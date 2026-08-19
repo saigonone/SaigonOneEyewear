@@ -292,6 +292,18 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               );
             })}
+
+            <button
+              id="btn-nav-articles"
+              onClick={() => {
+                const el = document.getElementById("articles-blog-section");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="relative py-1 flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-bold transition-all cursor-pointer whitespace-nowrap"
+            >
+              <span>Tin Tức & Cẩm Nang</span>
+              <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-full bg-slate-900 text-white">Mới</span>
+            </button>
           </div>
 
           {/* Gender Filter Buttons */}
@@ -352,6 +364,17 @@ export const Header: React.FC<HeaderProps> = ({
                 {cat.badge && <span className="text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full">{cat.badge}</span>}
               </button>
             ))}
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                const el = document.getElementById("articles-blog-section");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-between"
+            >
+              <span>Tin Tức & Cẩm Nang</span>
+              <span className="text-[9px] bg-slate-900 text-white px-1.5 py-0.5 rounded-full">Mới</span>
+            </button>
           </div>
 
           <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2">

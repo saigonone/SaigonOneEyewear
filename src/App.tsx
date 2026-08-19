@@ -36,6 +36,15 @@ import {
   AdminPanel 
 } from "./components/AdminPanel";
 import { 
+  AdminLoginModal 
+} from "./components/AdminLoginModal";
+import { 
+  LatestArticlesSection 
+} from "./components/LatestArticlesSection";
+import { 
+  ArticleDetailModal 
+} from "./components/ArticleDetailModal";
+import { 
   EyewearAiChat 
 } from "./components/EyewearAiChat";
 import { 
@@ -53,15 +62,20 @@ import {
   Order, 
   ProductColor, 
   LensOption, 
-  EyePrescription 
+  EyePrescription,
+  Article,
+  ArticleCategory
 } from "./types";
 import { MOCK_PRODUCTS } from "./data/mockProducts";
+import { INITIAL_ARTICLES, INITIAL_ARTICLE_CATEGORIES } from "./data/mockArticles";
 import { 
   getProductsFromFirebase, 
   addProductToFirebase, 
   deleteProductFromFirebase, 
   updateProductInFirebase,
-  subscribeToProductsFromFirebase
+  subscribeToProductsFromFirebase,
+  getArticlesFromFirebase,
+  getArticleCategoriesFromFirebase
 } from "./firebase";
 import { 
   Filter, 
@@ -152,7 +166,62 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
+  const [isAdminLoginOpen, setIsAdminLoginOpen] = useState<boolean>(false);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
+
+  // Articles & News state loaded from Firebase
+  const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
+  const [articleCategories, setArticleCategories] = useState<ArticleCategory[]>(INITIAL_ARTICLE_CATEGORIES);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+
+  // Admin Authentication State
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem("saigonone_admin_authenticated") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+
+  // Sync articles and categories from Firebase
+  useEffect(() => {
+    const loadArticlesData = async () => {
+      try {
+        const [arts, cats] = await Promise.all([
+          getArticlesFromFirebase(),
+          getArticleCategoriesFromFirebase()
+        ]);
+        if (arts && arts.length > 0) setArticles(arts);
+        if (cats && cats.length > 0) setArticleCategories(cats);
+      } catch (e) {
+        console.error("Error loading articles:", e);
+      }
+    };
+    loadArticlesData();
+  }, []);
+
+  const handleOpenAdminTrigger = () => {
+    if (isAdminAuthenticated) {
+      setIsAdminOpen(true);
+    } else {
+      setIsAdminLoginOpen(true);
+    }
+  };
+
+  const handleLoginSuccess = () => {
+    setIsAdminAuthenticated(true);
+    setIsAdminLoginOpen(false);
+    setIsAdminOpen(true);
+  };
+
+  const handleAdminLogout = () => {
+    try {
+      sessionStorage.removeItem("saigonone_admin_authenticated");
+      sessionStorage.removeItem("saigonone_admin_user");
+    } catch (e) {}
+    setIsAdminAuthenticated(false);
+    setIsAdminOpen(false);
+  };
 
   // Sync cart to local storage
   useEffect(() => {
@@ -362,7 +431,7 @@ export default function App() {
         onOpenLensGuide={() => setIsLensGuideOpen(true)}
         onOpenStores={() => setIsStoresOpen(true)}
         onOpenOrderLookup={() => setIsOrderLookupOpen(true)}
-        onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenAdmin={handleOpenAdminTrigger}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         selectedCategory={selectedCategory}
@@ -577,7 +646,35 @@ export default function App() {
 
       </main>
 
+      {/* Latest Articles & Vision Guide Section */}
+      {!searchQuery && !showOnlyFavorites && (
+        <LatestArticlesSection
+          articles={articles}
+          categories={articleCategories}
+          onSelectArticle={(art) => setSelectedArticle(art)}
+        />
+      )}
+
       {/* Modals */}
+      {selectedArticle && (
+        <ArticleDetailModal
+          article={selectedArticle}
+          onClose={() => setSelectedArticle(null)}
+          onSelectCategory={(catName) => {
+            const el = document.getElementById("articles-blog-section");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
+        />
+      )}
+
+      {isAdminLoginOpen && (
+        <AdminLoginModal
+          isOpen={isAdminLoginOpen}
+          onClose={() => setIsAdminLoginOpen(false)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
+
       {selectedDetailProduct && (
         <ProductDetailModal
           product={selectedDetailProduct.product}
@@ -651,6 +748,7 @@ export default function App() {
           onAddProduct={handleAddProduct}
           onUpdateProduct={handleUpdateProduct}
           onDeleteProduct={handleDeleteProduct}
+          onLogout={handleAdminLogout}
         />
       )}
 

@@ -132,6 +132,17 @@ export const Footer: React.FC<FooterProps> = ({
                 </button>
               </li>
               <li>
+                <button 
+                  onClick={() => {
+                    const el = document.getElementById("articles-blog-section");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }} 
+                  className="hover:text-blue-600 transition-colors"
+                >
+                  Góc Tin Tức & Cẩm Nang
+                </button>
+              </li>
+              <li>
                 <button onClick={onOpenOrderLookup} className="hover:text-blue-600 transition-colors">
                   Tra Cứu Tiến Độ Đơn Hàng
                 </button>

@@ -159,3 +159,45 @@ export interface Review {
   verifiedPurchase: boolean;
   images?: string[];
 }
+
+export interface Article {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  summary: string;
+  content: string;
+  thumbnail: string;
+  author: string;
+  readTime: string;
+  publishedAt: string;
+  viewsCount: number;
+  isFeatured?: boolean;
+  isPublished: boolean;
+}
+
+export interface ArticleCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+}
+
+export interface ProductCategoryItem {
+  id: string;
+  slug: ProductCategory;
+  name: string;
+  description: string;
+  itemCount?: number;
+}
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  fullName: string;
+  email: string;
+  role: "super_admin" | "admin" | "editor" | "technician";
+  createdAt: string;
+  lastLogin?: string;
+  isActive: boolean;
+}
