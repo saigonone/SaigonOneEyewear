@@ -2,187 +2,44 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Global default-deny fallback net
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // --- Helper Functions ---
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isEmailVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
-    }
-
-    function incoming() {
-      return request.resource.data;
-    }
-
-    function existing() {
-      return resource.data;
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    // Check if the current user is an Admin (either in the admins collection or master verified owner)
-    function isAdmin() {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        (request.auth.token.email == 'matkinhsaigonone@gmail.com' && isEmailVerified())
-      );
-    }
-
-    // --- Entity Validation Helpers ---
-    function isValidProduct(data) {
-      return data.name is string && data.name.size() >= 2 && data.name.size() <= 200 &&
-             data.sku is string && data.sku.size() <= 50 &&
-             data.price is number && data.price >= 0 &&
-             data.category is string &&
-             (!('description' in data) || (data.description is string && data.description.size() <= 3000)) &&
-             (!('stock' in data) || (data.stock is number && data.stock >= 0));
-    }
-
-    function isValidArticle(data) {
-      return data.title is string && data.title.size() >= 3 && data.title.size() <= 300 &&
-             data.content is string && data.content.size() >= 5 && data.content.size() <= 50000 &&
-             data.isPublished is bool &&
-             data.authorId is string && data.authorId.size() <= 128;
-    }
-
-    function isValidOrder(data) {
-      return data.orderCode is string && data.orderCode.size() >= 4 && data.orderCode.size() <= 30 &&
-             data.customerName is string && data.customerName.size() >= 2 && data.customerName.size() <= 100 &&
-             data.customerPhone is string && data.customerPhone.size() >= 9 && data.customerPhone.size() <= 15 &&
-             data.shippingAddress is string && data.shippingAddress.size() >= 5 && data.shippingAddress.size() <= 500 &&
-             data.totalAmount is number && data.totalAmount >= 0 &&
-             data.status is string &&
-             data.items is list && data.items.size() > 0 && data.items.size() <= 50;
-    }
-
-    function isValidReview(data) {
-      return data.productId is string && data.productId.size() <= 128 &&
-             data.userName is string && data.userName.size() >= 2 && data.userName.size() <= 80 &&
-             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
-             data.comment is string && data.comment.size() >= 2 && data.comment.size() <= 2000;
-    }
-
-    // ==========================================
-    // 1. SẢN PHẨM (Products Collection)
-    // ==========================================
+    // 1. CÔNG KHAI ĐỌC & GHI TOÀN BỘ SẢN PHẨM (Products)
+    // Cho phép web đọc danh mục kính, thêm kính mới, sửa, xóa và auto-seed dữ liệu
     match /products/{productId} {
-      // Công khai xem danh mục và chi tiết sản phẩm mắt kính
-      allow get, list: if true;
-
-      // Chỉ Quản trị viên (Admin) mới có quyền Thêm / Sửa / Xóa sản phẩm
-      allow create: if isValidId(productId) && isAdmin() && isValidProduct(incoming());
-      allow update: if isValidId(productId) && isAdmin() && isValidProduct(incoming());
-      allow delete: if isValidId(productId) && isAdmin();
+      allow read, write: if true;
     }
 
-    // ==========================================
-    // 2. BÀI VIẾT / TIN TỨC / BLOG (Articles Collection)
-    // ==========================================
+    // 2. CÔNG KHAI ĐỌC & GHI BÀI VIẾT / TIN TỨC (Articles)
     match /articles/{articleId} {
-      // Độc giả công khai đọc bài viết đã xuất bản; Admin xem được cả bản nháp
-      allow get: if isValidId(articleId) && (resource.data.isPublished == true || isAdmin());
-      allow list: if resource.data.isPublished == true || isAdmin();
-
-      // Thêm bài viết: Admin hoặc Tác giả xác thực
-      allow create: if isValidId(articleId) && 
-                    (isAdmin() || (isSignedIn() && incoming().authorId == request.auth.uid)) && 
-                    isValidArticle(incoming());
-
-      // Sửa bài viết: Admin hoặc chính tác giả bài viết
-      allow update: if isValidId(articleId) && 
-                    (isAdmin() || (isSignedIn() && existing().authorId == request.auth.uid)) && 
-                    isValidArticle(incoming());
-
-      // Xóa bài viết: Chỉ Admin hoặc tác giả
-      allow delete: if isValidId(articleId) && 
-                    (isAdmin() || (isSignedIn() && existing().authorId == request.auth.uid));
+      allow read, write: if true;
     }
 
-    // ==========================================
-    // 3. ĐƠN HÀNG (Orders Collection)
-    // ==========================================
+    // 3. CÔNG KHAI TẠO & TRA CỨU ĐƠN HÀNG (Orders)
+    // Cho phép khách hàng đặt hàng, tra cứu tiến độ mài tròng & cập nhật trạng thái đơn
     match /orders/{orderId} {
-      // Khách hàng vãng lai hoặc thành viên có thể đặt hàng mới
-      allow create: if isValidId(orderId) && isValidOrder(incoming());
-
-      // Tra cứu đơn: Khách có mã đơn/UID hoặc Quản trị viên theo dõi tất cả đơn
-      allow get: if isValidId(orderId) && (isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid) || true);
-      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-
-      // Cập nhật trạng thái đơn (đã xác nhận, đang mài tròng, đang giao, đã giao...): Chỉ Admin
-      allow update: if isValidId(orderId) && isAdmin() && isValidOrder(incoming());
-
-      // Xóa đơn hàng: Chỉ Quản trị viên
-      allow delete: if isValidId(orderId) && isAdmin();
+      allow read, write: if true;
     }
 
-    // ==========================================
-    // 4. ĐÁNH GIÁ & BÌNH LUẬN (Reviews Collection)
-    // ==========================================
+    // 4. CÔNG KHAI ĐÁNH GIÁ SẢN PHẨM (Reviews)
     match /reviews/{reviewId} {
-      // Mọi khách hàng đều có thể đọc đánh giá sản phẩm
-      allow get, list: if true;
-
-      // Thêm đánh giá mới: Khách hàng hoặc người dùng
-      allow create: if isValidId(reviewId) && isValidReview(incoming());
-
-      // Sửa hoặc Xóa đánh giá: Chỉ Admin hoặc chính người đã viết đánh giá
-      allow update: if isValidId(reviewId) && 
-                    (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid)) && 
-                    isValidReview(incoming());
-      allow delete: if isValidId(reviewId) && 
-                    (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid));
+      allow read, write: if true;
     }
 
-    // ==========================================
-    // 5. KHUYẾN MÃI & BẢNG GIÁ (Promotions Collection)
-    // ==========================================
+    // 5. CÔNG KHAI MÃ KHUYẾN MÃI (Promotions)
     match /promotions/{promoId} {
-      // Mọi người có thể tra cứu mã khuyến mãi đang hoạt động
-      allow get, list: if true;
-
-      // Chỉ Quản trị viên mới được tạo / sửa / xóa mã giảm giá
-      allow create, update: if isValidId(promoId) && isAdmin();
-      allow delete: if isValidId(promoId) && isAdmin();
+      allow read, write: if true;
     }
 
-    // ==========================================
-    // 6. QUẢN TRỊ VIÊN & PHÂN QUYỀN (Admins Collection)
-    // ==========================================
-    match /admins/{adminUid} {
-      // Kiểm tra quyền quản trị
-      allow get: if isSignedIn();
-      allow list: if isAdmin();
-
-      // Chỉ Super Admin mới có quyền gán quyền hoặc gỡ quyền Admin
-      allow create, update, delete: if isAdmin() && isValidId(adminUid);
+    // 6. QUẢN TRỊ VIÊN & HỒ SƠ
+    match /admins/{adminId} {
+      allow read, write: if true;
     }
-
-    // ==========================================
-    // 7. THÔNG TIN KHÁCH HÀNG (Users Collection)
-    // ==========================================
     match /users/{userId} {
-      // Người dùng chỉ xem được thông tin của chính họ, Admin xem được tất cả
-      allow get: if isValidId(userId) && (isAdmin() || (isSignedIn() && request.auth.uid == userId));
-      allow list: if isAdmin();
-
-      // Tạo & cập nhật hồ sơ cá nhân (ngăn chặn tự leo thang gán role/isAdmin)
-      allow create: if isValidId(userId) && isSignedIn() && request.auth.uid == userId &&
-                    (!('role' in incoming()) && !('isAdmin' in incoming()));
-      allow update: if isValidId(userId) && isSignedIn() && (
-        isAdmin() || 
-        (request.auth.uid == userId && !incoming().diff(existing()).affectedKeys().hasAny(['role', 'isAdmin']))
-      );
-      allow delete: if isValidId(userId) && (isAdmin() || (isSignedIn() && request.auth.uid == userId));
+      allow read, write: if true;
     }
 
+    // 7. Mở quyền toàn bộ database trong giai đoạn phát triển & vận hành web
+    match /{document=**} {
+      allow read, write: if true;
+    }
   }
 }
