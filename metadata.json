@@ -1,0 +1,6 @@
+{
+  "name": "Sài Gòn One Eyewear",
+  "description": "Cửa hàng mắt kính Sài Gòn One Eyewear chính hãng - Kính cận, kính mát thời trang, tròng kính cao cấp, thử kính trực tuyến và đặt hàng nhanh chóng.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
