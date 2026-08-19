@@ -1,0 +1,140 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Thông tin chi tiết về sản phẩm mắt kính, gọng kính và tròng kính.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 200 },
+        "sku": { "type": "string", "maxLength": 50 },
+        "brand": { "type": "string", "maxLength": 100 },
+        "category": { "type": "string", "enum": ["gong-kinh-can", "kinh-ram-mat", "trong-kinh", "kinh-doi-mau", "kinh-tre-em"] },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "stock": { "type": "number" },
+        "rating": { "type": "number" },
+        "reviewsCount": { "type": "number" },
+        "description": { "type": "string", "maxLength": 3000 },
+        "material": { "type": "string", "maxLength": 50 },
+        "frameShape": { "type": "string", "maxLength": 50 },
+        "gender": { "type": "string", "enum": ["nam", "nu", "unisex", "tre-em"] },
+        "isNewArrival": { "type": "boolean" },
+        "isBestSeller": { "type": "boolean" },
+        "isFeatured": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "sku", "price", "category"]
+    },
+    "Article": {
+      "title": "Article",
+      "description": "Bài viết tin tức, cẩm nang chọn kính và kiến thức chăm sóc mắt.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "minLength": 5, "maxLength": 300 },
+        "slug": { "type": "string", "maxLength": 150 },
+        "summary": { "type": "string", "maxLength": 500 },
+        "content": { "type": "string", "maxLength": 50000 },
+        "thumbnail": { "type": "string", "maxLength": 1000 },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "category": { "type": "string", "maxLength": 50 },
+        "isPublished": { "type": "boolean" },
+        "viewsCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "authorId", "isPublished"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Thông tin đơn đặt hàng kính mắt của khách hàng.",
+      "type": "object",
+      "properties": {
+        "orderCode": { "type": "string", "maxLength": 30 },
+        "customerName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "customerPhone": { "type": "string", "minLength": 9, "maxLength": 15 },
+        "customerEmail": { "type": "string", "maxLength": 100 },
+        "shippingAddress": { "type": "string", "minLength": 5, "maxLength": 500 },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "shippingFee": { "type": "number" },
+        "discountAmount": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["cod", "bank_transfer", "momo"] },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cutting_lens", "shipping", "delivered", "cancelled"] },
+        "prescriptionNote": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderCode", "customerName", "customerPhone", "shippingAddress", "items", "totalAmount", "status"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Đánh giá và nhận xét sản phẩm từ khách hàng.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "minLength": 2, "maxLength": 2000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "userName", "rating", "comment"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Danh sách quản trị viên có quyền chỉnh sửa hệ thống.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["super_admin", "admin", "editor", "technician"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role"]
+    },
+    "Promotion": {
+      "title": "Promotion",
+      "description": "Mã khuyến mãi giảm giá.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "maxLength": 30 },
+        "discountPercent": { "type": "number" },
+        "maxDiscount": { "type": "number" },
+        "minOrder": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "expiryDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "minOrder", "isActive"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Bộ sưu tập sản phẩm kính mắt, gọng và tròng kính."
+    },
+    "/articles/{articleId}": {
+      "schema": "Article",
+      "description": "Bộ sưu tập bài viết tin tức, hướng dẫn chọn kính."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Bộ sưu tập đơn hàng của khách."
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Bộ sưu tập đánh giá của khách hàng về sản phẩm."
+    },
+    "/admins/{adminUid}": {
+      "schema": "Admin",
+      "description": "Danh sách UID quản trị viên."
+    },
+    "/promotions/{promoId}": {
+      "schema": "Promotion",
+      "description": "Danh sách mã khuyến mãi."
+    }
+  }
+}

@@ -18,7 +18,7 @@ import {
   Check
 } from "lucide-react";
 import { Product, Order, ProductCategory, FrameShape, FrameMaterial } from "../types";
-import { fetchOrdersFromFirebase, db, rtdb } from "../firebase";
+import { fetchOrdersFromFirebase, updateOrderStatusInFirebase, db, rtdb } from "../firebase";
 
 interface AdminPanelProps {
   onClose: () => void;
@@ -72,7 +72,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     loadOrders();
   }, []);
 
-  const handleStatusChange = (orderCode: string, newStatus: any) => {
+  const handleStatusChange = async (orderCode: string, newStatus: any) => {
     const updated = orders.map((o) => {
       if (o.orderCode === orderCode) {
         return { ...o, status: newStatus, updatedAt: new Date().toISOString() };
@@ -80,9 +80,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return o;
     });
     setOrders(updated);
-    try {
-      localStorage.setItem("saigonone_orders", JSON.stringify(updated));
-    } catch (e) {}
+    await updateOrderStatusInFirebase(orderCode, newStatus);
   };
 
   const handleCreateProduct = (e: React.FormEvent) => {

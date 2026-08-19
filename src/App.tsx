@@ -57,6 +57,13 @@ import {
 } from "./types";
 import { MOCK_PRODUCTS } from "./data/mockProducts";
 import { 
+  getProductsFromFirebase, 
+  addProductToFirebase, 
+  deleteProductFromFirebase, 
+  updateProductInFirebase,
+  subscribeToProductsFromFirebase
+} from "./firebase";
+import { 
   Filter, 
   SlidersHorizontal, 
   Camera, 
@@ -71,17 +78,37 @@ import {
 } from "lucide-react";
 
 export default function App() {
-  // Products state
-  const [products, setProducts] = useState<Product[]>(() => {
-    try {
-      const local = localStorage.getItem("saigonone_custom_products");
-      if (local) {
-        const parsed = JSON.parse(local);
-        return [...MOCK_PRODUCTS, ...parsed];
+  // Products state loaded directly from Firebase
+  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(true);
+
+  // Sync products directly from Firebase (Firestore / Realtime Database)
+  useEffect(() => {
+    let unsubscribe = () => {};
+    const loadFirebaseProducts = async () => {
+      setIsLoadingProducts(true);
+      try {
+        const data = await getProductsFromFirebase();
+        if (data && data.length > 0) {
+          setProducts(data);
+        }
+      } catch (err) {
+        console.error("Error loading products from Firebase:", err);
+      } finally {
+        setIsLoadingProducts(false);
       }
-    } catch (e) {}
-    return MOCK_PRODUCTS;
-  });
+
+      // Realtime listener for live updates
+      unsubscribe = subscribeToProductsFromFirebase((updatedList) => {
+        if (updatedList && updatedList.length > 0) {
+          setProducts(updatedList);
+        }
+      });
+    };
+
+    loadFirebaseProducts();
+    return () => unsubscribe();
+  }, []);
 
   // Filter & Search states
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -219,23 +246,20 @@ export default function App() {
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Admin product modification handlers
-  const handleAddProduct = (newProd: Product) => {
+  // Admin product modification handlers with direct Firebase synchronization
+  const handleAddProduct = async (newProd: Product) => {
     setProducts((prev) => [newProd, ...prev]);
-    try {
-      const local = JSON.parse(localStorage.getItem("saigonone_custom_products") || "[]");
-      local.unshift(newProd);
-      localStorage.setItem("saigonone_custom_products", JSON.stringify(local));
-    } catch (e) {}
+    await addProductToFirebase(newProd);
   };
 
-  const handleDeleteProduct = (id: string) => {
+  const handleDeleteProduct = async (id: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
-    try {
-      const local = JSON.parse(localStorage.getItem("saigonone_custom_products") || "[]");
-      const filtered = local.filter((p: any) => p.id !== id);
-      localStorage.setItem("saigonone_custom_products", JSON.stringify(filtered));
-    } catch (e) {}
+    await deleteProductFromFirebase(id);
+  };
+
+  const handleUpdateProduct = async (updatedProd: Product) => {
+    setProducts((prev) => prev.map((p) => (p.id === updatedProd.id ? updatedProd : p)));
+    await updateProductInFirebase(updatedProd);
   };
 
   // Filtered and Sorted Products memo
@@ -625,7 +649,7 @@ export default function App() {
           onClose={() => setIsAdminOpen(false)}
           products={products}
           onAddProduct={handleAddProduct}
-          onUpdateProduct={() => {}}
+          onUpdateProduct={handleUpdateProduct}
           onDeleteProduct={handleDeleteProduct}
         />
       )}
