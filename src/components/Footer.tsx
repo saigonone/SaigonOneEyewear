@@ -17,6 +17,7 @@ import { ProductCategory } from "../types";
 interface FooterProps {
   onSelectCategory: (cat: ProductCategory) => void;
   onOpenStores: () => void;
+  onOpenAbout?: () => void;
   onOpenLensGuide: () => void;
   onOpenFaceAdvisor: () => void;
   onOpenTryOn: () => void;
@@ -26,6 +27,7 @@ interface FooterProps {
 export const Footer: React.FC<FooterProps> = ({
   onSelectCategory,
   onOpenStores,
+  onOpenAbout,
   onOpenLensGuide,
   onOpenFaceAdvisor,
   onOpenTryOn,
@@ -63,7 +65,7 @@ export const Footer: React.FC<FooterProps> = ({
             <div className="space-y-2 text-xs text-slate-600 pt-2">
               <p className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>Hotline: <strong>0903.372.556</strong></span>
+                <span>Hotline & Zalo: <a href="https://zalo.me/0973819928" target="_blank" rel="noreferrer" className="font-bold text-blue-600 hover:underline">0973.819.928</a></span>
               </p>
               <p className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-blue-600 shrink-0" />
@@ -116,6 +118,13 @@ export const Footer: React.FC<FooterProps> = ({
               Công Nghệ & Dịch Vụ
             </h4>
             <ul className="space-y-2 text-xs text-slate-500">
+              {onOpenAbout && (
+                <li>
+                  <button onClick={onOpenAbout} className="hover:text-blue-600 transition-colors font-medium">
+                    Giới Thiệu Saigon One
+                  </button>
+                </li>
+              )}
               <li>
                 <button onClick={onOpenTryOn} className="hover:text-blue-600 transition-colors flex items-center gap-1.5 text-blue-600 font-semibold">
                   <span>📸 Thử Kính AR 3D</span>
@@ -162,12 +171,12 @@ export const Footer: React.FC<FooterProps> = ({
             </h4>
             <ul className="space-y-2.5 text-[11px] text-slate-500">
               <li className="leading-snug">
-                <strong className="text-slate-900 block font-semibold">Chi nhánh Quận 1 (Flagship):</strong>
-                92 Nguyễn Trãi, P. Bến Thành, Q.1
+                <strong className="text-slate-900 block font-semibold text-blue-600">Trụ Sở Phú Nhuận (Flagship):</strong>
+                178 Phan Đăng Lưu, Phường 3, Q. Phú Nhuận, TP.HCM
               </li>
               <li className="leading-snug">
-                <strong className="text-slate-900 block font-semibold">Chi nhánh Quận 3:</strong>
-                348 Cách Mạng Tháng 8, P.10, Q.3
+                <strong className="text-slate-900 block font-semibold">Chi nhánh Quận 1:</strong>
+                92 Nguyễn Trãi, P. Bến Thành, Q.1
               </li>
               <li className="leading-snug">
                 <strong className="text-slate-900 block font-semibold">Chi nhánh Quận 10:</strong>

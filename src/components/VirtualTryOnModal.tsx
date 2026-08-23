@@ -8,13 +8,14 @@ import {
   Maximize2, 
   Sliders, 
   Sparkles, 
-  ShoppingBag, 
+  MessageSquare, 
   Check, 
   Layers,
   HelpCircle,
   FlipHorizontal,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Phone
 } from "lucide-react";
 import { Product, ProductColor } from "../types";
 
@@ -23,7 +24,6 @@ interface VirtualTryOnModalProps {
   allProducts: Product[];
   onClose: () => void;
   onSelectProduct: (p: Product) => void;
-  onAddToCart: (p: Product, color: ProductColor) => void;
 }
 
 const SAMPLE_AVATARS = [
@@ -650,17 +650,16 @@ export const VirtualTryOnModal: React.FC<VirtualTryOnModalProps> = ({
 
             {/* Bottom Actions */}
             <div className="pt-4 mt-4 border-t border-stone-800 flex items-center gap-3">
-              <button
-                id="btn-tryon-add-to-cart"
-                onClick={() => {
-                  onAddToCart(currentProduct, selectedColor);
-                  onClose();
-                }}
-                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold py-3 px-4 rounded-xl text-sm shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+              <a
+                id="btn-tryon-contact-zalo"
+                href="https://zalo.me/0973819928"
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl text-sm shadow-lg shadow-blue-500/20 transition-all cursor-pointer"
               >
-                <ShoppingBag className="w-4 h-4" />
-                <span>Chọn Mua Mẫu Này</span>
-              </button>
+                <MessageSquare className="w-4 h-4" />
+                <span>Tư Vấn Zalo: 0973.819.928</span>
+              </a>
             </div>
 
           </div>

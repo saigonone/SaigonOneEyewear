@@ -30,7 +30,9 @@ import {
   Palette,
   Star,
   PlusCircle,
-  ArrowUp
+  ArrowUp,
+  Ruler,
+  Scale
 } from "lucide-react";
 import { 
   Product, 
@@ -105,6 +107,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [prodPrice, setProdPrice] = useState("650000");
   const [prodOrigPrice, setProdOrigPrice] = useState("850000");
   const [prodStock, setProdStock] = useState<number>(30);
+  const [prodLensWidth, setProdLensWidth] = useState<number>(51);
+  const [prodBridgeWidth, setProdBridgeWidth] = useState<number>(19);
+  const [prodTempleLength, setProdTempleLength] = useState<number>(145);
+  const [prodFrameHeight, setProdFrameHeight] = useState<number>(44);
+  const [prodWeight, setProdWeight] = useState<number>(14);
   const [prodImages, setProdImages] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState<string>("");
   const [prodColors, setProdColors] = useState<ProductColor[]>([]);
@@ -266,6 +273,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setProdPrice("650000");
     setProdOrigPrice("850000");
     setProdStock(30);
+    setProdLensWidth(51);
+    setProdBridgeWidth(19);
+    setProdTempleLength(145);
+    setProdFrameHeight(44);
+    setProdWeight(14);
     const defaultImg = "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80";
     setProdImages([defaultImg]);
     setNewImageUrl("");
@@ -289,6 +301,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setProdPrice(p.price.toString());
     setProdOrigPrice(p.originalPrice.toString());
     setProdStock(p.stock || 20);
+    setProdLensWidth(p.dimensions?.lensWidth || 51);
+    setProdBridgeWidth(p.dimensions?.bridgeWidth || 19);
+    setProdTempleLength(p.dimensions?.templeLength || 145);
+    setProdFrameHeight(p.dimensions?.frameHeight || 44);
+    setProdWeight(p.weight || 14);
     setProdImages(p.images && p.images.length > 0 ? [...p.images] : ["https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80"]);
     setNewImageUrl("");
     setProdColors(p.colors && p.colors.length > 0 ? [...p.colors] : [
@@ -316,6 +333,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
     const highlightsArr = prodHighlights.split("\n").map(s => s.trim()).filter(Boolean);
 
+    const frameDimensions = {
+      lensWidth: Number(prodLensWidth) || 51,
+      bridgeWidth: Number(prodBridgeWidth) || 19,
+      templeLength: Number(prodTempleLength) || 145,
+      frameHeight: Number(prodFrameHeight) || 44,
+    };
+    const frameWeight = Number(prodWeight) || 14;
+
     if (editingProduct) {
       const updated: Product = {
         ...editingProduct,
@@ -331,6 +356,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         images: finalImages,
         colors: finalColors,
         stock: prodStock,
+        dimensions: frameDimensions,
+        weight: frameWeight,
         description: prodDesc,
         highlights: highlightsArr.length > 0 ? highlightsArr : editingProduct.highlights,
       };
@@ -352,8 +379,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         frameShape: prodShape,
         faceShapes: ["tron", "trai-xoan", "vuong"],
         material: prodMaterial,
-        weight: 10,
-        dimensions: { lensWidth: 51, bridgeWidth: 19, templeLength: 145, frameHeight: 44 },
+        weight: frameWeight,
+        dimensions: frameDimensions,
         description: prodDesc,
         highlights: highlightsArr.length > 0 ? highlightsArr : ["Gọng kính chính hãng Sài Gòn One", "Bảo hành nắn chỉnh trọn đời"],
         stock: prodStock,
@@ -710,7 +737,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 </div>
                                 <div>
                                   <div className="font-bold text-slate-900 line-clamp-1">{p.name}</div>
-                                  <div className="text-[11px] text-slate-400 capitalize">{p.material} • Dáng {p.frameShape}</div>
+                                  <div className="text-[11px] text-slate-400 flex items-center gap-1.5 flex-wrap">
+                                    <span className="capitalize">{p.material}</span>
+                                    <span>•</span>
+                                    <span>Dáng {p.frameShape}</span>
+                                    {p.dimensions && (
+                                      <>
+                                        <span>•</span>
+                                        <span className="font-mono text-blue-600 font-semibold bg-blue-50 px-1.5 py-0.5 rounded text-[10px]">
+                                          {p.dimensions.lensWidth}□{p.dimensions.bridgeWidth}-{p.dimensions.templeLength}mm ({p.weight || 14}g)
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
                                   {p.colors && p.colors.length > 0 && (
                                     <div className="flex items-center gap-1.5 mt-1.5">
                                       {p.colors.slice(0, 5).map((c, i) => (
@@ -1242,13 +1281,122 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
-              {/* SECTION 3: THƯ VIỆN HÌNH ẢNH (GALLERY) */}
+              {/* SECTION 3: THÔNG SỐ KỸ THUẬT GỌNG KÍNH (KÍCH THƯỚC & TRỌNG LƯỢNG) */}
+              <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200/80 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <h4 className="font-bold text-slate-900 flex items-center gap-2 text-xs">
+                    <Ruler className="w-3.5 h-3.5 text-blue-600" />
+                    <span>3. Thông Số Kỹ Thuật Gọng Kính (Kích Thước mm & Trọng Lượng)</span>
+                  </h4>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-50 text-blue-700 text-[10px] font-bold font-mono border border-blue-200/60">
+                    <span>Mã Chuẩn: {prodLensWidth || 51} □ {prodBridgeWidth || 19} - {prodTempleLength || 145} mm</span>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-500">
+                  Thông số giúp khách hàng kiểm tra độ vừa vặn với khuôn mặt (được in chìm trên càng kính chuẩn quốc tế).
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1 text-[11px]">
+                      Chiều Ngang Tròng (mm)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="30"
+                        max="80"
+                        value={prodLensWidth}
+                        onChange={(e) => setProdLensWidth(parseInt(e.target.value) || 51)}
+                        placeholder="51"
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-slate-900"
+                      />
+                      <span className="absolute right-2.5 top-2 text-[10px] text-gray-400 font-semibold">mm</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1 text-[11px]">
+                      Cầu Mũi / Đệm Mũi (mm)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="10"
+                        max="35"
+                        value={prodBridgeWidth}
+                        onChange={(e) => setProdBridgeWidth(parseInt(e.target.value) || 19)}
+                        placeholder="19"
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-slate-900"
+                      />
+                      <span className="absolute right-2.5 top-2 text-[10px] text-gray-400 font-semibold">mm</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1 text-[11px]">
+                      Chiều Dài Càng (mm)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="100"
+                        max="170"
+                        value={prodTempleLength}
+                        onChange={(e) => setProdTempleLength(parseInt(e.target.value) || 145)}
+                        placeholder="145"
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-slate-900"
+                      />
+                      <span className="absolute right-2.5 top-2 text-[10px] text-gray-400 font-semibold">mm</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1 text-[11px]">
+                      Chiều Cao Tròng (mm)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="25"
+                        max="70"
+                        value={prodFrameHeight}
+                        onChange={(e) => setProdFrameHeight(parseInt(e.target.value) || 44)}
+                        placeholder="44"
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-slate-900"
+                      />
+                      <span className="absolute right-2.5 top-2 text-[10px] text-gray-400 font-semibold">mm</span>
+                    </div>
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block font-semibold text-slate-700 mb-1 text-[11px]">
+                      Trọng Lượng (g)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="5"
+                        max="60"
+                        value={prodWeight}
+                        onChange={(e) => setProdWeight(parseInt(e.target.value) || 14)}
+                        placeholder="14"
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-amber-700"
+                      />
+                      <span className="absolute right-2.5 top-2 text-[10px] text-gray-400 font-semibold">gram</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 4: THƯ VIỆN HÌNH ẢNH (GALLERY) */}
               <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200/80 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <h4 className="font-bold text-slate-900 flex items-center gap-2 text-xs">
                       <ImageIcon className="w-3.5 h-3.5 text-indigo-600" />
-                      <span>3. Quản Lý Thư Viện Hình Ảnh ({prodImages.length} ảnh)</span>
+                      <span>4. Quản Lý Thư Viện Hình Ảnh ({prodImages.length} ảnh)</span>
                     </h4>
                     <p className="text-[11px] text-slate-500 mt-0.5">
                       Ảnh đầu tiên là ảnh đại diện chính (Cover Photo). Bạn có thể thêm nhiều góc chụp kính.
@@ -1344,13 +1492,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
-              {/* SECTION 4: QUẢN LÝ MÀU SẮC & ẢNH THEO MÀU (COLOR VARIANTS) */}
+              {/* SECTION 5: QUẢN LÝ MÀU SẮC & ẢNH THEO MÀU (COLOR VARIANTS) */}
               <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200/80 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <h4 className="font-bold text-slate-900 flex items-center gap-2 text-xs">
                       <Palette className="w-3.5 h-3.5 text-amber-600" />
-                      <span>4. Quản Lý Bảng Màu & Ảnh Theo Từng Màu ({prodColors.length} màu)</span>
+                      <span>5. Quản Lý Bảng Màu & Ảnh Theo Từng Màu ({prodColors.length} màu)</span>
                     </h4>
                     <p className="text-[11px] text-slate-500 mt-0.5">
                       Khi khách chọn màu trên website, hệ thống sẽ tự động chuyển sang ảnh của màu tương ứng!
@@ -1483,11 +1631,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
-              {/* SECTION 5: MÔ TẢ & ĐIỂM NỔI BẬT */}
+              {/* SECTION 6: MÔ TẢ & ĐIỂM NỔI BẬT */}
               <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200/80 space-y-4">
                 <h4 className="font-bold text-slate-900 flex items-center gap-2 text-xs">
                   <BookOpen className="w-3.5 h-3.5 text-purple-600" />
-                  <span>5. Mô Tả Chi Tiết & Điểm Nổi Bật</span>
+                  <span>6. Mô Tả Chi Tiết & Điểm Nổi Bật</span>
                 </h4>
 
                 <div>

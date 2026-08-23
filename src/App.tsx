@@ -24,12 +24,6 @@ import {
   StoreLocationsModal 
 } from "./components/StoreLocationsModal";
 import { 
-  CartDrawer 
-} from "./components/CartDrawer";
-import { 
-  CheckoutModal 
-} from "./components/CheckoutModal";
-import { 
   OrderLookupModal 
 } from "./components/OrderLookupModal";
 import { 
@@ -38,6 +32,9 @@ import {
 import { 
   AdminLoginModal 
 } from "./components/AdminLoginModal";
+import { 
+  AboutModal 
+} from "./components/AboutModal";
 import { 
   LatestArticlesSection 
 } from "./components/LatestArticlesSection";
@@ -58,8 +55,6 @@ import {
   FrameShape, 
   FrameMaterial, 
   FaceShape, 
-  CartItem, 
-  Order, 
   ProductColor, 
   LensOption, 
   EyePrescription,
@@ -77,6 +72,13 @@ import {
   getArticlesFromFirebase,
   getArticleCategoriesFromFirebase
 } from "./firebase";
+import { 
+  parseCurrentRoute, 
+  navigateTo, 
+  replaceRoute, 
+  updateSEOMeta, 
+  CATEGORY_TO_PATH 
+} from "./utils/routes";
 import { 
   Filter, 
   SlidersHorizontal, 
@@ -133,16 +135,6 @@ export default function App() {
   const [selectedFaceShapeFilter, setSelectedFaceShapeFilter] = useState<FaceShape | null>(null);
   const [sortBy, setSortBy] = useState<"featured" | "price_asc" | "price_desc" | "newest" | "rating">("featured");
 
-  // Cart state (persisted)
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-    try {
-      const saved = localStorage.getItem("saigonone_cart");
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-
   // Favorites / Wishlist state (persisted)
   const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
     try {
@@ -153,8 +145,6 @@ export default function App() {
     }
   });
 
-  const [appliedPromo, setAppliedPromo] = useState<string>("CHAOHANG2026");
-
   // Modals visibility
   const [selectedDetailProduct, setSelectedDetailProduct] = useState<{ product: Product; color?: ProductColor } | null>(null);
   const [tryOnProduct, setTryOnProduct] = useState<Product | null>(null);
@@ -163,10 +153,9 @@ export default function App() {
   const [isLensGuideOpen, setIsLensGuideOpen] = useState<boolean>(false);
   const [isStoresOpen, setIsStoresOpen] = useState<boolean>(false);
   const [isOrderLookupOpen, setIsOrderLookupOpen] = useState<boolean>(false);
-  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState<boolean>(false);
+  const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
 
   // Articles & News state loaded from Firebase
@@ -200,12 +189,168 @@ export default function App() {
     loadArticlesData();
   }, []);
 
+  // Sync route on initial load and on popstate (Back/Forward buttons)
+  useEffect(() => {
+    const handlePopState = () => {
+      const route = parseCurrentRoute(products, articles);
+      updateSEOMeta(route.title, route.description);
+
+      if (route.category) {
+        setSelectedCategory(route.category);
+      }
+      setIsAboutOpen(!!route.isAbout);
+      setIsStoresOpen(!!route.isStores);
+      setIsTryOnModalOpen(!!route.isTryOn);
+      setIsOrderLookupOpen(!!route.isOrderLookup);
+
+      if (route.isAdmin) {
+        if (isAdminAuthenticated) {
+          setIsAdminOpen(true);
+        } else {
+          setIsAdminLoginOpen(true);
+        }
+      } else {
+        setIsAdminOpen(false);
+        setIsAdminLoginOpen(false);
+      }
+
+      if (route.productId) {
+        const found = products.find(
+          (p) =>
+            p.id.toLowerCase() === route.productId?.toLowerCase() ||
+            (p.sku && p.sku.toLowerCase() === route.productId?.toLowerCase()) ||
+            p.name.toLowerCase().replace(/\s+/g, "-") === route.productId
+        );
+        if (found) {
+          setSelectedDetailProduct({ product: found });
+        }
+      } else {
+        setSelectedDetailProduct(null);
+      }
+
+      if (route.articleId) {
+        const foundArt = articles.find(
+          (a) => a.id === route.articleId || a.id.toLowerCase() === route.articleId?.toLowerCase()
+        );
+        if (foundArt) {
+          setSelectedArticle(foundArt);
+        }
+      } else {
+        setSelectedArticle(null);
+      }
+    };
+
+    // Run once on load
+    handlePopState();
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [products, articles, isAdminAuthenticated]);
+
+  // Navigation handlers with HTML5 History API & SEO Title/Meta updates
+  const handleSelectCategory = (cat: ProductCategory) => {
+    setSelectedCategory(cat);
+    const targetPath = cat === "all" ? "/san-pham" : CATEGORY_TO_PATH[cat] || "/san-pham";
+    navigateTo(targetPath);
+    const route = parseCurrentRoute(products, articles);
+    updateSEOMeta(route.title, route.description);
+
+    // Close open modals
+    setIsAboutOpen(false);
+    setIsStoresOpen(false);
+    setIsTryOnModalOpen(false);
+    setIsOrderLookupOpen(false);
+    setSelectedDetailProduct(null);
+    setSelectedArticle(null);
+  };
+
+  const handleOpenAbout = () => {
+    navigateTo("/gioi-thieu");
+    setIsAboutOpen(true);
+    updateSEOMeta(
+      "Giới Thiệu Saigon One Eyewear - 178 Phan Đăng Lưu, Phú Nhuận",
+      "Tìm hiểu về Saigon One Eyewear - Hệ thống mắt kính thời trang cao cấp & phòng khám đo khúc xạ y khoa uy tín tại TP.HCM."
+    );
+  };
+
+  const handleOpenStores = () => {
+    navigateTo("/lien-he");
+    setIsStoresOpen(true);
+    updateSEOMeta(
+      "Liên Hệ & Hệ Thống Cửa Hàng - Saigon One Eyewear",
+      "Địa chỉ trụ sở Flagship Saigon One Eyewear: 178 Phan Đăng Lưu, Phường 3, Phú Nhuận, TP.HCM. Hotline/Zalo: 0973.819.928."
+    );
+  };
+
+  const handleOpenProductDetail = (product: Product, color?: ProductColor) => {
+    const slug = product.sku ? product.sku.toLowerCase() : product.id;
+    navigateTo(`/san-pham/${slug}`);
+    setSelectedDetailProduct({ product, color });
+    updateSEOMeta(
+      `${product.name} - ${product.brand} | Saigon One Eyewear`,
+      `${product.name} chính hãng ${product.brand}. Chất liệu ${product.material}. Giá: ${product.price.toLocaleString("vi-VN")}đ.`
+    );
+  };
+
+  const handleOpenArticleDetail = (art: Article) => {
+    navigateTo(`/cam-nang/${art.id}`);
+    setSelectedArticle(art);
+    updateSEOMeta(
+      `${art.title} | Saigon One Eyewear`,
+      art.summary
+    );
+  };
+
+  const handleOpenOrderLookup = () => {
+    navigateTo("/tra-cuu-don-hang");
+    setIsOrderLookupOpen(true);
+    updateSEOMeta(
+      "Tra Cứu Đơn Hàng - Saigon One Eyewear",
+      "Kiểm tra tiến độ đơn hàng và bảo hành kính mắt Saigon One."
+    );
+  };
+
+  const handleOpenTryOn = (p?: Product) => {
+    navigateTo("/thu-kinh-ar");
+    if (p) {
+      setTryOnProduct(p);
+    } else {
+      setTryOnProduct(products[0]);
+    }
+    setIsTryOnModalOpen(true);
+    updateSEOMeta(
+      "Thử Kính AR 3D Trực Tuyến - Saigon One Eyewear",
+      "Trải nghiệm tính năng thử gọng kính AR 3D bằng camera trực tiếp siêu chân thực tại Saigon One Eyewear."
+    );
+  };
+
   const handleOpenAdminTrigger = () => {
+    navigateTo("/admin");
     if (isAdminAuthenticated) {
       setIsAdminOpen(true);
     } else {
       setIsAdminLoginOpen(true);
     }
+    updateSEOMeta(
+      "Quản Trị Hệ Thống - Saigon One Eyewear",
+      "Hệ thống quản trị kính mắt Saigon One Eyewear."
+    );
+  };
+
+  const handleCloseModals = () => {
+    setIsAboutOpen(false);
+    setIsStoresOpen(false);
+    setIsTryOnModalOpen(false);
+    setIsOrderLookupOpen(false);
+    setIsAdminOpen(false);
+    setIsAdminLoginOpen(false);
+    setSelectedDetailProduct(null);
+    setSelectedArticle(null);
+
+    const fallbackPath = selectedCategory === "all" ? "/" : CATEGORY_TO_PATH[selectedCategory] || "/san-pham";
+    replaceRoute(fallbackPath);
+    const route = parseCurrentRoute(products, articles);
+    updateSEOMeta(route.title, route.description);
   };
 
   const handleLoginSuccess = () => {
@@ -221,14 +366,8 @@ export default function App() {
     } catch (e) {}
     setIsAdminAuthenticated(false);
     setIsAdminOpen(false);
+    handleCloseModals();
   };
-
-  // Sync cart to local storage
-  useEffect(() => {
-    try {
-      localStorage.setItem("saigonone_cart", JSON.stringify(cartItems));
-    } catch (e) {}
-  }, [cartItems]);
 
   // Sync favorites to local storage
   useEffect(() => {
@@ -237,71 +376,11 @@ export default function App() {
     } catch (e) {}
   }, [favoriteIds]);
 
-  // Cart Handlers
-  const handleAddToCart = (
-    product: Product, 
-    selectedColor: ProductColor, 
-    selectedLens?: LensOption, 
-    prescription?: EyePrescription
-  ) => {
-    const lensId = selectedLens?.id || "none";
-    const cartItemId = `${product.id}-${selectedColor.name}-${lensId}`;
-
-    setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === cartItemId);
-      if (existing) {
-        return prev.map((item) => 
-          item.id === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      } else {
-        const newItem: CartItem = {
-          id: cartItemId,
-          product,
-          selectedColor,
-          selectedLens,
-          prescription,
-          quantity: 1,
-        };
-        return [...prev, newItem];
-      }
-    });
-
-    setIsCartOpen(true);
-  };
-
-  const handleUpdateCartQuantity = (id: string, qty: number) => {
-    if (qty <= 0) {
-      handleRemoveCartItem(id);
-      return;
-    }
-    setCartItems((prev) => 
-      prev.map((item) => (item.id === id ? { ...item, quantity: qty } : item))
-    );
-  };
-
-  const handleRemoveCartItem = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const handleClearCart = () => {
-    setCartItems([]);
-  };
-
   // Favorite handler
   const handleToggleFavorite = (product: Product) => {
     setFavoriteIds((prev) => 
       prev.includes(product.id) ? prev.filter((id) => id !== product.id) : [...prev, product.id]
     );
-  };
-
-  // Quick Try-On
-  const handleOpenTryOn = (p?: Product) => {
-    if (p) {
-      setTryOnProduct(p);
-    } else {
-      setTryOnProduct(products[0]);
-    }
-    setIsTryOnModalOpen(true);
   };
 
   // Face Shape Recommendation handler
@@ -422,20 +501,19 @@ export default function App() {
       
       {/* Header */}
       <Header
-        cartCount={cartItems.reduce((acc, it) => acc + it.quantity, 0)}
         favoritesCount={favoriteIds.length}
-        onOpenCart={() => setIsCartOpen(true)}
         onOpenFavorites={() => setShowOnlyFavorites(!showOnlyFavorites)}
         onOpenTryOn={() => handleOpenTryOn()}
         onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
         onOpenLensGuide={() => setIsLensGuideOpen(true)}
-        onOpenStores={() => setIsStoresOpen(true)}
-        onOpenOrderLookup={() => setIsOrderLookupOpen(true)}
+        onOpenStores={handleOpenStores}
+        onOpenOrderLookup={handleOpenOrderLookup}
         onOpenAdmin={handleOpenAdminTrigger}
+        onOpenAbout={handleOpenAbout}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
+        onSelectCategory={handleSelectCategory}
         selectedGender={selectedGender}
         onSelectGender={setSelectedGender}
       />
@@ -446,7 +524,7 @@ export default function App() {
           onOpenTryOn={() => handleOpenTryOn()}
           onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
           onOpenLensGuide={() => setIsLensGuideOpen(true)}
-          onSelectCategory={setSelectedCategory}
+          onSelectCategory={handleSelectCategory}
         />
       )}
 
@@ -603,9 +681,8 @@ export default function App() {
                 product={p}
                 isFavorite={favoriteIds.includes(p.id)}
                 onToggleFavorite={handleToggleFavorite}
-                onOpenDetail={(product, color) => setSelectedDetailProduct({ product, color })}
+                onOpenDetail={(product, color) => handleOpenProductDetail(product, color)}
                 onQuickTryOn={handleOpenTryOn}
-                onQuickAddToCart={(product, color) => handleAddToCart(product, color)}
               />
             ))}
           </div>
@@ -651,7 +728,7 @@ export default function App() {
         <LatestArticlesSection
           articles={articles}
           categories={articleCategories}
-          onSelectArticle={(art) => setSelectedArticle(art)}
+          onSelectArticle={(art) => handleOpenArticleDetail(art)}
         />
       )}
 
@@ -659,7 +736,7 @@ export default function App() {
       {selectedArticle && (
         <ArticleDetailModal
           article={selectedArticle}
-          onClose={() => setSelectedArticle(null)}
+          onClose={handleCloseModals}
           onSelectCategory={(catName) => {
             const el = document.getElementById("articles-blog-section");
             if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -670,7 +747,7 @@ export default function App() {
       {isAdminLoginOpen && (
         <AdminLoginModal
           isOpen={isAdminLoginOpen}
-          onClose={() => setIsAdminLoginOpen(false)}
+          onClose={handleCloseModals}
           onLoginSuccess={handleLoginSuccess}
         />
       )}
@@ -681,9 +758,8 @@ export default function App() {
           initialColor={selectedDetailProduct.color}
           isFavorite={favoriteIds.includes(selectedDetailProduct.product.id)}
           onToggleFavorite={handleToggleFavorite}
-          onClose={() => setSelectedDetailProduct(null)}
+          onClose={handleCloseModals}
           onOpenTryOn={handleOpenTryOn}
-          onAddToCart={handleAddToCart}
         />
       )}
 
@@ -691,9 +767,8 @@ export default function App() {
         <VirtualTryOnModal
           product={tryOnProduct}
           allProducts={products}
-          onClose={() => setIsTryOnModalOpen(false)}
+          onClose={handleCloseModals}
           onSelectProduct={(p) => setTryOnProduct(p)}
-          onAddToCart={(p, c) => handleAddToCart(p, c)}
         />
       )}
 
@@ -709,41 +784,28 @@ export default function App() {
       )}
 
       {isStoresOpen && (
-        <StoreLocationsModal onClose={() => setIsStoresOpen(false)} />
+        <StoreLocationsModal onClose={handleCloseModals} />
+      )}
+
+      {isAboutOpen && (
+        <AboutModal 
+          onClose={handleCloseModals} 
+          onOpenStores={() => {
+            handleOpenStores();
+          }}
+          onOpenTryOn={() => {
+            handleOpenTryOn();
+          }}
+        />
       )}
 
       {isOrderLookupOpen && (
-        <OrderLookupModal onClose={() => setIsOrderLookupOpen(false)} />
-      )}
-
-      {isCartOpen && (
-        <CartDrawer
-          isOpen={isCartOpen}
-          onClose={() => setIsCartOpen(false)}
-          items={cartItems}
-          onUpdateQuantity={handleUpdateCartQuantity}
-          onRemoveItem={handleRemoveCartItem}
-          appliedPromo={appliedPromo}
-          onApplyPromo={setAppliedPromo}
-          onProceedToCheckout={() => setIsCheckoutOpen(true)}
-        />
-      )}
-
-      {isCheckoutOpen && (
-        <CheckoutModal
-          items={cartItems}
-          appliedPromo={appliedPromo}
-          onClose={() => setIsCheckoutOpen(false)}
-          onOrderSuccess={(order) => {
-            // Success handler
-          }}
-          onClearCart={handleClearCart}
-        />
+        <OrderLookupModal onClose={handleCloseModals} />
       )}
 
       {isAdminOpen && (
         <AdminPanel
-          onClose={() => setIsAdminOpen(false)}
+          onClose={handleCloseModals}
           products={products}
           onAddProduct={handleAddProduct}
           onUpdateProduct={handleUpdateProduct}
@@ -757,21 +819,22 @@ export default function App() {
         onOpenTryOn={() => handleOpenTryOn()}
         onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
         onOpenLensGuide={() => setIsLensGuideOpen(true)}
-        onOpenStores={() => setIsStoresOpen(true)}
+        onOpenStores={handleOpenStores}
       />
 
       {/* Footer */}
       <Footer
         onSelectCategory={(cat) => {
-          setSelectedCategory(cat);
+          handleSelectCategory(cat);
           const el = document.getElementById("products-catalog-section");
           if (el) el.scrollIntoView({ behavior: "smooth" });
         }}
-        onOpenStores={() => setIsStoresOpen(true)}
+        onOpenStores={handleOpenStores}
+        onOpenAbout={handleOpenAbout}
         onOpenLensGuide={() => setIsLensGuideOpen(true)}
         onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
         onOpenTryOn={() => handleOpenTryOn()}
-        onOpenOrderLookup={() => setIsOrderLookupOpen(true)}
+        onOpenOrderLookup={handleOpenOrderLookup}
       />
 
     </div>

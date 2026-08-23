@@ -457,36 +457,37 @@ export const MOCK_PRODUCTS: Product[] = [
 
 export const STORE_LOCATIONS: StoreLocation[] = [
   {
-    id: "store-q1",
-    name: "Flagship Store Sài Gòn One - Quận 1",
-    address: "Số 92 Đường Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh",
-    district: "Quận 1",
+    id: "store-phandangluu",
+    name: "Flagship Store Sài Gòn One - Phú Nhuận",
+    address: "Số 178 Đường Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP. Hồ Chí Minh",
+    district: "Quận Phú Nhuận",
     city: "TP. Hồ Chí Minh",
-    phone: "0903.372.556",
-    hotline: "1900 886 699",
+    phone: "0973.819.928",
+    hotline: "0973.819.928",
     openHours: "08:30 - 21:30 (Mở cửa tất cả các ngày trong tuần)",
     services: [
-      "Đo khám thị lực chuẩn quốc tế bằng máy tự động Topcon Nhật Bản",
-      "Mài lắp kính lấy liền trong 15 - 20 phút",
+      "Đo khám khúc xạ mắt miễn phí bằng máy đo tự động chuẩn y khoa",
+      "Cắt mài kính lấy ngay trong 15 - 20 phút",
       "Trải nghiệm phòng thử kính 3D & kính đổi màu chuyên sâu",
-      "Vệ sinh kính bằng sóng siêu âm & nắn chỉnh gọng trọn đời miễn phí"
+      "Vệ sinh kính sóng siêu âm, nắn chỉnh gọng, thay ve đệm mũi miễn phí trọn đời",
+      "Tư vấn trực tiếp Zalo: 0973.819.928"
     ],
     image: "https://images.unsplash.com/photo-1516762689617-e1cffcef479d?auto=format&fit=crop&w=800&q=80",
     isMainFlagship: true,
   },
   {
-    id: "store-q3",
-    name: "Chi Nhánh Sài Gòn One - Quận 3",
-    address: "Số 348 Đường Cách Mạng Tháng 8, Phường 10, Quận 3, TP. Hồ Chí Minh",
-    district: "Quận 3",
+    id: "store-q1",
+    name: "Chi Nhánh Sài Gòn One - Quận 1",
+    address: "Số 92 Đường Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh",
+    district: "Quận 1",
     city: "TP. Hồ Chí Minh",
-    phone: "0908.112.445",
-    hotline: "1900 886 699",
-    openHours: "08:30 - 21:30",
+    phone: "0973.819.928",
+    hotline: "0973.819.928",
+    openHours: "08:30 - 21:30 (Mở cửa tất cả các ngày)",
     services: [
-      "Đo khúc xạ mắt miễn phí bởi chuyên viên chuyên khoa",
-      "Lắp tròng chống ánh sáng xanh lấy ngay",
-      "Bảo hành ve ốc, đệm mũi miễn phí"
+      "Đo khám thị lực chuẩn quốc tế",
+      "Mài lắp kính lấy liền trong 15 - 20 phút",
+      "Khu vực gọng kính Titanium & Acetate cao cấp"
     ],
     image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80",
   },
@@ -496,8 +497,8 @@ export const STORE_LOCATIONS: StoreLocation[] = [
     address: "Số 526 Đường Ba Tháng Hai, Phường 14, Quận 10, TP. Hồ Chí Minh",
     district: "Quận 10",
     city: "TP. Hồ Chí Minh",
-    phone: "0932.789.654",
-    hotline: "1900 886 699",
+    phone: "0973.819.928",
+    hotline: "0973.819.928",
     openHours: "08:30 - 21:30",
     services: [
       "Khu vực kính thời trang Hàn Quốc & Kính mát du lịch",
@@ -512,8 +513,8 @@ export const STORE_LOCATIONS: StoreLocation[] = [
     address: "Số 688 Đường Quang Trung, Phường 11, Quận Gò Vấp, TP. Hồ Chí Minh",
     district: "Quận Gò Vấp",
     city: "TP. Hồ Chí Minh",
-    phone: "0906.665.332",
-    hotline: "1900 886 699",
+    phone: "0973.819.928",
+    hotline: "0973.819.928",
     openHours: "08:30 - 21:30",
     services: [
       "Đo khám mắt & khúc xạ trẻ em chuyên biệt",

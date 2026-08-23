@@ -1,16 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
-  MessageCircle, 
   X, 
   Send, 
-  Sparkles, 
   Bot, 
-  User, 
   Glasses, 
-  MapPin, 
   Phone,
-  HelpCircle,
-  Camera
+  MessageSquare,
+  ArrowUp
 } from "lucide-react";
 
 interface EyewearAiChatProps {
@@ -35,18 +31,19 @@ export const EyewearAiChat: React.FC<EyewearAiChatProps> = ({
   onOpenStores,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "msg-welcome",
       sender: "bot",
-      text: "Xin chào quý khách! Em là Trợ Lý Ảo Sài Gòn One Eyewear. Em có thể tư vấn dáng kính hợp mặt, bảng giá tròng kính chính hãng và lịch đo khám mắt miễn phí. Quý khách đang cần hỗ trợ gì ạ?",
+      text: "Xin chào quý khách! Em là Trợ Lý Kính Mắt. Em có thể tư vấn dáng kính hợp khuôn mặt, chất liệu gọng kính, thông số kích thước và liên hệ đặt hàng qua Zalo: 0973.819.928. Quý khách đang cần tìm mẫu kính gì ạ?",
       timestamp: "Vừa xong",
       actions: [
+        { label: "💬 Chat Zalo: 0973.819.928", action: () => window.open("https://zalo.me/0973819928", "_blank") },
         { label: "📸 Thử kính AR 3D", action: onOpenTryOn },
         { label: "✨ Tư vấn dáng mặt", action: onOpenFaceAdvisor },
-        { label: "🔬 Bảng giá tròng cận", action: onOpenLensGuide },
-        { label: "📍 Địa chỉ 4 cửa hàng", action: onOpenStores },
+        { label: "📍 Địa chỉ cửa hàng", action: onOpenStores },
       ]
     }
   ]);
@@ -54,10 +51,22 @@ export const EyewearAiChat: React.FC<EyewearAiChatProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 300);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isOpen]);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,44 +83,29 @@ export const EyewearAiChat: React.FC<EyewearAiChatProps> = ({
     setMessages((prev) => [...prev, userMsg]);
     setInputMessage("");
 
-    // Generate intelligent response based on keywords
     setTimeout(() => {
       let botResponse = "";
       let botActions: { label: string; action: () => void }[] | undefined = undefined;
       const lower = query.toLowerCase();
 
       if (lower.includes("mặt tròn") || lower.includes("mat tron")) {
-        botResponse = "Với gương mặt tròn đầy đặn, quý khách nên ưu tiên chọn các mẫu Gọng Kính Vuông, Gọng Đa Giác Titan hoặc Gọng Mắt Mèo. Các góc cạnh sắc sảo của gọng sẽ giúp gương mặt trông thon gọn và dài hơn rất nhiều ạ!";
+        botResponse = "Với gương mặt tròn, quý khách nên ưu tiên chọn các mẫu Gọng Kính Vuông, Gọng Đa Giác Titan hoặc Dáng Mắt Mèo để gương mặt trông góc cạnh, thon gọn hơn!";
         botActions = [
           { label: "Xem gợi ý kính mặt tròn", action: onOpenFaceAdvisor },
           { label: "Thử kính AR ngay", action: onOpenTryOn }
         ];
-      } else if (lower.includes("độ cận") || lower.includes("mỏng") || lower.includes("chiết suất") || lower.includes("tròng")) {
-        botResponse = "Dạ, nếu độ cận của quý khách từ 0.50D - 2.50D thì dùng tròng 1.56 hoặc 1.60. Nếu từ 3.00D - 6.00D thì nên chọn tròng 1.67 siêu mỏng để viền kính mỏng nhẹ không tì cấn sống mũi. Cận trên 6.00D thì tròng 1.74 Hoya/Chemi là sự lựa chọn tối ưu nhất ạ!";
+      } else if (lower.includes("địa chỉ") || lower.includes("ở đâu") || lower.includes("chi nhánh")) {
+        botResponse = "Hệ thống có các chi nhánh tại TP.HCM & Hà Nội, mở cửa 08:30 - 21:30 tất cả các ngày. Quý khách liên hệ Zalo 0973.819.928 để được gửi định vị chi tiết nhất!";
         botActions = [
-          { label: "Xem chi tiết bảng tròng", action: onOpenLensGuide }
-        ];
-      } else if (lower.includes("đo mắt") || lower.includes("khám") || lower.includes("cắt kính") || lower.includes("thời gian")) {
-        botResponse = "Tại 4 chi nhánh Sài Gòn One Eyewear (Q1, Q3, Q10, Gò Vấp), chúng em đo khám khúc xạ mắt HOÀN TOÀN MIỄN PHÍ bằng máy tự động Topcon Nhật Bản. Sau khi chọn gọng & tròng, kỹ thuật viên sẽ mài lắp lấy liền chỉ trong 15 - 20 phút ạ!";
-        botActions = [
-          { label: "Xem danh sách chi nhánh", action: onOpenStores }
-        ];
-      } else if (lower.includes("thử") || lower.includes("camera") || lower.includes("ar")) {
-        botResponse = "Quý khách có thể bấm vào nút 'Thử Kính AR 3D' để bật camera trực tiếp hoặc chọn ảnh mẫu người thật để xem ngay gọng kính lên mặt có hợp không nhé!";
-        botActions = [
-          { label: "Mở phòng thử kính AR", action: onOpenTryOn }
-        ];
-      } else if (lower.includes("địa chỉ") || lower.includes("ở đâu") || lower.includes("chi nhánh") || lower.includes("cửa hàng")) {
-        botResponse = "Dạ hệ thống Sài Gòn One có 4 chi nhánh tại TP.HCM:\n1. 92 Nguyễn Trãi, Q.1\n2. 348 Cách Mạng Tháng 8, Q.3\n3. 526 Ba Tháng Hai, Q.10\n4. 688 Quang Trung, Gò Vấp.\nMở cửa 08:30 - 21:30 tất cả các ngày!";
-        botActions = [
-          { label: "Chỉ đường Google Maps", action: onOpenStores }
+          { label: "Chỉ đường chi nhánh", action: onOpenStores },
+          { label: "Chat Zalo ngay", action: () => window.open("https://zalo.me/0973819928", "_blank") }
         ];
       } else {
-        botResponse = "Cảm ơn quý khách đã nhắn tin! Quý khách có thể xem nhanh các chức năng dưới đây hoặc gọi trực tiếp hotline 0903.372.556 để chuyên viên hỗ trợ tức thì ạ.";
+        botResponse = "Quý khách có thể bấm nút chat Zalo bên dưới hoặc gọi hotline 0973.819.928 để được chuyên viên gửi ảnh và video thực tế sản phẩm chi tiết nhất!";
         botActions = [
+          { label: "💬 Nhắn Zalo: 0973.819.928", action: () => window.open("https://zalo.me/0973819928", "_blank") },
           { label: "📸 Thử kính AR", action: onOpenTryOn },
-          { label: "✨ Tư vấn khuôn mặt", action: onOpenFaceAdvisor },
-          { label: "📍 Cửa hàng gần nhất", action: onOpenStores }
+          { label: "✨ Tư vấn dáng mặt", action: onOpenFaceAdvisor },
         ];
       }
 
@@ -124,82 +118,102 @@ export const EyewearAiChat: React.FC<EyewearAiChatProps> = ({
       };
 
       setMessages((prev) => [...prev, botMsg]);
-    }, 600);
+    }, 500);
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-40">
-      {/* Floating Trigger Button */}
-      {!isOpen && (
+    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3">
+      
+      {/* Scroll to Top Button */}
+      {showBackToTop && (
         <button
-          id="btn-open-ai-chat"
-          onClick={() => setIsOpen(true)}
-          className="group relative flex items-center gap-2.5 bg-[#0f172a] text-white p-3.5 sm:px-4 sm:py-3 rounded-full shadow-2xl hover:bg-blue-900 border border-slate-700 transition-all duration-300 hover:scale-105 cursor-pointer"
-          aria-label="Tư vấn kính mắt AI"
+          id="btn-scroll-top"
+          onClick={scrollToTop}
+          className="w-10 h-10 bg-[#18181b] hover:bg-black text-white rounded-full flex items-center justify-center shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer"
+          aria-label="Lên đầu trang"
         >
-          <div className="relative">
-            <Glasses className="w-5 h-5 text-blue-400" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-slate-900 animate-pulse" />
-          </div>
-          <span className="hidden sm:inline font-bold text-xs">
-            Tư Vấn Kính Trực Tuyến
-          </span>
-          <span className="hidden sm:inline text-[9px] bg-blue-600 text-white font-extrabold px-1.5 py-0.2 rounded-full uppercase">
-            AI 24/7
-          </span>
+          <ArrowUp className="w-4 h-4" />
         </button>
       )}
 
+      {/* Floating Action Strip */}
+      <div className="flex items-center gap-2.5">
+        
+        {/* Hotline Call Button */}
+        <a
+          id="btn-floating-phone"
+          href="tel:0973819928"
+          className="w-12 h-12 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-full flex items-center justify-center shadow-xl transition-all transform hover:scale-105 cursor-pointer relative"
+          title="Gọi Hotline: 0973.819.928"
+        >
+          <span className="absolute inset-0 rounded-full bg-amber-400 opacity-75 animate-ping" />
+          <Phone className="w-5 h-5 relative z-10" />
+        </a>
+
+        {/* Zalo 24/7 Pill Button */}
+        <a
+          id="btn-floating-zalo"
+          href="https://zalo.me/0973819928"
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-2 bg-[#0068FF] hover:bg-[#0052cc] text-white font-bold text-xs uppercase tracking-wider py-3 px-4 rounded-full shadow-xl transition-all transform hover:scale-105 cursor-pointer"
+          title="Tư vấn Zalo 24/7"
+        >
+          <MessageSquare className="w-4 h-4 fill-white" />
+          <span className="hidden sm:inline">TƯ VẤN ZALO 24/7</span>
+          <span className="sm:hidden">ZALO</span>
+        </a>
+
+      </div>
+
       {/* Chat Window */}
       {isOpen && (
-        <div className="w-[92vw] sm:w-96 bg-white rounded-2xl border border-gray-100 shadow-2xl flex flex-col h-[500px] overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
-          
+        <div className="w-[92vw] sm:w-96 bg-white rounded-2xl border border-neutral-200 shadow-2xl flex flex-col h-[480px] overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
           {/* Chat Header */}
-          <div className="p-4 bg-[#0f172a] text-white flex items-center justify-between">
+          <div className="p-4 bg-[#18181b] text-white flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
                 <Glasses className="w-4 h-4" />
               </div>
               <div>
                 <h3 className="font-bold text-xs text-white flex items-center gap-1.5">
-                  <span>Trợ Lý Sài Gòn One</span>
+                  <span>Tư Vấn Kính Mắt</span>
                   <span className="w-2 h-2 rounded-full bg-emerald-400" />
                 </h3>
-                <p className="text-[10px] text-slate-400">Tư vấn dáng kính & đo khám 24/7</p>
+                <p className="text-[10px] text-neutral-400">Hotline / Zalo: 0973.819.928</p>
               </div>
             </div>
 
             <button
               id="btn-close-ai-chat"
               onClick={() => setIsOpen(false)}
-              className="p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-1.5 text-neutral-400 hover:text-white rounded-full hover:bg-neutral-800 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Messages Body */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-slate-50/60 text-xs">
+          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-neutral-50 text-xs">
             {messages.map((m) => {
               const isBot = m.sender === "bot";
               return (
                 <div key={m.id} className={`flex gap-2.5 ${isBot ? "items-start" : "items-end justify-end"}`}>
                   {isBot && (
-                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                    <div className="w-6 h-6 rounded-full bg-neutral-900 text-amber-400 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
                       <Bot className="w-3.5 h-3.5" />
                     </div>
                   )}
 
-                  <div className={`max-w-[82%] space-y-2`}>
+                  <div className="max-w-[82%] space-y-2">
                     <div className={`p-3 rounded-xl leading-relaxed whitespace-pre-line shadow-xs ${
                       isBot 
-                        ? "bg-white text-slate-800 border border-gray-100 rounded-tl-xs" 
-                        : "bg-[#0f172a] text-white rounded-tr-xs font-medium"
+                        ? "bg-white text-neutral-800 border border-neutral-200 rounded-tl-xs" 
+                        : "bg-[#18181b] text-white rounded-tr-xs font-medium"
                     }`}>
                       {m.text}
                     </div>
 
-                    {/* Action buttons inside message if any */}
                     {m.actions && (
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         {m.actions.map((act, i) => (
@@ -209,7 +223,7 @@ export const EyewearAiChat: React.FC<EyewearAiChatProps> = ({
                               act.action();
                               setIsOpen(false);
                             }}
-                            className="text-[11px] font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                            className="text-[11px] font-semibold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-md transition-colors cursor-pointer"
                           >
                             {act.label}
                           </button>
@@ -217,7 +231,7 @@ export const EyewearAiChat: React.FC<EyewearAiChatProps> = ({
                       </div>
                     )}
 
-                    <span className={`text-[9px] text-gray-400 block ${isBot ? "text-left" : "text-right"}`}>
+                    <span className={`text-[9px] text-neutral-400 block ${isBot ? "text-left" : "text-right"}`}>
                       {m.timestamp}
                     </span>
                   </div>
@@ -228,24 +242,24 @@ export const EyewearAiChat: React.FC<EyewearAiChatProps> = ({
           </div>
 
           {/* Input Footer */}
-          <form onSubmit={handleSendMessage} className="p-3 border-t border-gray-100 bg-white flex items-center gap-2">
+          <form onSubmit={handleSendMessage} className="p-3 border-t border-neutral-200 bg-white flex items-center gap-2">
             <input
               type="text"
               placeholder="Nhập câu hỏi (ví dụ: Mặt tròn đeo kính gì?)..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              className="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="flex-1 px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <button
               type="submit"
-              className="p-2 bg-[#0f172a] hover:bg-blue-900 text-white rounded-lg transition-colors cursor-pointer"
+              className="p-2 bg-[#18181b] hover:bg-black text-white rounded-lg transition-colors cursor-pointer"
             >
               <Send className="w-4 h-4" />
             </button>
           </form>
-
         </div>
       )}
+
     </div>
   );
 };
