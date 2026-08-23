@@ -24,12 +24,20 @@ import {
   FileText,
   UserPlus,
   Tag,
-  AlertCircle
+  AlertCircle,
+  Upload,
+  Image as ImageIcon,
+  Palette,
+  Star,
+  PlusCircle,
+  ArrowUp
 } from "lucide-react";
 import { 
   Product, 
+  ProductColor,
   Order, 
   ProductCategory, 
+  GenderTarget,
   FrameShape, 
   FrameMaterial, 
   Article, 
@@ -91,12 +99,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [prodName, setProdName] = useState("");
   const [prodBrand, setProdBrand] = useState("Sài Gòn One");
   const [prodCategory, setProdCategory] = useState<ProductCategory>("gong-kinh-can");
+  const [prodGender, setProdGender] = useState<GenderTarget>("unisex");
   const [prodShape, setProdShape] = useState<FrameShape>("vuong");
   const [prodMaterial, setProdMaterial] = useState<FrameMaterial>("titanium");
   const [prodPrice, setProdPrice] = useState("650000");
   const [prodOrigPrice, setProdOrigPrice] = useState("850000");
-  const [prodImage, setProdImage] = useState("https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80");
+  const [prodStock, setProdStock] = useState<number>(30);
+  const [prodImages, setProdImages] = useState<string[]>([]);
+  const [newImageUrl, setNewImageUrl] = useState<string>("");
+  const [prodColors, setProdColors] = useState<ProductColor[]>([]);
   const [prodDesc, setProdDesc] = useState("Gọng kính chính hãng chất lượng cao, bảo hành nắn chỉnh trọn đời.");
+  const [prodHighlights, setProdHighlights] = useState<string>("Gọng kính chính hãng Sài Gòn One\nBảo hành nắn chỉnh trọn đời\nTặng kèm hộp da & khăn lau nano");
 
   // Article Form State
   const [showAddArticleModal, setShowAddArticleModal] = useState<boolean>(false);
@@ -157,19 +170,111 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   // ==========================================
-  // HANDLERS: PRODUCTS
+  // HANDLERS: PRODUCTS & IMAGES & COLORS
   // ==========================================
+  const handleAddImage = (urlToAdd?: string) => {
+    const url = (urlToAdd || newImageUrl).trim();
+    if (!url) return;
+    if (!prodImages.includes(url)) {
+      setProdImages(prev => [...prev, url]);
+    }
+    setNewImageUrl("");
+  };
+
+  const handleFileUploadForImages = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach((file: File) => {
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const result = uploadEvent.target?.result as string;
+        if (result) {
+          setProdImages(prev => [...prev, result]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setProdImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleSetPrimaryImage = (indexToPromote: number) => {
+    setProdImages(prev => {
+      const item = prev[indexToPromote];
+      const rest = prev.filter((_, idx) => idx !== indexToPromote);
+      return [item, ...rest];
+    });
+  };
+
+  const handleAddColor = () => {
+    const newColor: ProductColor = {
+      name: "Màu Mới",
+      hex: "#1e2022",
+      image: prodImages[0] || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80"
+    };
+    setProdColors(prev => [...prev, newColor]);
+  };
+
+  const handleQuickAddColorPreset = (presetName: string, presetHex: string) => {
+    const newColor: ProductColor = {
+      name: presetName,
+      hex: presetHex,
+      image: prodImages[0] || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80"
+    };
+    setProdColors(prev => [...prev, newColor]);
+  };
+
+  const handleUpdateColor = (index: number, field: keyof ProductColor, value: string) => {
+    setProdColors(prev => prev.map((col, idx) => {
+      if (idx === index) {
+        return { ...col, [field]: value };
+      }
+      return col;
+    }));
+  };
+
+  const handleColorImageUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const result = uploadEvent.target?.result as string;
+      if (result) {
+        handleUpdateColor(index, "image", result);
+        if (!prodImages.includes(result)) {
+          setProdImages(prev => [...prev, result]);
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveColor = (indexToRemove: number) => {
+    setProdColors(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
   const handleOpenAddProduct = () => {
     setEditingProduct(null);
     setProdName("");
     setProdBrand("Sài Gòn One");
     setProdCategory("gong-kinh-can");
+    setProdGender("unisex");
     setProdShape("vuong");
     setProdMaterial("titanium");
     setProdPrice("650000");
     setProdOrigPrice("850000");
-    setProdImage("https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80");
+    setProdStock(30);
+    const defaultImg = "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80";
+    setProdImages([defaultImg]);
+    setNewImageUrl("");
+    setProdColors([
+      { name: "Đen Nhám Cổ Điển", hex: "#1e2022", image: defaultImg },
+      { name: "Vàng Gold Sang Trọng", hex: "#d4af37", image: defaultImg }
+    ]);
     setProdDesc("Gọng kính chính hãng chất lượng cao, bảo hành nắn chỉnh trọn đời.");
+    setProdHighlights("Gọng kính chính hãng Sài Gòn One\nBảo hành nắn chỉnh trọn đời\nTặng kèm hộp da & khăn lau nano");
     setShowAddProductModal(true);
   };
 
@@ -178,12 +283,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setProdName(p.name);
     setProdBrand(p.brand);
     setProdCategory(p.category);
+    setProdGender(p.gender || "unisex");
     setProdShape(p.frameShape);
     setProdMaterial(p.material);
     setProdPrice(p.price.toString());
     setProdOrigPrice(p.originalPrice.toString());
-    setProdImage(p.images[0] || "");
-    setProdDesc(p.description);
+    setProdStock(p.stock || 20);
+    setProdImages(p.images && p.images.length > 0 ? [...p.images] : ["https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80"]);
+    setNewImageUrl("");
+    setProdColors(p.colors && p.colors.length > 0 ? [...p.colors] : [
+      { name: "Đen Cơ Bản", hex: "#1e2022", image: p.images?.[0] || "" }
+    ]);
+    setProdDesc(p.description || "");
+    setProdHighlights(p.highlights?.join("\n") || "Gọng kính chính hãng Sài Gòn One\nBảo hành nắn chỉnh trọn đời");
     setShowAddProductModal(true);
   };
 
@@ -194,19 +306,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const priceNum = parseInt(prodPrice) || 500000;
     const origPriceNum = parseInt(prodOrigPrice) || priceNum;
 
+    // Determine final images list
+    const finalImages = prodImages.length > 0 ? prodImages : (prodColors.length > 0 && prodColors[0].image ? [prodColors[0].image] : ["https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80"]);
+    
+    // Determine final colors list
+    const finalColors = prodColors.length > 0 ? prodColors : [
+      { name: "Đen Cơ Bản", hex: "#1e2022", image: finalImages[0] }
+    ];
+
+    const highlightsArr = prodHighlights.split("\n").map(s => s.trim()).filter(Boolean);
+
     if (editingProduct) {
       const updated: Product = {
         ...editingProduct,
         name: prodName,
         brand: prodBrand,
         category: prodCategory,
+        gender: prodGender,
         frameShape: prodShape,
         material: prodMaterial,
         price: priceNum,
         originalPrice: origPriceNum,
         discountPercent: origPriceNum > priceNum ? Math.round(((origPriceNum - priceNum) / origPriceNum) * 100) : 0,
-        images: [prodImage, ...(editingProduct.images.slice(1))],
+        images: finalImages,
+        colors: finalColors,
+        stock: prodStock,
         description: prodDesc,
+        highlights: highlightsArr.length > 0 ? highlightsArr : editingProduct.highlights,
       };
       onUpdateProduct(updated);
     } else {
@@ -217,23 +343,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         name: prodName,
         brand: prodBrand,
         category: prodCategory,
-        gender: "unisex",
+        gender: prodGender,
         price: priceNum,
         originalPrice: origPriceNum,
         discountPercent: origPriceNum > priceNum ? Math.round(((origPriceNum - priceNum) / origPriceNum) * 100) : 0,
-        images: [prodImage],
-        colors: [
-          { name: "Đen Cơ Bản", hex: "#1e2022", image: prodImage },
-          { name: "Vàng Gold", hex: "#d4af37", image: prodImage }
-        ],
+        images: finalImages,
+        colors: finalColors,
         frameShape: prodShape,
         faceShapes: ["tron", "trai-xoan", "vuong"],
         material: prodMaterial,
         weight: 10,
         dimensions: { lensWidth: 51, bridgeWidth: 19, templeLength: 145, frameHeight: 44 },
         description: prodDesc,
-        highlights: ["Gọng kính chính hãng Sài Gòn One", "Bảo hành nắn chỉnh trọn đời"],
-        stock: 30,
+        highlights: highlightsArr.length > 0 ? highlightsArr : ["Gọng kính chính hãng Sài Gòn One", "Bảo hành nắn chỉnh trọn đời"],
+        stock: prodStock,
         rating: 5.0,
         reviewsCount: 1,
         tryOnOverlayType: "polygon",
@@ -574,15 +697,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
                             <td className="p-3.5">
                               <div className="flex items-center gap-3">
-                                <img
-                                  src={p.images[0]}
-                                  alt={p.name}
-                                  className="w-12 h-12 object-cover rounded-lg border border-gray-200 shrink-0"
-                                  referrerPolicy="no-referrer"
-                                />
+                                <div className="relative shrink-0">
+                                  <img
+                                    src={p.images[0] || (p.colors && p.colors[0]?.image) || ""}
+                                    alt={p.name}
+                                    className="w-13 h-13 object-cover rounded-lg border border-gray-200"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                  <span className="absolute -bottom-1 -right-1 px-1.5 py-0.5 bg-slate-900/90 text-[9px] text-white font-mono rounded shadow-xs">
+                                    {p.images?.length || 1} ảnh
+                                  </span>
+                                </div>
                                 <div>
                                   <div className="font-bold text-slate-900 line-clamp-1">{p.name}</div>
                                   <div className="text-[11px] text-slate-400 capitalize">{p.material} • Dáng {p.frameShape}</div>
+                                  {p.colors && p.colors.length > 0 && (
+                                    <div className="flex items-center gap-1.5 mt-1.5">
+                                      {p.colors.slice(0, 5).map((c, i) => (
+                                        <div
+                                          key={i}
+                                          className="w-3.5 h-3.5 rounded-full border border-gray-300 shadow-2xs"
+                                          style={{ backgroundColor: c.hex }}
+                                          title={`${c.name} (${c.hex})`}
+                                        />
+                                      ))}
+                                      {p.colors.length > 5 && (
+                                        <span className="text-[10px] text-slate-400">+{p.colors.length - 5}</span>
+                                      )}
+                                      <span className="text-[10px] text-slate-500 font-medium">({p.colors.length} màu)</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </td>
@@ -939,110 +1083,451 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {/* ========================================== */}
       {showAddProductModal && (
         <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl max-w-lg w-full p-6 overflow-y-auto max-h-[90vh]">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
-              <h3 className="font-bold text-slate-900 text-base">
-                {editingProduct ? "Chỉnh Sửa Sản Phẩm Kính" : "Thêm Kính Mắt Mới Lên Firebase"}
-              </h3>
-              <button onClick={() => setShowAddProductModal(false)} className="text-slate-400 hover:text-slate-600">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl max-w-3xl w-full p-6 overflow-y-auto max-h-[92vh]">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                  <Package className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">
+                    {editingProduct ? `Chỉnh Sửa Kính Mắt: ${editingProduct.sku}` : "Thêm Kính Mắt Mới Vào Hệ Thống"}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">Đồng bộ trực tiếp với cơ sở dữ liệu Firebase Cloud</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowAddProductModal(false)} 
+                className="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveProduct} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Tên Sản Phẩm Kính *</label>
-                <input
-                  type="text"
-                  required
-                  value={prodName}
-                  onChange={(e) => setProdName(e.target.value)}
-                  placeholder="Gọng Kính Titanium Aviator Cao Cấp..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
-              </div>
+            <form onSubmit={handleSaveProduct} className="space-y-6 text-xs">
+              {/* SECTION 1: THÔNG TIN CƠ BẢN */}
+              <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200/80 space-y-4">
+                <h4 className="font-bold text-slate-900 flex items-center gap-2 text-xs">
+                  <FileText className="w-3.5 h-3.5 text-blue-600" />
+                  <span>1. Thông Tin Cơ Bản & Phân Loại</span>
+                </h4>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Thương Hiệu</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Tên Sản Phẩm Kính *</label>
                   <input
                     type="text"
-                    value={prodBrand}
-                    onChange={(e) => setProdBrand(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs"
+                    required
+                    value={prodName}
+                    onChange={(e) => setProdName(e.target.value)}
+                    placeholder="Ví dụ: Gọng Kính Titanium Aviator Sài Gòn One Classic..."
+                    className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium"
                   />
                 </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Danh Mục</label>
-                  <select
-                    value={prodCategory}
-                    onChange={(e) => setProdCategory(e.target.value as ProductCategory)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs"
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Thương Hiệu</label>
+                    <input
+                      type="text"
+                      value={prodBrand}
+                      onChange={(e) => setProdBrand(e.target.value)}
+                      placeholder="Sài Gòn One, Bolon, Ray-Ban..."
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Danh Mục Kính</label>
+                    <select
+                      value={prodCategory}
+                      onChange={(e) => setProdCategory(e.target.value as ProductCategory)}
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900 font-medium"
+                    >
+                      <option value="gong-kinh-can">Gọng Kính Cận</option>
+                      <option value="kinh-ram-mat">Kính Râm Thời Trang</option>
+                      <option value="trong-kinh">Tròng Kính</option>
+                      <option value="kinh-doi-mau">Kính Đổi Màu</option>
+                      <option value="kinh-tre-em">Kính Trẻ Em</option>
+                      <option value="phu-kien">Phụ Kiện Kính</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Đối Tượng Phù Hợp</label>
+                    <select
+                      value={prodGender}
+                      onChange={(e) => setProdGender(e.target.value as GenderTarget)}
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900"
+                    >
+                      <option value="unisex">Unisex (Nam & Nữ)</option>
+                      <option value="nam">Nam Giới</option>
+                      <option value="nu">Nữ Giới</option>
+                      <option value="tre-em">Trẻ Em</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Dáng Gọng Kính</label>
+                    <select
+                      value={prodShape}
+                      onChange={(e) => setProdShape(e.target.value as FrameShape)}
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900"
+                    >
+                      <option value="vuong">Vuông (Square)</option>
+                      <option value="tron">Tròn (Round)</option>
+                      <option value="mat-meo">Mắt Mèo (Cat-eye)</option>
+                      <option value="browline">Browline / Clubmaster</option>
+                      <option value="aviator">Phi Công (Aviator)</option>
+                      <option value="da-giac">Đa Giác (Geometric)</option>
+                      <option value="chu-nhat">Chữ Nhật (Rectangle)</option>
+                      <option value="oval">Oval Bầu Dục</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Chất Liệu Khung</label>
+                    <select
+                      value={prodMaterial}
+                      onChange={(e) => setProdMaterial(e.target.value as FrameMaterial)}
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900"
+                    >
+                      <option value="titanium">Pure Titanium Siêu Nhẹ</option>
+                      <option value="acetate">Acetate Cao Cấp</option>
+                      <option value="kim-loai">Hợp Kim Thép Không Gỉ</option>
+                      <option value="nhua-tr90">Nhựa Dẻo Thụy Sĩ TR90</option>
+                      <option value="go-cao-cap">Gỗ Tự Nhiên & Sừng</option>
+                      <option value="khong-vien">Gọng Khoan / Không Viền</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: GIÁ & TỒN KHO */}
+              <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200/80 space-y-4">
+                <h4 className="font-bold text-slate-900 flex items-center gap-2 text-xs">
+                  <Tag className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>2. Giá Bán & Tồn Kho</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Giá Bán Thực Tế (VNĐ) *</label>
+                    <input
+                      type="number"
+                      required
+                      value={prodPrice}
+                      onChange={(e) => setProdPrice(e.target.value)}
+                      placeholder="650000"
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-blue-600 font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Giá Gốc Niêm Yết (VNĐ)</label>
+                    <input
+                      type="number"
+                      value={prodOrigPrice}
+                      onChange={(e) => setProdOrigPrice(e.target.value)}
+                      placeholder="850000"
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Số Lượng Tồn Kho (Cây)</label>
+                    <input
+                      type="number"
+                      value={prodStock}
+                      onChange={(e) => setProdStock(parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900 font-semibold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: THƯ VIỆN HÌNH ẢNH (GALLERY) */}
+              <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200/80 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="font-bold text-slate-900 flex items-center gap-2 text-xs">
+                      <ImageIcon className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>3. Quản Lý Thư Viện Hình Ảnh ({prodImages.length} ảnh)</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Ảnh đầu tiên là ảnh đại diện chính (Cover Photo). Bạn có thể thêm nhiều góc chụp kính.
+                    </p>
+                  </div>
+                  
+                  {/* File Upload Trigger */}
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold cursor-pointer transition-colors shadow-2xs">
+                    <Upload className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Tải Ảnh Từ Máy Tính</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileUploadForImages}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Images Grid */}
+                {prodImages.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 pt-1">
+                    {prodImages.map((img, idx) => (
+                      <div key={idx} className="relative group bg-white p-1.5 rounded-xl border border-gray-200 shadow-2xs">
+                        <div className="aspect-square rounded-lg overflow-hidden bg-slate-100 relative">
+                          <img
+                            src={img}
+                            alt={`Ảnh kính ${idx + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                            referrerPolicy="no-referrer"
+                          />
+                          {idx === 0 && (
+                            <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-blue-600 text-white text-[9px] font-bold rounded flex items-center gap-1 shadow-xs">
+                              <Star className="w-2.5 h-2.5 fill-current" />
+                              <span>Ảnh Bìa</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-gray-100">
+                          {idx !== 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => handleSetPrimaryImage(idx)}
+                              className="text-[10px] text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-0.5"
+                              title="Đặt làm ảnh đại diện"
+                            >
+                              <ArrowUp className="w-3 h-3" />
+                              <span>Đặt bìa</span>
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-medium">Chính</span>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(idx)}
+                            className="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50"
+                            title="Xóa ảnh này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 bg-white rounded-xl border border-dashed border-gray-300 text-slate-400">
+                    <ImageIcon className="w-8 h-8 mx-auto mb-1 opacity-50" />
+                    <p className="text-xs font-medium">Chưa có hình ảnh nào. Hãy nhập URL hoặc tải ảnh lên.</p>
+                  </div>
+                )}
+
+                {/* Input Add Image URL */}
+                <div className="flex gap-2 pt-2">
+                  <input
+                    type="url"
+                    placeholder="Dán đường dẫn ảnh mới (https://...)"
+                    value={newImageUrl}
+                    onChange={(e) => setNewImageUrl(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddImage()}
+                    disabled={!newImageUrl.trim()}
+                    className="px-4 py-2 bg-slate-900 hover:bg-black text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5"
                   >
-                    <option value="gong-kinh-can">Gọng Kính Cận</option>
-                    <option value="kinh-ram-mat">Kính Râm Thời Trang</option>
-                    <option value="trong-kinh">Tròng Kính</option>
-                    <option value="kinh-doi-mau">Kính Đổi Màu</option>
-                    <option value="kinh-tre-em">Kính Trẻ Em</option>
-                    <option value="phu-kien">Phụ Kiện</option>
-                  </select>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Thêm URL</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* SECTION 4: QUẢN LÝ MÀU SẮC & ẢNH THEO MÀU (COLOR VARIANTS) */}
+              <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200/80 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="font-bold text-slate-900 flex items-center gap-2 text-xs">
+                      <Palette className="w-3.5 h-3.5 text-amber-600" />
+                      <span>4. Quản Lý Bảng Màu & Ảnh Theo Từng Màu ({prodColors.length} màu)</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Khi khách chọn màu trên website, hệ thống sẽ tự động chuyển sang ảnh của màu tương ứng!
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAddColor}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-2xs"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>+ Thêm Màu Mới</span>
+                  </button>
+                </div>
+
+                {/* Preset quick colors */}
+                <div className="bg-white p-2.5 rounded-lg border border-gray-200">
+                  <span className="text-[11px] font-semibold text-slate-600 mr-2">Thêm nhanh màu phổ biến:</span>
+                  <div className="inline-flex flex-wrap gap-1.5 mt-1">
+                    {[
+                      { name: "Đen Nhám", hex: "#1e2022" },
+                      { name: "Vàng Gold", hex: "#d4af37" },
+                      { name: "Bạc Silver", hex: "#cbd5e1" },
+                      { name: "Đồi Mồi Havana", hex: "#854d0e" },
+                      { name: "Nâu Cà Phê", hex: "#5c3d2e" },
+                      { name: "Trong Suốt", hex: "#f1f5f9" },
+                      { name: "Xanh Navy", hex: "#1e3a8a" },
+                      { name: "Hồng Trà", hex: "#f472b6" },
+                    ].map((p, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleQuickAddColorPreset(p.name, p.hex)}
+                        className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11px] font-medium flex items-center gap-1.5 transition-colors border border-gray-200"
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full border border-gray-300 inline-block" style={{ backgroundColor: p.hex }} />
+                        <span>+{p.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* List of Colors */}
+                <div className="space-y-3">
+                  {prodColors.map((color, cIdx) => (
+                    <div key={cIdx} className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-2xs space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
+                          <span className="w-3 h-3 rounded-full border border-gray-300 inline-block" style={{ backgroundColor: color.hex }} />
+                          <span>Phiên Bản Màu #{cIdx + 1}: {color.name || "Chưa đặt tên"}</span>
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveColor(cIdx)}
+                          className="text-rose-500 hover:text-rose-700 text-xs font-semibold p-1 hover:bg-rose-50 rounded flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Xóa màu</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                        {/* Hex Picker & Input */}
+                        <div className="sm:col-span-4 flex items-center gap-2">
+                          <label className="text-[11px] font-semibold text-slate-600 shrink-0">Mã màu:</label>
+                          <input
+                            type="color"
+                            value={color.hex.startsWith("#") ? color.hex : "#000000"}
+                            onChange={(e) => handleUpdateColor(cIdx, "hex", e.target.value)}
+                            className="w-8 h-8 rounded border border-gray-300 cursor-pointer p-0.5 bg-white shrink-0"
+                          />
+                          <input
+                            type="text"
+                            value={color.hex}
+                            onChange={(e) => handleUpdateColor(cIdx, "hex", e.target.value)}
+                            placeholder="#1e2022"
+                            className="w-full px-2 py-1.5 bg-slate-50 border border-gray-200 rounded text-xs font-mono"
+                          />
+                        </div>
+
+                        {/* Color Name */}
+                        <div className="sm:col-span-4">
+                          <input
+                            type="text"
+                            value={color.name}
+                            onChange={(e) => handleUpdateColor(cIdx, "name", e.target.value)}
+                            placeholder="Tên màu (VD: Đen Nhám, Vàng Gold...)"
+                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-gray-200 rounded text-xs font-medium"
+                          />
+                        </div>
+
+                        {/* Color Image Upload/URL with Thumbnail Preview */}
+                        <div className="sm:col-span-4 flex items-center gap-2">
+                          {color.image ? (
+                            <img
+                              src={color.image}
+                              alt={color.name}
+                              className="w-8 h-8 rounded object-cover border border-gray-200 shrink-0"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded bg-slate-100 border border-dashed border-gray-300 flex items-center justify-center text-slate-400 shrink-0">
+                              <ImageIcon className="w-4 h-4" />
+                            </div>
+                          )}
+
+                          <input
+                            type="text"
+                            value={color.image}
+                            onChange={(e) => handleUpdateColor(cIdx, "image", e.target.value)}
+                            placeholder="Link ảnh cho màu này..."
+                            className="w-full px-2 py-1.5 bg-slate-50 border border-gray-200 rounded text-[11px]"
+                          />
+
+                          <label className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-gray-200 cursor-pointer shrink-0" title="Tải ảnh riêng cho màu này">
+                            <Upload className="w-3.5 h-3.5" />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleColorImageUpload(cIdx, e)}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* SECTION 5: MÔ TẢ & ĐIỂM NỔI BẬT */}
+              <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200/80 space-y-4">
+                <h4 className="font-bold text-slate-900 flex items-center gap-2 text-xs">
+                  <BookOpen className="w-3.5 h-3.5 text-purple-600" />
+                  <span>5. Mô Tả Chi Tiết & Điểm Nổi Bật</span>
+                </h4>
+
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Giá Bán (VNĐ) *</label>
-                  <input
-                    type="number"
-                    value={prodPrice}
-                    onChange={(e) => setProdPrice(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs"
+                  <label className="block font-semibold text-slate-700 mb-1">Mô Tả Sản Phẩm</label>
+                  <textarea
+                    rows={3}
+                    value={prodDesc}
+                    onChange={(e) => setProdDesc(e.target.value)}
+                    placeholder="Mô tả chất liệu, cảm giác đeo, nguồn gốc gọng kính..."
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Giá Gốc Niêm Yết (VNĐ)</label>
-                  <input
-                    type="number"
-                    value={prodOrigPrice}
-                    onChange={(e) => setProdOrigPrice(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs"
+                  <label className="block font-semibold text-slate-700 mb-1">Điểm Nổi Bật (Mỗi dòng một điểm)</label>
+                  <textarea
+                    rows={2}
+                    value={prodHighlights}
+                    onChange={(e) => setProdHighlights(e.target.value)}
+                    placeholder="Gọng kính chính hãng Sài Gòn One&#10;Bảo hành nắn chỉnh trọn đời&#10;Tặng kèm hộp da & khăn nano"
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Link Ảnh Sản Phẩm (URL)</label>
-                <input
-                  type="url"
-                  value={prodImage}
-                  onChange={(e) => setProdImage(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Mô Tả Sản Phẩm</label>
-                <textarea
-                  rows={3}
-                  value={prodDesc}
-                  onChange={(e) => setProdDesc(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+              {/* FOOTER ACTIONS */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowAddProductModal(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold"
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold transition-colors"
                 >
-                  Hủy
+                  Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold"
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md shadow-blue-500/20 transition-all flex items-center gap-2"
                 >
-                  Lưu Sản Phẩm
+                  <Check className="w-4 h-4" />
+                  <span>{editingProduct ? "Lưu Cập Nhật Kính Lên Firebase" : "Tạo Kính Mới Lên Firebase"}</span>
                 </button>
               </div>
             </form>
