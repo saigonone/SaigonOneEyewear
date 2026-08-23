@@ -18,6 +18,7 @@ interface FooterProps {
   onSelectCategory: (cat: ProductCategory) => void;
   onOpenStores: () => void;
   onOpenAbout?: () => void;
+  onOpenArticles?: () => void;
   onOpenLensGuide: () => void;
   onOpenFaceAdvisor: () => void;
   onOpenTryOn: () => void;
@@ -28,6 +29,7 @@ export const Footer: React.FC<FooterProps> = ({
   onSelectCategory,
   onOpenStores,
   onOpenAbout,
+  onOpenArticles,
   onOpenLensGuide,
   onOpenFaceAdvisor,
   onOpenTryOn,
@@ -143,8 +145,12 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <button 
                   onClick={() => {
-                    const el = document.getElementById("articles-blog-section");
-                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                    if (onOpenArticles) {
+                      onOpenArticles();
+                    } else {
+                      const el = document.getElementById("articles-blog-section");
+                      if (el) el.scrollIntoView({ behavior: "smooth" });
+                    }
                   }} 
                   className="hover:text-blue-600 transition-colors"
                 >

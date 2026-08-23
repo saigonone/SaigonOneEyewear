@@ -16,12 +16,14 @@ interface LatestArticlesSectionProps {
   articles: Article[];
   categories: ArticleCategory[];
   onSelectArticle: (article: Article) => void;
+  onOpenAllArticles?: () => void;
 }
 
 export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
   articles,
   categories,
   onSelectArticle,
+  onOpenAllArticles,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
@@ -193,6 +195,20 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
           </div>
 
         </div>
+
+        {/* Bottom CTA: Link to full standalone Articles Page */}
+        {onOpenAllArticles && (
+          <div className="mt-12 text-center">
+            <button
+              onClick={onOpenAllArticles}
+              className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-slate-900 hover:bg-blue-600 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
+            >
+              <BookOpen className="w-4 h-4 text-blue-400 group-hover:text-white" />
+              <span>Xem Tất Cả Bài Viết Trong Trang Cẩm Nang</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        )}
 
       </div>
     </section>

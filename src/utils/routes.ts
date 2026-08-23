@@ -10,6 +10,7 @@ export interface RouteState {
   isTryOn?: boolean;
   isOrderLookup?: boolean;
   isAdmin?: boolean;
+  isArticlesPage?: boolean;
   title: string;
   description?: string;
 }
@@ -162,6 +163,7 @@ export function parseCurrentRoute(products: Product[] = [], articles: Article[] 
   if (rawPath === "/cam-nang" || rawPath === "/tin-tuc") {
     return {
       path: "/cam-nang",
+      isArticlesPage: true,
       title: "Cẩm Nang Thị Lực & Tin Tức Kính Mắt - Saigon One Eyewear",
       description: "Chia sẻ kinh nghiệm chọn gọng kính hợp khuôn mặt, chăm sóc mắt và công nghệ tròng kính chống ánh sáng xanh mới nhất."
     };

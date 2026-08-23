@@ -39,6 +39,9 @@ import {
   LatestArticlesSection 
 } from "./components/LatestArticlesSection";
 import { 
+  ArticlesPage 
+} from "./components/ArticlesPage";
+import { 
   ArticleDetailModal 
 } from "./components/ArticleDetailModal";
 import { 
@@ -156,6 +159,7 @@ export default function App() {
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState<boolean>(false);
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false);
+  const [isArticlesPage, setIsArticlesPage] = useState<boolean>(false);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
 
   // Articles & News state loaded from Firebase
@@ -202,6 +206,7 @@ export default function App() {
       setIsStoresOpen(!!route.isStores);
       setIsTryOnModalOpen(!!route.isTryOn);
       setIsOrderLookupOpen(!!route.isOrderLookup);
+      setIsArticlesPage(!!route.isArticlesPage);
 
       if (route.isAdmin) {
         if (isAdminAuthenticated) {
@@ -249,6 +254,7 @@ export default function App() {
 
   // Navigation handlers with HTML5 History API & SEO Title/Meta updates
   const handleSelectCategory = (cat: ProductCategory) => {
+    setIsArticlesPage(false);
     setSelectedCategory(cat);
     const targetPath = cat === "all" ? "/san-pham" : CATEGORY_TO_PATH[cat] || "/san-pham";
     navigateTo(targetPath);
@@ -262,6 +268,7 @@ export default function App() {
     setIsOrderLookupOpen(false);
     setSelectedDetailProduct(null);
     setSelectedArticle(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleOpenAbout = () => {
@@ -280,6 +287,24 @@ export default function App() {
       "Liên Hệ & Hệ Thống Cửa Hàng - Saigon One Eyewear",
       "Địa chỉ trụ sở Flagship Saigon One Eyewear: 178 Phan Đăng Lưu, Phường 3, Phú Nhuận, TP.HCM. Hotline/Zalo: 0973.819.928."
     );
+  };
+
+  const handleOpenArticles = () => {
+    navigateTo("/cam-nang");
+    setIsArticlesPage(true);
+    setIsAboutOpen(false);
+    setIsStoresOpen(false);
+    setIsTryOnModalOpen(false);
+    setIsOrderLookupOpen(false);
+    setIsAdminOpen(false);
+    setIsAdminLoginOpen(false);
+    setSelectedDetailProduct(null);
+    setSelectedArticle(null);
+    updateSEOMeta(
+      "Cẩm Nang Thị Lực & Tin Tức Kính Mắt - Saigon One Eyewear",
+      "Chia sẻ kinh nghiệm chọn gọng kính hợp khuôn mặt, chăm sóc mắt và công nghệ tròng kính chống ánh sáng xanh mới nhất tại Saigon One Eyewear 178 Phan Đăng Lưu."
+    );
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleOpenProductDetail = (product: Product, color?: ProductColor) => {
@@ -346,6 +371,15 @@ export default function App() {
     setIsAdminLoginOpen(false);
     setSelectedDetailProduct(null);
     setSelectedArticle(null);
+
+    if (isArticlesPage) {
+      replaceRoute("/cam-nang");
+      updateSEOMeta(
+        "Cẩm Nang Thị Lực & Tin Tức Kính Mắt - Saigon One Eyewear",
+        "Chia sẻ kinh nghiệm chọn gọng kính hợp khuôn mặt, chăm sóc mắt và công nghệ tròng kính chống ánh sáng xanh mới nhất."
+      );
+      return;
+    }
 
     const fallbackPath = selectedCategory === "all" ? "/" : CATEGORY_TO_PATH[selectedCategory] || "/san-pham";
     replaceRoute(fallbackPath);
@@ -502,7 +536,10 @@ export default function App() {
       {/* Header */}
       <Header
         favoritesCount={favoriteIds.length}
-        onOpenFavorites={() => setShowOnlyFavorites(!showOnlyFavorites)}
+        onOpenFavorites={() => {
+          setIsArticlesPage(false);
+          setShowOnlyFavorites(!showOnlyFavorites);
+        }}
         onOpenTryOn={() => handleOpenTryOn()}
         onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
         onOpenLensGuide={() => setIsLensGuideOpen(true)}
@@ -510,23 +547,40 @@ export default function App() {
         onOpenOrderLookup={handleOpenOrderLookup}
         onOpenAdmin={handleOpenAdminTrigger}
         onOpenAbout={handleOpenAbout}
+        onOpenArticles={handleOpenArticles}
+        isArticlesActive={isArticlesPage}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={(q) => {
+          setIsArticlesPage(false);
+          setSearchQuery(q);
+        }}
         selectedCategory={selectedCategory}
         onSelectCategory={handleSelectCategory}
         selectedGender={selectedGender}
         onSelectGender={setSelectedGender}
       />
 
-      {/* Hero Banner (Only if not in search or favorites mode) */}
-      {!searchQuery && !showOnlyFavorites && (
-        <HeroBanner
+      {/* Standalone Articles Page vs Catalog Home Page */}
+      {isArticlesPage ? (
+        <ArticlesPage
+          articles={articles}
+          categories={articleCategories}
+          onSelectArticle={handleOpenArticleDetail}
+          onGoHome={() => handleSelectCategory("all")}
+          onOpenStores={handleOpenStores}
           onOpenTryOn={() => handleOpenTryOn()}
-          onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
-          onOpenLensGuide={() => setIsLensGuideOpen(true)}
-          onSelectCategory={handleSelectCategory}
         />
-      )}
+      ) : (
+        <>
+          {/* Hero Banner (Only if not in search or favorites mode) */}
+          {!searchQuery && !showOnlyFavorites && (
+            <HeroBanner
+              onOpenTryOn={() => handleOpenTryOn()}
+              onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
+              onOpenLensGuide={() => setIsLensGuideOpen(true)}
+              onSelectCategory={handleSelectCategory}
+            />
+          )}
 
       {/* Main Catalog Content */}
       <main id="products-catalog-section" className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
@@ -723,13 +777,16 @@ export default function App() {
 
       </main>
 
-      {/* Latest Articles & Vision Guide Section */}
-      {!searchQuery && !showOnlyFavorites && (
-        <LatestArticlesSection
-          articles={articles}
-          categories={articleCategories}
-          onSelectArticle={(art) => handleOpenArticleDetail(art)}
-        />
+          {/* Latest Articles & Vision Guide Section */}
+          {!searchQuery && !showOnlyFavorites && (
+            <LatestArticlesSection
+              articles={articles}
+              categories={articleCategories}
+              onSelectArticle={(art) => handleOpenArticleDetail(art)}
+              onOpenAllArticles={handleOpenArticles}
+            />
+          )}
+        </>
       )}
 
       {/* Modals */}
@@ -825,12 +882,14 @@ export default function App() {
       {/* Footer */}
       <Footer
         onSelectCategory={(cat) => {
+          setIsArticlesPage(false);
           handleSelectCategory(cat);
           const el = document.getElementById("products-catalog-section");
           if (el) el.scrollIntoView({ behavior: "smooth" });
         }}
         onOpenStores={handleOpenStores}
         onOpenAbout={handleOpenAbout}
+        onOpenArticles={handleOpenArticles}
         onOpenLensGuide={() => setIsLensGuideOpen(true)}
         onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
         onOpenTryOn={() => handleOpenTryOn()}

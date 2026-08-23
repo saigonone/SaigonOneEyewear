@@ -28,6 +28,8 @@ interface HeaderProps {
   onOpenOrderLookup: () => void;
   onOpenAdmin: () => void;
   onOpenAbout: () => void;
+  onOpenArticles?: () => void;
+  isArticlesActive?: boolean;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   selectedCategory: ProductCategory;
@@ -46,6 +48,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenOrderLookup,
   onOpenAdmin,
   onOpenAbout,
+  onOpenArticles,
+  isArticlesActive = false,
   searchQuery,
   onSearchChange,
   selectedCategory,
@@ -240,10 +244,18 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="nav-link-articles"
             onClick={() => {
-              const el = document.getElementById("articles-blog-section");
-              if (el) el.scrollIntoView({ behavior: "smooth" });
+              if (onOpenArticles) {
+                onOpenArticles();
+              } else {
+                const el = document.getElementById("articles-blog-section");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }
             }}
-            className="transition-colors py-1 cursor-pointer whitespace-nowrap text-neutral-700 hover:text-amber-800"
+            className={`transition-colors py-1 cursor-pointer whitespace-nowrap ${
+              isArticlesActive
+                ? "text-amber-800 font-extrabold"
+                : "text-neutral-700 hover:text-amber-800"
+            }`}
           >
             Cẩm Nang & Tin Tức
           </button>
@@ -400,11 +412,17 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="mobile-nav-articles"
               onClick={() => {
-                const el = document.getElementById("articles-blog-section");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
+                if (onOpenArticles) {
+                  onOpenArticles();
+                } else {
+                  const el = document.getElementById("articles-blog-section");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }
                 setMobileMenuOpen(false);
               }}
-              className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-neutral-800 hover:bg-neutral-50"
+              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider ${
+                isArticlesActive ? "bg-amber-50 text-amber-900 font-black" : "text-neutral-800 hover:bg-neutral-50"
+              }`}
             >
               Cẩm Nang & Tin Tức
             </button>
