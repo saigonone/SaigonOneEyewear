@@ -33,14 +33,18 @@ import {
   ArrowUp,
   Ruler,
   Scale,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Link2,
+  Globe,
+  ExternalLink,
+  Copy
 } from "lucide-react";
 import { 
   Product, 
   ProductColor,
   Order, 
   ProductCategory, 
-  GenderTarget,
+  GenderTarget, 
   FrameShape, 
   FrameMaterial, 
   Article, 
@@ -49,6 +53,13 @@ import {
   AdminUser,
   BannerSlide
 } from "../types";
+import { 
+  createSlug, 
+  getProductSlug, 
+  getArticleSlug, 
+  getProductUrl, 
+  getArticleUrl 
+} from "../utils/slug";
 import { 
   fetchOrdersFromFirebase, 
   updateOrderStatusInFirebase,
@@ -109,6 +120,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [showAddProductModal, setShowAddProductModal] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [prodName, setProdName] = useState("");
+  const [prodSku, setProdSku] = useState("");
+  const [prodSlug, setProdSlug] = useState("");
+  const [isCustomProdSlug, setIsCustomProdSlug] = useState(false);
   const [prodBrand, setProdBrand] = useState("Sài Gòn One");
   const [prodCategory, setProdCategory] = useState<ProductCategory>("gong-kinh-can");
   const [prodGender, setProdGender] = useState<GenderTarget>("unisex");
@@ -132,11 +146,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [showAddArticleModal, setShowAddArticleModal] = useState<boolean>(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [artTitle, setArtTitle] = useState("");
+  const [artSlug, setArtSlug] = useState("");
+  const [isCustomArtSlug, setIsCustomArtSlug] = useState(false);
   const [artCategory, setArtCategory] = useState("Cẩm Nang Chọn Kính");
   const [artSummary, setArtSummary] = useState("");
   const [artContent, setArtContent] = useState("");
   const [artThumbnail, setArtThumbnail] = useState("https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80");
   const [artAuthor, setArtAuthor] = useState("Chuyên Gia Sài Gòn One");
+  const [artSearchFilter, setArtSearchFilter] = useState("");
+  const [artCategoryFilter, setArtCategoryFilter] = useState("all");
+  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
 
   // Category Form State
   const [showAddArtCatModal, setShowAddArtCatModal] = useState(false);
@@ -278,7 +297,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleOpenAddProduct = () => {
     setEditingProduct(null);
+    const newSku = `SGO-${Math.floor(1000 + Math.random() * 9000)}`;
+    setProdSku(newSku);
     setProdName("");
+    setProdSlug("");
+    setIsCustomProdSlug(false);
     setProdBrand("Sài Gòn One");
     setProdCategory("gong-kinh-can");
     setProdGender("unisex");
@@ -306,7 +329,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleOpenEditProduct = (p: Product) => {
     setEditingProduct(p);
+    setProdSku(p.sku || `SGO-${Math.floor(1000 + Math.random() * 9000)}`);
     setProdName(p.name);
+    setProdSlug(p.slug || getProductSlug(p));
+    setIsCustomProdSlug(!!p.slug);
     setProdBrand(p.brand);
     setProdCategory(p.category);
     setProdGender(p.gender || "unisex");
@@ -355,10 +381,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     };
     const frameWeight = Number(prodWeight) || 14;
 
+    const effectiveSku = prodSku.trim() || `SGO-${Math.floor(1000 + Math.random() * 9000)}`;
+    const effectiveSlug = prodSlug.trim() || getProductSlug({ sku: effectiveSku, name: prodName });
+
     if (editingProduct) {
       const updated: Product = {
         ...editingProduct,
+        sku: effectiveSku,
         name: prodName,
+        slug: effectiveSlug,
         brand: prodBrand,
         category: prodCategory,
         gender: prodGender,
@@ -380,8 +411,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       const id = `sgo-prod-${Date.now()}`;
       const newProd: Product = {
         id,
-        sku: `SGO-${Math.floor(1000 + Math.random() * 9000)}`,
+        sku: effectiveSku,
         name: prodName,
+        slug: effectiveSlug,
         brand: prodBrand,
         category: prodCategory,
         gender: prodGender,
@@ -414,6 +446,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleOpenAddArticle = () => {
     setEditingArticle(null);
     setArtTitle("");
+    setArtSlug("");
+    setIsCustomArtSlug(false);
     setArtCategory(articleCategories[0]?.name || "Cẩm Nang Chọn Kính");
     setArtSummary("");
     setArtContent("");
@@ -425,6 +459,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleOpenEditArticle = (art: Article) => {
     setEditingArticle(art);
     setArtTitle(art.title);
+    setArtSlug(art.slug || getArticleSlug(art));
+    setIsCustomArtSlug(!!art.slug);
     setArtCategory(art.category);
     setArtSummary(art.summary);
     setArtContent(art.content);
@@ -437,10 +473,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     e.preventDefault();
     if (!artTitle.trim()) return;
 
+    const effectiveSlug = artSlug.trim() || createSlug(artTitle);
+
     if (editingArticle) {
       const updated: Article = {
         ...editingArticle,
         title: artTitle,
+        slug: effectiveSlug,
         category: artCategory,
         summary: artSummary,
         content: artContent,
@@ -454,7 +493,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       const newArt: Article = {
         id,
         title: artTitle,
-        slug: artTitle.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+        slug: effectiveSlug,
         category: artCategory,
         summary: artSummary,
         content: artContent,
@@ -807,9 +846,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 </div>
                               </div>
                             </td>
-                            <td className="p-3.5 font-mono text-slate-700">
-                              <div className="font-semibold">{p.sku}</div>
-                              <div className="text-[11px] text-slate-400">{p.brand}</div>
+                            <td className="p-3.5">
+                              <div className="font-mono font-bold text-slate-800 text-xs">{p.sku}</div>
+                              <div className="text-[11px] text-slate-400 mb-1">{p.brand}</div>
+                              <div className="flex items-center gap-1 font-mono text-[10px] text-blue-700 bg-blue-50/80 border border-blue-200/60 px-1.5 py-0.5 rounded max-w-[180px] truncate">
+                                <Globe className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                                <span className="truncate">/san-pham/{p.slug || getProductSlug(p)}</span>
+                              </div>
                             </td>
                             <td className="p-3.5">
                               <span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md font-medium text-[11px]">
@@ -907,66 +950,175 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           {/* ======================================================== */}
           {activeTab === "articles" && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">Quản Lý Bài Viết & Cẩm Nang</h3>
-                  <p className="text-xs text-slate-500">Bài viết hiển thị tại mục "Bài Viết Mới Nhất" trên trang chủ</p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-200">
+                <div className="flex flex-1 items-center gap-3">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Tìm bài viết theo tiêu đề, slug, tác giả..."
+                      value={artSearchFilter}
+                      onChange={(e) => setArtSearchFilter(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                    />
+                  </div>
+
+                  <select
+                    value={artCategoryFilter}
+                    onChange={(e) => setArtCategoryFilter(e.target.value)}
+                    className="px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs text-slate-700 font-medium focus:ring-2 focus:ring-blue-600 cursor-pointer"
+                  >
+                    <option value="all">Tất Cả Chuyên Mục ({articles.length})</option>
+                    {articleCategories.map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
                 <button
                   onClick={handleOpenAddArticle}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-2"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-2 shrink-0 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Viết Bài Mới Lên Firebase</span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {articles.map((art) => (
-                  <div key={art.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs flex flex-col">
-                    <div className="relative h-40 w-full overflow-hidden bg-slate-900">
-                      <img
-                        src={art.thumbnail || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=800&q=80"}
-                        alt={art.title}
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute top-3 left-3">
-                        <span className="px-2.5 py-0.5 bg-blue-600 text-white text-[11px] font-bold rounded">
-                          {art.category}
-                        </span>
-                      </div>
-                    </div>
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-slate-600">
+                    <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-gray-200">
+                      <tr>
+                        <th className="p-3.5">Bài Viết</th>
+                        <th className="p-3.5">Đường Dẫn URL (Slug SEO)</th>
+                        <th className="p-3.5">Chuyên Mục</th>
+                        <th className="p-3.5">Tác Giả</th>
+                        <th className="p-3.5">Lượt Xem</th>
+                        <th className="p-3.5 text-right">Thao Tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {articles
+                        .filter((art) => {
+                          const matchSearch =
+                            art.title.toLowerCase().includes(artSearchFilter.toLowerCase()) ||
+                            (art.slug && art.slug.toLowerCase().includes(artSearchFilter.toLowerCase())) ||
+                            art.author.toLowerCase().includes(artSearchFilter.toLowerCase()) ||
+                            art.category.toLowerCase().includes(artSearchFilter.toLowerCase());
+                          const matchCat =
+                            artCategoryFilter === "all" || art.category === artCategoryFilter;
+                          return matchSearch && matchCat;
+                        })
+                        .map((art) => {
+                          const slugVal = art.slug || getArticleSlug(art);
+                          const fullUrl = `https://matkinhsaigonone.com/bai-viet/${slugVal}`;
+                          return (
+                            <tr key={art.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="p-3.5 max-w-sm">
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={art.thumbnail || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=600&q=80"}
+                                    alt={art.title}
+                                    className="w-13 h-13 object-cover rounded-lg border border-gray-200 shrink-0"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                  <div className="min-w-0">
+                                    <div className="font-bold text-slate-900 line-clamp-1 hover:text-blue-600 transition-colors">
+                                      {art.title}
+                                    </div>
+                                    <div className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                                      {art.summary}
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-2">
+                                      <span>{art.publishedAt}</span>
+                                      <span>•</span>
+                                      <span>{art.readTime || "4 phút đọc"}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
 
-                    <div className="p-4 flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="text-[11px] text-slate-400 mb-1">{art.publishedAt} • {art.author}</div>
-                        <h4 className="text-sm font-bold text-slate-900 mb-2 line-clamp-2 leading-snug">{art.title}</h4>
-                        <p className="text-xs text-slate-500 line-clamp-2">{art.summary}</p>
-                      </div>
+                              <td className="p-3.5">
+                                <div className="inline-flex flex-col gap-1">
+                                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-blue-700 bg-blue-50 border border-blue-200/80 px-2 py-1 rounded-md max-w-xs truncate">
+                                    <Globe className="w-3 h-3 text-blue-600 shrink-0" />
+                                    <span className="truncate">/bai-viet/{slugVal}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(fullUrl);
+                                      setCopiedSlug(art.id);
+                                      setTimeout(() => setCopiedSlug(null), 2000);
+                                    }}
+                                    className="text-[10px] text-slate-400 hover:text-blue-600 flex items-center gap-1 transition-colors cursor-pointer w-fit"
+                                  >
+                                    {copiedSlug === art.id ? (
+                                      <>
+                                        <Check className="w-3 h-3 text-emerald-600" />
+                                        <span className="text-emerald-600 font-semibold">Đã sao chép link</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="w-3 h-3" />
+                                        <span>Sao chép link đầy đủ</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
 
-                      <div className="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between">
-                        <span className="text-[11px] text-slate-400">{art.viewsCount} lượt xem</span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleOpenEditArticle(art)}
-                            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs flex items-center gap-1"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>Sửa</span>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteArticle(art.id)}
-                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs flex items-center gap-1"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Xóa</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                              <td className="p-3.5">
+                                <span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md font-medium text-[11px]">
+                                  {art.category}
+                                </span>
+                              </td>
+
+                              <td className="p-3.5">
+                                <div className="font-semibold text-slate-800">{art.author}</div>
+                                <div className="text-[10px] text-slate-400">Biên tập viên</div>
+                              </td>
+
+                              <td className="p-3.5">
+                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-semibold rounded text-[11px] flex items-center gap-1 w-fit">
+                                  <Eye className="w-3 h-3" />
+                                  <span>{art.viewsCount || 0}</span>
+                                </span>
+                              </td>
+
+                              <td className="p-3.5 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => handleOpenEditArticle(art)}
+                                    className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
+                                    title="Chỉnh sửa bài viết"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteArticle(art.id)}
+                                    className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer"
+                                    title="Xóa bài viết"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      {articles.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="text-center py-10 text-slate-400">
+                            Chưa có bài viết nào trong hệ thống. Hãy nhấn "Viết Bài Mới" để tạo bài viết đầu tiên!
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1189,16 +1341,80 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span>1. Thông Tin Cơ Bản & Phân Loại</span>
                 </h4>
 
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Tên Sản Phẩm Kính *</label>
-                  <input
-                    type="text"
-                    required
-                    value={prodName}
-                    onChange={(e) => setProdName(e.target.value)}
-                    placeholder="Ví dụ: Gọng Kính Titanium Aviator Sài Gòn One Classic..."
-                    className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Mã Sản Phẩm (SKU) *</label>
+                    <input
+                      type="text"
+                      required
+                      value={prodSku}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProdSku(val);
+                        if (!isCustomProdSlug) {
+                          setProdSlug(getProductSlug({ sku: val, name: prodName }));
+                        }
+                      }}
+                      placeholder="SGO-1001"
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900 font-mono font-bold"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block font-semibold text-slate-700 mb-1">Tên Sản Phẩm Kính *</label>
+                    <input
+                      type="text"
+                      required
+                      value={prodName}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProdName(val);
+                        if (!isCustomProdSlug) {
+                          setProdSlug(getProductSlug({ sku: prodSku, name: val }));
+                        }
+                      }}
+                      placeholder="Ví dụ: Gọng Kính Titanium Aviator Sài Gòn One Classic..."
+                      className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* URL Slug (SEO Permalink) Editor */}
+                <div className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                      <Globe className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Đường Dẫn Tĩnh Sản Phẩm (URL Slug SEO)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomProdSlug(false);
+                        setProdSlug(getProductSlug({ sku: prodSku, name: prodName }));
+                      }}
+                      className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold underline cursor-pointer"
+                    >
+                      Tạo lại URL theo Mã & Tên
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500 font-mono text-[11px] shrink-0 font-medium">/san-pham/</span>
+                    <input
+                      type="text"
+                      value={prodSlug}
+                      onChange={(e) => {
+                        setIsCustomProdSlug(true);
+                        setProdSlug(createSlug(e.target.value));
+                      }}
+                      placeholder="sgo-1001-ten-san-pham"
+                      className="flex-1 px-3 py-1.5 bg-white border border-blue-200 rounded-lg text-xs font-mono text-blue-900 font-medium focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    />
+                  </div>
+                  <div className="text-[11px] text-slate-600 flex items-center gap-1.5 pt-0.5">
+                    <span className="text-slate-400">Xem trước URL:</span>
+                    <span className="font-mono text-blue-700 font-medium break-all">
+                      https://matkinhsaigonone.com/san-pham/{prodSlug || getProductSlug({ sku: prodSku, name: prodName })}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1743,10 +1959,55 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   type="text"
                   required
                   value={artTitle}
-                  onChange={(e) => setArtTitle(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setArtTitle(val);
+                    if (!isCustomArtSlug) {
+                      setArtSlug(createSlug(val));
+                    }
+                  }}
                   placeholder="Cách chọn gọng kính chuẩn nhất 2026..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium"
                 />
+              </div>
+
+              {/* URL Slug (SEO Permalink) Editor */}
+              <div className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                    <Globe className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Đường Dẫn Tĩnh Bài Viết (URL Slug SEO)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomArtSlug(false);
+                      setArtSlug(createSlug(artTitle));
+                    }}
+                    className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold underline cursor-pointer"
+                  >
+                    Tạo lại URL theo Tiêu đề
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 font-mono text-[11px] shrink-0 font-medium">/bai-viet/</span>
+                  <input
+                    type="text"
+                    value={artSlug}
+                    onChange={(e) => {
+                      setIsCustomArtSlug(true);
+                      setArtSlug(createSlug(e.target.value));
+                    }}
+                    placeholder="tieu-de-bai-viet-chuan-seo"
+                    className="flex-1 px-3 py-1.5 bg-white border border-blue-200 rounded-lg text-xs font-mono text-blue-900 font-medium focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
+                <div className="text-[11px] text-slate-600 flex items-center gap-1.5 pt-0.5">
+                  <span className="text-slate-400">Xem trước URL:</span>
+                  <span className="font-mono text-blue-700 font-medium break-all">
+                    https://matkinhsaigonone.com/bai-viet/{artSlug || createSlug(artTitle)}
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

@@ -1,4 +1,19 @@
 import { ProductCategory, Product, Article } from "../types";
+import { 
+  createSlug, 
+  getProductSlug, 
+  getArticleSlug, 
+  getProductUrl, 
+  getArticleUrl 
+} from "./slug";
+
+export { 
+  createSlug, 
+  getProductSlug, 
+  getArticleSlug, 
+  getProductUrl, 
+  getArticleUrl 
+};
 
 export interface RouteState {
   path: string;
@@ -159,8 +174,8 @@ export function parseCurrentRoute(products: Product[] = [], articles: Article[] 
     };
   }
 
-  // 7. Cẩm Nang & Tin Tức
-  if (rawPath === "/cam-nang" || rawPath === "/tin-tuc") {
+  // 7. Cẩm Nang & Tin Tức & Bài Viết
+  if (rawPath === "/cam-nang" || rawPath === "/tin-tuc" || rawPath === "/bai-viet") {
     return {
       path: "/cam-nang",
       isArticlesPage: true,
@@ -169,12 +184,21 @@ export function parseCurrentRoute(products: Product[] = [], articles: Article[] 
     };
   }
 
-  // 8. Chi tiết bài viết: /cam-nang/:slug hoặc /tin-tuc/:slug
-  if (rawPath.startsWith("/cam-nang/") || rawPath.startsWith("/tin-tuc/")) {
-    const slug = rawPath.replace(/^\/(cam-nang|tin-tuc)\//, "");
-    const foundArticle = articles.find(
-      (a) => a.id === slug || a.id.toLowerCase() === slug || a.title.toLowerCase().replace(/\s+/g, "-") === slug
-    );
+  // 8. Chi tiết bài viết: /bai-viet/:slug, /cam-nang/:slug hoặc /tin-tuc/:slug
+  if (rawPath.startsWith("/bai-viet/") || rawPath.startsWith("/cam-nang/") || rawPath.startsWith("/tin-tuc/")) {
+    const slug = rawPath.replace(/^\/(bai-viet|cam-nang|tin-tuc)\//, "");
+    const foundArticle = articles.find((a) => {
+      const artSlug = getArticleSlug(a);
+      const titleSlug = createSlug(a.title);
+      return (
+        a.id === slug ||
+        a.id.toLowerCase() === slug.toLowerCase() ||
+        a.slug === slug ||
+        artSlug === slug ||
+        titleSlug === slug
+      );
+    });
+
     return {
       path: rawPath,
       articleId: foundArticle ? foundArticle.id : slug,
@@ -183,15 +207,24 @@ export function parseCurrentRoute(products: Product[] = [], articles: Article[] 
     };
   }
 
-  // 9. Chi tiết sản phẩm: /san-pham/:id hoặc /san-pham/:sku
+  // 9. Chi tiết sản phẩm: /san-pham/:slug (vd: /san-pham/sgo-1001-gong-kinh-titan)
   if (rawPath.startsWith("/san-pham/")) {
     const prodKey = rawPath.replace("/san-pham/", "");
-    const foundProduct = products.find(
-      (p) =>
-        p.id.toLowerCase() === prodKey.toLowerCase() ||
-        (p.sku && p.sku.toLowerCase() === prodKey.toLowerCase()) ||
-        p.name.toLowerCase().replace(/\s+/g, "-") === prodKey
-    );
+    const foundProduct = products.find((p) => {
+      const pSlug = getProductSlug(p);
+      const pNameSlug = createSlug(p.name);
+      const pSku = (p.sku || "").toLowerCase();
+      const pKeyLower = prodKey.toLowerCase();
+      
+      return (
+        p.id.toLowerCase() === pKeyLower ||
+        (p.slug && p.slug.toLowerCase() === pKeyLower) ||
+        pSlug === pKeyLower ||
+        (pSku && pSku === pKeyLower) ||
+        pNameSlug === pKeyLower ||
+        (pSku && pKeyLower.startsWith(`${pSku}-`))
+      );
+    });
 
     return {
       path: rawPath,

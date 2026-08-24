@@ -56,6 +56,7 @@ export interface Product {
   id: string;
   sku: string;
   name: string;
+  slug?: string;
   brand: string;
   category: ProductCategory;
   gender: GenderTarget;
