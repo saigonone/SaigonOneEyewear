@@ -170,29 +170,26 @@ export const Footer: React.FC<FooterProps> = ({
             </ul>
           </div>
 
-          {/* Col 4: Hệ Thống Cửa Hàng TP.HCM */}
+          {/* Col 4: Showroom & Địa Chỉ Trực Tiếp */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest">
-              Chi Nhánh Saigon One
+              Showroom Trực Tiếp
             </h4>
-            <ul className="space-y-2.5 text-[11px] text-slate-500">
-              <li className="leading-snug">
-                <strong className="text-slate-900 block font-semibold text-blue-600">Trụ Sở Phú Nhuận (Flagship):</strong>
-                178 Phan Đăng Lưu, Phường 3, Q. Phú Nhuận, TP.HCM
-              </li>
-              <li className="leading-snug">
-                <strong className="text-slate-900 block font-semibold">Chi nhánh Quận 1:</strong>
-                92 Nguyễn Trãi, P. Bến Thành, Q.1
-              </li>
-              <li className="leading-snug">
-                <strong className="text-slate-900 block font-semibold">Chi nhánh Quận 10:</strong>
-                526 Ba Tháng Hai, P.14, Q.10
-              </li>
-              <li className="leading-snug">
-                <strong className="text-slate-900 block font-semibold">Chi nhánh Gò Vấp:</strong>
-                688 Quang Trung, P.11, Gò Vấp
-              </li>
-            </ul>
+            <div className="space-y-2.5 text-[11px] text-slate-500">
+              <div className="leading-snug bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <strong className="text-slate-900 block font-bold text-blue-600 text-xs mb-1">
+                  Saigon One Eyewear:
+                </strong>
+                <p className="text-slate-700 font-medium">178 Phan Đăng Lưu, Phường Đức Nhuận, TP. Hồ Chí Minh</p>
+                <p className="text-slate-500 mt-1">Giờ mở cửa: 08:30 - 21:30 (Cả tuần)</p>
+              </div>
+              <button 
+                onClick={onOpenStores}
+                className="w-full py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span>📍 Xem Bản Đồ Google Maps & Đặt Lịch</span>
+              </button>
+            </div>
           </div>
 
         </div>

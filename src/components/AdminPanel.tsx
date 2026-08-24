@@ -32,7 +32,8 @@ import {
   PlusCircle,
   ArrowUp,
   Ruler,
-  Scale
+  Scale,
+  SlidersHorizontal
 } from "lucide-react";
 import { 
   Product, 
@@ -45,7 +46,8 @@ import {
   Article, 
   ArticleCategory, 
   ProductCategoryItem, 
-  AdminUser 
+  AdminUser,
+  BannerSlide
 } from "../types";
 import { 
   fetchOrdersFromFirebase, 
@@ -63,9 +65,12 @@ import {
   getAdminsFromFirebase,
   addAdminToFirebase,
   deleteAdminFromFirebase,
+  getBannersFromFirebase,
   db, 
   rtdb 
 } from "../firebase";
+import { INITIAL_BANNER_SLIDES } from "../data/mockBanners";
+import { AdminBannerManager } from "./AdminBannerManager";
 
 interface AdminPanelProps {
   onClose: () => void;
@@ -73,10 +78,12 @@ interface AdminPanelProps {
   onAddProduct: (p: Product) => void;
   onUpdateProduct: (p: Product) => void;
   onDeleteProduct: (id: string) => void;
+  banners?: BannerSlide[];
+  onUpdateBanners?: (banners: BannerSlide[]) => void;
   onLogout?: () => void;
 }
 
-type AdminTab = "products" | "product_categories" | "articles" | "article_categories" | "admins" | "orders";
+type AdminTab = "products" | "banners" | "product_categories" | "articles" | "article_categories" | "admins" | "orders";
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
   onClose,
@@ -84,9 +91,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
+  banners: initialBanners = INITIAL_BANNER_SLIDES,
+  onUpdateBanners,
   onLogout,
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>("products");
+  const [banners, setBanners] = useState<BannerSlide[]>(initialBanners);
   const [orders, setOrders] = useState<Order[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [articleCategories, setArticleCategories] = useState<ArticleCategory[]>([]);
@@ -149,18 +159,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const loadData = async () => {
     setLoading(true);
     try {
-      const [fetchedOrders, fetchedArticles, fetchedArtCats, fetchedProdCats, fetchedAdmins] = await Promise.all([
+      const [fetchedOrders, fetchedArticles, fetchedArtCats, fetchedProdCats, fetchedAdmins, fetchedBanners] = await Promise.all([
         fetchOrdersFromFirebase(),
         getArticlesFromFirebase(),
         getArticleCategoriesFromFirebase(),
         getProductCategoriesFromFirebase(),
-        getAdminsFromFirebase()
+        getAdminsFromFirebase(),
+        getBannersFromFirebase()
       ]);
       setOrders(fetchedOrders);
       setArticles(fetchedArticles);
       setArticleCategories(fetchedArtCats);
       setProductCategories(fetchedProdCats);
       setAdmins(fetchedAdmins);
+      if (fetchedBanners && fetchedBanners.length > 0) {
+        setBanners(fetchedBanners);
+      }
     } catch (e) {
       console.error("Error loading admin data:", e);
     } finally {
@@ -449,6 +463,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         readTime: "4 phút đọc",
         publishedAt: new Date().toLocaleDateString("vi-VN"),
         viewsCount: 1,
+        tags: ["CamNang", "KinhMat", "SaigonOne"],
         isFeatured: false,
         isPublished: true,
       };
@@ -625,6 +640,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           </button>
 
           <button
+            onClick={() => setActiveTab("banners")}
+            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 ${
+              activeTab === "banners" ? "bg-blue-600 text-white" : "hover:bg-slate-800 text-slate-300"
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            <span>Banner Trang Chủ ({banners.length})</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab("product_categories")}
             className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 ${
               activeTab === "product_categories" ? "bg-blue-600 text-white" : "hover:bg-slate-800 text-slate-300"
@@ -679,6 +704,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
           
           {/* ======================================================== */}
+          {/* TAB: QUẢN TRỊ BANNER & SLIDER TRANG CHỦ */}
+          {/* ======================================================== */}
+          {activeTab === "banners" && (
+            <AdminBannerManager
+              banners={banners}
+              onUpdateBanners={(updated) => {
+                setBanners(updated);
+                if (onUpdateBanners) onUpdateBanners(updated);
+              }}
+            />
+          )}
+
+          {/* ======================================================== */}
           {/* TAB 1: QUẢN TRỊ SẢN PHẨM */}
           {/* ======================================================== */}
           {activeTab === "products" && (
@@ -726,7 +764,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               <div className="flex items-center gap-3">
                                 <div className="relative shrink-0">
                                   <img
-                                    src={p.images[0] || (p.colors && p.colors[0]?.image) || ""}
+                                    src={p.images[0] || (p.colors && p.colors[0]?.image) || "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=600&q=80"}
                                     alt={p.name}
                                     className="w-13 h-13 object-cover rounded-lg border border-gray-200"
                                     referrerPolicy="no-referrer"
@@ -888,7 +926,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <div key={art.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs flex flex-col">
                     <div className="relative h-40 w-full overflow-hidden bg-slate-900">
                       <img
-                        src={art.thumbnail}
+                        src={art.thumbnail || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=800&q=80"}
                         alt={art.title}
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
@@ -1418,9 +1456,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 {/* Images Grid */}
-                {prodImages.length > 0 ? (
+                {prodImages.filter(Boolean).length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 pt-1">
-                    {prodImages.map((img, idx) => (
+                    {prodImages.filter(Boolean).map((img, idx) => (
                       <div key={idx} className="relative group bg-white p-1.5 rounded-xl border border-gray-200 shadow-2xs">
                         <div className="aspect-square rounded-lg overflow-hidden bg-slate-100 relative">
                           <img
@@ -1594,7 +1632,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                         {/* Color Image Upload/URL with Thumbnail Preview */}
                         <div className="sm:col-span-4 flex items-center gap-2">
-                          {color.image ? (
+                          {color.image && color.image.trim() !== "" ? (
                             <img
                               src={color.image}
                               alt={color.name}

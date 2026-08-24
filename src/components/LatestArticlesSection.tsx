@@ -92,7 +92,7 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
             >
               <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-slate-900">
                 <img
-                  src={featuredArticle.thumbnail}
+                  src={featuredArticle.thumbnail || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=800&q=80"}
                   alt={featuredArticle.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   referrerPolicy="no-referrer"
@@ -148,7 +148,7 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
               >
                 <div className="relative h-44 w-full overflow-hidden bg-slate-900">
                   <img
-                    src={art.thumbnail}
+                    src={art.thumbnail || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=800&q=80"}
                     alt={art.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     referrerPolicy="no-referrer"
@@ -171,7 +171,7 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                       <span>{art.publishedAt}</span>
                       <span>•</span>
                       <Eye className="w-3 h-3" />
-                      <span>{art.viewsCount.toLocaleString("vi-VN")}</span>
+                      <span>{(art.viewsCount || 0).toLocaleString("vi-VN")}</span>
                     </div>
 
                     <h4 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 mb-2">

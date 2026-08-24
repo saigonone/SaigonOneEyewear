@@ -84,7 +84,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
               <div>
                 <div className="flex items-center gap-2 text-amber-900 font-bold text-sm uppercase tracking-wider mb-4">
                   <MapPin className="w-4 h-4 text-amber-700 shrink-0" />
-                  <span>ĐỊA CHỈ TRUNG TÂM PHÚ NHUẬN</span>
+                  <span>SHOWROOM & TRUNG TÂM KHÚC XẠ</span>
                 </div>
 
                 <div className="space-y-3.5 text-xs text-neutral-800">
@@ -92,7 +92,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                     <MapPin className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                     <div>
                       <strong className="block text-sm text-neutral-900">178 Phan Đăng Lưu</strong>
-                      <span>Phường 3, Quận Phú Nhuận, TP. Hồ Chí Minh</span>
+                      <span>Phường Đức Nhuận, TP. Hồ Chí Minh</span>
                     </div>
                   </div>
 
@@ -124,7 +124,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                 </div>
               </div>
 
-              <div className="mt-5 pt-4 border-t border-amber-200/60 flex items-center gap-2">
+              <div className="mt-5 pt-4 border-t border-amber-200/60 flex flex-wrap items-center gap-2">
                 <a
                   href="https://zalo.me/0973819928"
                   target="_blank"
@@ -132,15 +132,18 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                   className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-xs transition-colors"
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Chat Zalo: 0973.819.928</span>
+                  <span>Chat Zalo</span>
                 </a>
-                <a
-                  href="tel:0973819928"
-                  className="flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-neutral-950 font-bold text-xs py-2.5 px-4 rounded-xl shadow-xs transition-colors"
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenStores();
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
-                  <Phone className="w-3.5 h-3.5" />
-                  <span>Gọi Ngay</span>
-                </a>
+                  <Navigation className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Xem Bản Đồ</span>
+                </button>
               </div>
             </div>
 

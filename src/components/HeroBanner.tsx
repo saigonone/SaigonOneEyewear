@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Camera, Sparkles, ChevronRight, Shield, Award, Clock, RefreshCw, Eye, ArrowRight, Check } from "lucide-react";
-import { ProductCategory } from "../types";
+import { ProductCategory, BannerSlide } from "../types";
+import { INITIAL_BANNER_SLIDES } from "../data/mockBanners";
 
 interface HeroBannerProps {
+  slides?: BannerSlide[];
   onOpenTryOn: () => void;
   onOpenFaceAdvisor: () => void;
   onOpenLensGuide: () => void;
@@ -10,60 +12,36 @@ interface HeroBannerProps {
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({
+  slides = INITIAL_BANNER_SLIDES,
   onOpenTryOn,
   onOpenFaceAdvisor,
   onOpenLensGuide,
   onSelectCategory,
 }) => {
+  const activeSlides = (slides && slides.length > 0) 
+    ? slides.filter(s => s.isActive !== false)
+    : INITIAL_BANNER_SLIDES;
+
+  const validSlides = activeSlides.length > 0 ? activeSlides : INITIAL_BANNER_SLIDES;
+
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const slides = [
-    {
-      collectionTag: "BỘ SƯU TẬP 2026",
-      titleLine1: "Tầm Nhìn",
-      titleLine2: "Hoàn Hảo",
-      desc: "Khám phá sự kết hợp tinh tế giữa công nghệ đo mắt chuẩn quốc tế và phong cách thời trang đương đại tại Saigon One Eyewear.",
-      buttonText: "Khám Phá Ngay",
-      secondaryButtonText: "Thử Kính AR 3D",
-      category: "gong-kinh-can" as ProductCategory,
-      featureBadge: "Lọc ánh sáng xanh kỹ thuật số",
-      featureDesc: "Bảo vệ đôi mắt tuyệt đối khi làm việc liên tục với máy tính và điện thoại.",
-      image: "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=1200&q=85",
-    },
-    {
-      collectionTag: "KÍNH MÁT POLARIZED MỚI",
-      titleLine1: "Phong Cách",
-      titleLine2: "Đương Đại",
-      desc: "Tròng kính phân cực khử 100% tia UV400 và ánh sáng chói lóa. Kiểu dáng Aviator và gọng vuông kim loại sắc nét dành cho người sành điệu.",
-      buttonText: "Xem Kính Râm",
-      secondaryButtonText: "Thử Kính Trực Tuyến",
-      category: "kinh-ram-mat" as ProductCategory,
-      featureBadge: "Chống chói & Tia cực tím UV400",
-      featureDesc: "Khử ánh sáng lóa mặt đường, bảo vệ võng mạc tối đa khi lái xe dưới nắng gắt.",
-      image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=1200&q=85",
-    },
-    {
-      collectionTag: "CÔNG NGHỆ QUANG HỌC",
-      titleLine1: "Tròng Cận",
-      titleLine2: "Siêu Mỏng 1.74",
-      desc: "Đổi màu tức thì theo tia UV, cắt mài đo tâm quang học tự động theo công nghệ Topcon Nhật Bản lấy liền chỉ trong 15 phút.",
-      buttonText: "Bảng Giá Tròng",
-      secondaryButtonText: "Tư Vấn Chọn Tròng",
-      category: "trong-kinh" as ProductCategory,
-      featureBadge: "Đo mắt miễn phí 100%",
-      featureDesc: "Máy đo khúc xạ tự động và chuyên viên khúc xạ nhiều năm kinh nghiệm tư vấn.",
-      image: "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?auto=format&fit=crop&w=1200&q=85",
+  // Keep index within bounds if slide count changes
+  useEffect(() => {
+    if (currentSlide >= validSlides.length) {
+      setCurrentSlide(0);
     }
-  ];
+  }, [validSlides.length, currentSlide]);
 
   useEffect(() => {
+    if (validSlides.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      setCurrentSlide((prev) => (prev + 1) % validSlides.length);
     }, 7000);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [validSlides.length]);
 
-  const slide = slides[currentSlide];
+  const slide = validSlides[currentSlide] || validSlides[0];
 
   return (
     <div className="relative overflow-hidden bg-[#fdfdfd] border-b border-gray-100">
@@ -141,13 +119,21 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           <div className="w-96 h-96 bg-blue-500/10 rounded-full blur-3xl absolute"></div>
           
           {/* Main Visual Center Showcase */}
-          <div className="relative z-10 w-full max-w-lg aspect-[4/3] rounded-2xl overflow-hidden bg-white shadow-2xl border border-gray-100 p-2">
+          <div className="relative z-10 w-full max-w-lg aspect-[4/3] rounded-2xl overflow-hidden bg-white shadow-2xl border border-gray-100 p-2 group">
             <img
-              src={slide.image}
+              src={slide.image || "https://images.unsplash.com/photo-1577803645773-f96470509666?auto=format&fit=crop&w=1200&q=85"}
               alt={slide.titleLine2}
-              className="w-full h-full object-cover rounded-xl transition-all duration-700 hover:scale-105"
+              className="w-full h-full object-cover rounded-xl transition-all duration-700 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent rounded-xl" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 rounded-xl" />
+            
+            {/* Top Optical Brand Campaign Badge */}
+            {slide.brandNote && (
+              <div className="absolute top-4 left-4 right-4 z-10 flex items-center gap-1.5 bg-slate-950/75 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20 text-white shadow-sm">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="text-[11px] font-medium tracking-wide truncate">{slide.brandNote}</span>
+              </div>
+            )}
           </div>
 
           {/* Sleek Floating Feature Card */}
@@ -164,7 +150,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
           {/* Slide Indicator dots */}
           <div className="absolute top-6 right-6 z-20 flex items-center gap-1.5 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-100 shadow-xs">
-            {slides.map((_, idx) => (
+            {validSlides.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentSlide(idx)}

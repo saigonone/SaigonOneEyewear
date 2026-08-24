@@ -94,7 +94,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Product Image - Full Frame */}
         <img
-          src={selectedColor.image || product.images[0]}
+          src={selectedColor?.image || product.images?.[0] || "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=600&q=80"}
           alt={product.name}
           className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-106"
           loading="lazy"

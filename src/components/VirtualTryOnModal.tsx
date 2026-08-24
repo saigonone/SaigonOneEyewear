@@ -314,7 +314,7 @@ export const VirtualTryOnModal: React.FC<VirtualTryOnModalProps> = ({
     );
   };
 
-  const activeImage = uploadedImageUrl || selectedAvatarUrl;
+  const activeImage = uploadedImageUrl || selectedAvatarUrl || SAMPLE_AVATARS[0].url;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
@@ -633,7 +633,7 @@ export const VirtualTryOnModal: React.FC<VirtualTryOnModalProps> = ({
                         }`}
                       >
                         <img 
-                          src={p.images[0]} 
+                          src={p.images?.[0] || (p.colors && p.colors[0]?.image) || "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=600&q=80"} 
                           alt={p.name} 
                           className="w-full h-10 object-contain mb-1" 
                         />

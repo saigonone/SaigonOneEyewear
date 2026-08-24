@@ -171,7 +171,8 @@ export interface Article {
   author: string;
   readTime: string;
   publishedAt: string;
-  viewsCount: number;
+  viewsCount?: number;
+  tags?: string[];
   isFeatured?: boolean;
   isPublished: boolean;
 }
@@ -200,4 +201,21 @@ export interface AdminUser {
   createdAt: string;
   lastLogin?: string;
   isActive: boolean;
+}
+
+export interface BannerSlide {
+  id: string;
+  collectionTag: string;
+  titleLine1: string;
+  titleLine2: string;
+  desc: string;
+  buttonText: string;
+  secondaryButtonText?: string;
+  category: ProductCategory;
+  featureBadge: string;
+  featureDesc: string;
+  image: string;
+  brandNote?: string;
+  isActive: boolean;
+  order?: number;
 }

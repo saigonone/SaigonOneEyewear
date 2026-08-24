@@ -88,7 +88,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
               </div>
               <div className="flex items-center gap-1.5">
                 <Eye className="w-4 h-4 text-slate-400" />
-                {article.viewsCount.toLocaleString("vi-VN")} lượt xem
+                {(article.viewsCount || 0).toLocaleString("vi-VN")} lượt xem
               </div>
             </div>
           </div>
@@ -114,7 +114,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
           {/* Article Content */}
           <div className="prose prose-slate max-w-none space-y-4 text-sm sm:text-base leading-relaxed text-slate-700">
-            {article.content.split("\n\n").map((paragraph, index) => {
+            {(article.content || "").split("\n\n").map((paragraph, index) => {
               if (paragraph.startsWith("### ")) {
                 return (
                   <h3 key={index} className="text-lg sm:text-xl font-bold text-slate-900 mt-6 mb-2">

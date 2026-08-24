@@ -164,7 +164,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   {/* Thumbnail */}
                   <div className="w-20 h-20 bg-slate-50 rounded-lg border border-gray-100 p-1 shrink-0 flex items-center justify-center">
                     <img 
-                      src={item.selectedColor.image || item.product.images[0]} 
+                      src={item.selectedColor?.image || item.product?.images?.[0] || "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=600&q=80"} 
                       alt={item.product.name} 
                       className="w-full h-full object-contain"
                     />

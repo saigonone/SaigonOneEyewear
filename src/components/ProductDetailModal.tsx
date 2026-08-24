@@ -128,7 +128,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           <div className="flex flex-col">
             <div className="relative aspect-square w-full bg-[#f8f8f8] rounded-2xl border border-neutral-200/80 flex items-center justify-center overflow-hidden">
               <img
-                src={selectedImage}
+                src={selectedImage || product?.images?.[0] || "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=600&q=80"}
                 alt={product.name}
                 className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-105"
               />

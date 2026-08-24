@@ -28,6 +28,7 @@ interface HeaderProps {
   onOpenOrderLookup: () => void;
   onOpenAdmin: () => void;
   onOpenAbout: () => void;
+  isAboutActive?: boolean;
   onOpenArticles?: () => void;
   isArticlesActive?: boolean;
   searchQuery: string;
@@ -48,6 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenOrderLookup,
   onOpenAdmin,
   onOpenAbout,
+  isAboutActive = false,
   onOpenArticles,
   isArticlesActive = false,
   searchQuery,
@@ -171,7 +173,7 @@ export const Header: React.FC<HeaderProps> = ({
             id="nav-link-home"
             onClick={() => onSelectCategory("all")}
             className={`transition-colors py-1 cursor-pointer whitespace-nowrap ${
-              selectedCategory === "all"
+              selectedCategory === "all" && !isAboutActive && !isArticlesActive
                 ? "text-amber-800 font-extrabold"
                 : "text-neutral-700 hover:text-amber-800"
             }`}
@@ -183,7 +185,11 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="nav-link-about"
             onClick={onOpenAbout}
-            className="transition-colors py-1 cursor-pointer whitespace-nowrap text-neutral-700 hover:text-amber-800 font-semibold"
+            className={`transition-colors py-1 cursor-pointer whitespace-nowrap ${
+              isAboutActive
+                ? "text-amber-800 font-extrabold"
+                : "text-neutral-700 hover:text-amber-800 font-semibold"
+            }`}
           >
             Giới Thiệu
           </button>
@@ -202,7 +208,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onSelectCategory("all");
               }}
               className={`flex items-center gap-1.5 py-1 transition-colors cursor-pointer whitespace-nowrap ${
-                selectedCategory !== "all" || isProductsDropdownOpen
+                !isAboutActive && !isArticlesActive && (selectedCategory !== "all" || isProductsDropdownOpen)
                   ? "text-amber-800 font-extrabold"
                   : "text-neutral-700 hover:text-amber-800"
               }`}
@@ -361,7 +367,11 @@ export const Header: React.FC<HeaderProps> = ({
                 onSelectCategory("all");
                 setMobileMenuOpen(false);
               }}
-              className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-neutral-800 hover:bg-neutral-50"
+              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
+                selectedCategory === "all" && !isAboutActive && !isArticlesActive
+                  ? "bg-amber-100 text-amber-900 font-extrabold"
+                  : "text-neutral-800 hover:bg-neutral-50"
+              }`}
             >
               Trang Chủ
             </button>
@@ -373,7 +383,11 @@ export const Header: React.FC<HeaderProps> = ({
                 onOpenAbout();
                 setMobileMenuOpen(false);
               }}
-              className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-neutral-800 hover:bg-neutral-50"
+              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
+                isAboutActive
+                  ? "bg-amber-100 text-amber-900 font-extrabold"
+                  : "text-neutral-800 hover:bg-neutral-50"
+              }`}
             >
               Giới Thiệu Saigon One
             </button>

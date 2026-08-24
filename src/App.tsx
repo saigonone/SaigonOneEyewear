@@ -62,10 +62,12 @@ import {
   LensOption, 
   EyePrescription,
   Article,
-  ArticleCategory
+  ArticleCategory,
+  BannerSlide
 } from "./types";
 import { MOCK_PRODUCTS } from "./data/mockProducts";
 import { INITIAL_ARTICLES, INITIAL_ARTICLE_CATEGORIES } from "./data/mockArticles";
+import { INITIAL_BANNER_SLIDES } from "./data/mockBanners";
 import { 
   getProductsFromFirebase, 
   addProductToFirebase, 
@@ -73,7 +75,8 @@ import {
   updateProductInFirebase,
   subscribeToProductsFromFirebase,
   getArticlesFromFirebase,
-  getArticleCategoriesFromFirebase
+  getArticleCategoriesFromFirebase,
+  getBannersFromFirebase
 } from "./firebase";
 import { 
   parseCurrentRoute, 
@@ -167,6 +170,9 @@ export default function App() {
   const [articleCategories, setArticleCategories] = useState<ArticleCategory[]>(INITIAL_ARTICLE_CATEGORIES);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
+  // Hero Banners state loaded from Firebase
+  const [banners, setBanners] = useState<BannerSlide[]>(INITIAL_BANNER_SLIDES);
+
   // Admin Authentication State
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
     try {
@@ -176,21 +182,23 @@ export default function App() {
     }
   });
 
-  // Sync articles and categories from Firebase
+  // Sync articles, categories and banners from Firebase
   useEffect(() => {
-    const loadArticlesData = async () => {
+    const loadContentData = async () => {
       try {
-        const [arts, cats] = await Promise.all([
+        const [arts, cats, fetchedBanners] = await Promise.all([
           getArticlesFromFirebase(),
-          getArticleCategoriesFromFirebase()
+          getArticleCategoriesFromFirebase(),
+          getBannersFromFirebase()
         ]);
         if (arts && arts.length > 0) setArticles(arts);
         if (cats && cats.length > 0) setArticleCategories(cats);
+        if (fetchedBanners && fetchedBanners.length > 0) setBanners(fetchedBanners);
       } catch (e) {
-        console.error("Error loading articles:", e);
+        console.error("Error loading articles and banners:", e);
       }
     };
-    loadArticlesData();
+    loadContentData();
   }, []);
 
   // Sync route on initial load and on popstate (Back/Forward buttons)
@@ -575,6 +583,7 @@ export default function App() {
           {/* Hero Banner (Only if not in search or favorites mode) */}
           {!searchQuery && !showOnlyFavorites && (
             <HeroBanner
+              slides={banners}
               onOpenTryOn={() => handleOpenTryOn()}
               onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
               onOpenLensGuide={() => setIsLensGuideOpen(true)}
@@ -867,6 +876,8 @@ export default function App() {
           onAddProduct={handleAddProduct}
           onUpdateProduct={handleUpdateProduct}
           onDeleteProduct={handleDeleteProduct}
+          banners={banners}
+          onUpdateBanners={(updated) => setBanners(updated)}
           onLogout={handleAdminLogout}
         />
       )}

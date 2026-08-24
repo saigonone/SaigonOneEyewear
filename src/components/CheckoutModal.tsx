@@ -227,11 +227,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-stone-200/80">
                     <div className="w-44 h-44 bg-white p-2 border rounded-xl shadow-xs shrink-0 flex items-center justify-center">
-                      <img 
-                        src={createdOrder.paymentDetails?.qrUrl} 
-                        alt="VietQR Payment" 
-                        className="w-full h-full object-contain"
-                      />
+                      {createdOrder.paymentDetails?.qrUrl ? (
+                        <img 
+                          src={createdOrder.paymentDetails.qrUrl} 
+                          alt="VietQR Payment" 
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <div className="text-center p-2 text-stone-400 text-xs">
+                          <QrCode className="w-8 h-8 mx-auto mb-1 text-stone-300" />
+                          <span>Mã QR thanh toán</span>
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2 text-xs text-stone-700 flex-1">
                       <p><strong>Ngân hàng:</strong> {bankInfo.bankName}</p>

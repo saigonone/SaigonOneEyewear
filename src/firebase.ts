@@ -23,7 +23,7 @@ import {
   onValue 
 } from "firebase/database";
 import { getAuth } from "firebase/auth";
-import { Product, Order, Article, ArticleCategory, ProductCategoryItem, AdminUser } from "./types";
+import { Product, Order, Article, ArticleCategory, ProductCategoryItem, AdminUser, BannerSlide } from "./types";
 import { MOCK_PRODUCTS } from "./data/mockProducts";
 import { 
   INITIAL_ARTICLES, 
@@ -31,6 +31,7 @@ import {
   INITIAL_PRODUCT_CATEGORIES, 
   INITIAL_ADMINS 
 } from "./data/mockArticles";
+import { INITIAL_BANNER_SLIDES } from "./data/mockBanners";
 
 // Web app's Firebase configuration provided by user
 export const firebaseConfig = {
@@ -472,5 +473,114 @@ export async function updateOrderStatusInFirebase(orderCode: string, newStatus: 
     return true;
   } catch (e) {
     return false;
+  }
+}
+
+// =========================================================================
+// 7. BANNERS & SLIDERS CRUD
+// =========================================================================
+
+export async function getBannersFromFirebase(): Promise<BannerSlide[]> {
+  // First check localStorage for fast local persistence
+  try {
+    const local = localStorage.getItem("saigonone_banners");
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const bannersRef = collection(db, "banners");
+    const snapshot = await getDocs(bannersRef);
+    if (!snapshot.empty) {
+      const list: BannerSlide[] = [];
+      snapshot.forEach((docSnap) => {
+        list.push({ id: docSnap.id, ...docSnap.data() } as BannerSlide);
+      });
+      list.sort((a, b) => (a.order || 0) - (b.order || 0));
+      localStorage.setItem("saigonone_banners", JSON.stringify(list));
+      return list;
+    }
+  } catch (err) {
+    console.warn("[Firebase Firestore] Lỗi đọc banners:", err);
+  }
+
+  try {
+    const rtdbRef = ref(rtdb);
+    const snapshot = await get(child(rtdbRef, "banners"));
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      const list = Object.values(data) as BannerSlide[];
+      if (list && list.length > 0) {
+        list.sort((a, b) => (a.order || 0) - (b.order || 0));
+        localStorage.setItem("saigonone_banners", JSON.stringify(list));
+        return list;
+      }
+    }
+  } catch (err) {
+    console.warn("[Firebase RTDB] Lỗi đọc banners:", err);
+  }
+
+  // Seed default banners
+  localStorage.setItem("saigonone_banners", JSON.stringify(INITIAL_BANNER_SLIDES));
+  return INITIAL_BANNER_SLIDES;
+}
+
+export async function saveBannerToFirebase(slide: BannerSlide): Promise<boolean> {
+  try {
+    await setDoc(doc(db, "banners", slide.id), slide);
+  } catch (e) {}
+
+  try {
+    await set(ref(rtdb, `banners/${slide.id}`), slide);
+  } catch (e) {}
+
+  // Update localStorage
+  try {
+    const current = await getBannersFromFirebase();
+    const existingIdx = current.findIndex(s => s.id === slide.id);
+    let updated: BannerSlide[];
+    if (existingIdx >= 0) {
+      updated = current.map(s => s.id === slide.id ? slide : s);
+    } else {
+      updated = [...current, slide];
+    }
+    localStorage.setItem("saigonone_banners", JSON.stringify(updated));
+  } catch (e) {}
+
+  return true;
+}
+
+export async function deleteBannerFromFirebase(slideId: string): Promise<boolean> {
+  try {
+    await deleteDoc(doc(db, "banners", slideId));
+  } catch (e) {}
+
+  try {
+    await remove(ref(rtdb, `banners/${slideId}`));
+  } catch (e) {}
+
+  try {
+    const current = await getBannersFromFirebase();
+    const filtered = current.filter(s => s.id !== slideId);
+    localStorage.setItem("saigonone_banners", JSON.stringify(filtered));
+  } catch (e) {}
+
+  return true;
+}
+
+export async function saveAllBannersToFirebase(slides: BannerSlide[]): Promise<boolean> {
+  localStorage.setItem("saigonone_banners", JSON.stringify(slides));
+  try {
+    for (const slide of slides) {
+      await setDoc(doc(db, "banners", slide.id), slide);
+      await set(ref(rtdb, `banners/${slide.id}`), slide);
+    }
+    return true;
+  } catch (e) {
+    return true;
   }
 }

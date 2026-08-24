@@ -458,70 +458,23 @@ export const MOCK_PRODUCTS: Product[] = [
 export const STORE_LOCATIONS: StoreLocation[] = [
   {
     id: "store-phandangluu",
-    name: "Flagship Store Sài Gòn One - Phú Nhuận",
-    address: "Số 178 Đường Phan Đăng Lưu, Phường 3, Quận Phú Nhuận, TP. Hồ Chí Minh",
-    district: "Quận Phú Nhuận",
+    name: "Showroom Saigon One Eyewear - 178 Phan Đăng Lưu",
+    address: "178 Phan Đăng Lưu, Phường Đức Nhuận, TP. Hồ Chí Minh",
+    district: "Phường Đức Nhuận",
     city: "TP. Hồ Chí Minh",
     phone: "0973.819.928",
     hotline: "0973.819.928",
     openHours: "08:30 - 21:30 (Mở cửa tất cả các ngày trong tuần)",
     services: [
-      "Đo khám khúc xạ mắt miễn phí bằng máy đo tự động chuẩn y khoa",
-      "Cắt mài kính lấy ngay trong 15 - 20 phút",
-      "Trải nghiệm phòng thử kính 3D & kính đổi màu chuyên sâu",
-      "Vệ sinh kính sóng siêu âm, nắn chỉnh gọng, thay ve đệm mũi miễn phí trọn đời",
-      "Tư vấn trực tiếp Zalo: 0973.819.928"
+      "Đo khám khúc xạ mắt miễn phí bằng máy đo tự động Topcon chuẩn y khoa Nhật Bản",
+      "Cắt mài lắp kính lấy ngay siêu tốc trong 15 - 20 phút",
+      "Khu trưng bày gọng kính Titanium, Acetate, Kính râm Polarized & Tròng kính chính hãng",
+      "Vệ sinh kính bằng sóng siêu âm, nắn chỉnh gọng, thay ve đệm mũi miễn phí trọn đời",
+      "Hỗ trợ tư vấn trực tiếp qua Zalo / Hotline: 0973.819.928",
+      "Chỗ đỗ xe máy và ô tô thuận tiện, an toàn"
     ],
-    image: "https://images.unsplash.com/photo-1516762689617-e1cffcef479d?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1516762689617-e1cffcef479d?auto=format&fit=crop&w=1200&q=80",
     isMainFlagship: true,
-  },
-  {
-    id: "store-q1",
-    name: "Chi Nhánh Sài Gòn One - Quận 1",
-    address: "Số 92 Đường Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh",
-    district: "Quận 1",
-    city: "TP. Hồ Chí Minh",
-    phone: "0973.819.928",
-    hotline: "0973.819.928",
-    openHours: "08:30 - 21:30 (Mở cửa tất cả các ngày)",
-    services: [
-      "Đo khám thị lực chuẩn quốc tế",
-      "Mài lắp kính lấy liền trong 15 - 20 phút",
-      "Khu vực gọng kính Titanium & Acetate cao cấp"
-    ],
-    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "store-q10",
-    name: "Chi Nhánh Sài Gòn One - Quận 10",
-    address: "Số 526 Đường Ba Tháng Hai, Phường 14, Quận 10, TP. Hồ Chí Minh",
-    district: "Quận 10",
-    city: "TP. Hồ Chí Minh",
-    phone: "0973.819.928",
-    hotline: "0973.819.928",
-    openHours: "08:30 - 21:30",
-    services: [
-      "Khu vực kính thời trang Hàn Quốc & Kính mát du lịch",
-      "Tư vấn tròng cận độ cao siêu mỏng 1.67 / 1.74",
-      "Thanh toán quẹt thẻ, trả góp 0% lãi suất"
-    ],
-    image: "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "store-govap",
-    name: "Chi Nhánh Sài Gòn One - Gò Vấp",
-    address: "Số 688 Đường Quang Trung, Phường 11, Quận Gò Vấp, TP. Hồ Chí Minh",
-    district: "Quận Gò Vấp",
-    city: "TP. Hồ Chí Minh",
-    phone: "0973.819.928",
-    hotline: "0973.819.928",
-    openHours: "08:30 - 21:30",
-    services: [
-      "Đo khám mắt & khúc xạ trẻ em chuyên biệt",
-      "Bảo dưỡng kính mắt định kỳ miễn phí",
-      "Chỗ đỗ xe ô tô và xe máy rộng rãi"
-    ],
-    image: "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?auto=format&fit=crop&w=800&q=80",
   }
 ];
 

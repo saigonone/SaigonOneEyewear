@@ -32,8 +32,8 @@ interface ArticlesPageProps {
 }
 
 export const ArticlesPage: React.FC<ArticlesPageProps> = ({
-  articles,
-  categories,
+  articles = [],
+  categories = [],
   onSelectArticle,
   onGoHome,
   onOpenStores,
@@ -43,32 +43,44 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const publishedArticles = useMemo(() => {
-    return articles.filter(a => a.isPublished !== false);
+    return (articles || []).filter(a => a && a.isPublished !== false);
   }, [articles]);
 
   const filteredArticles = useMemo(() => {
     return publishedArticles.filter(a => {
-      const matchCat = selectedCategory === "all" || a.category.toLowerCase() === selectedCategory.toLowerCase();
-      const matchSearch = searchQuery === "" || 
-        a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      const aCat = (a.category || "").toLowerCase();
+      const sCat = (selectedCategory || "").toLowerCase();
+      const matchCat = selectedCategory === "all" || aCat === sCat;
+      const q = searchQuery.toLowerCase().trim();
+      const aTitle = (a.title || "").toLowerCase();
+      const aSummary = (a.summary || "").toLowerCase();
+      const aTags = Array.isArray(a.tags) ? a.tags : [];
+      const matchSearch = q === "" || 
+        aTitle.includes(q) ||
+        aSummary.includes(q) ||
+        aTags.some(t => (t || "").toLowerCase().includes(q));
       return matchCat && matchSearch;
     });
   }, [publishedArticles, selectedCategory, searchQuery]);
 
   const featuredArticle = useMemo(() => {
-    return publishedArticles.find(a => a.isFeatured) || publishedArticles[0];
+    return publishedArticles.find(a => a.isFeatured) || publishedArticles[0] || null;
   }, [publishedArticles]);
 
   const mostViewedArticles = useMemo(() => {
-    return [...publishedArticles].sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0)).slice(0, 4);
+    return [...publishedArticles]
+      .sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0))
+      .slice(0, 4);
   }, [publishedArticles]);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
     publishedArticles.forEach(a => {
-      a.tags.forEach(t => set.add(t));
+      if (Array.isArray(a.tags)) {
+        a.tags.forEach(t => {
+          if (t && typeof t === "string") set.add(t.trim());
+        });
+      }
     });
     return Array.from(set);
   }, [publishedArticles]);
@@ -160,14 +172,14 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                 Tất Cả Bài Viết ({publishedArticles.length})
               </button>
               
-              {categories.map((cat) => {
-                const count = publishedArticles.filter(a => a.category.toLowerCase() === cat.name.toLowerCase()).length;
+              {(categories || []).map((cat) => {
+                const count = publishedArticles.filter(a => (a.category || "").toLowerCase() === (cat.name || "").toLowerCase()).length;
                 return (
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.name)}
                     className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                      selectedCategory.toLowerCase() === cat.name.toLowerCase()
+                      (selectedCategory || "").toLowerCase() === (cat.name || "").toLowerCase()
                         ? "bg-blue-600 text-white shadow-sm"
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
@@ -204,7 +216,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
             >
               <div className="lg:col-span-7 relative h-72 sm:h-96 lg:h-full overflow-hidden bg-slate-900">
                 <img
-                  src={featuredArticle.thumbnail}
+                  src={featuredArticle.thumbnail || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=800&q=80"}
                   alt={featuredArticle.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   referrerPolicy="no-referrer"
@@ -243,7 +255,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
 
                   {/* Tags */}
                   <div className="flex flex-wrap gap-1.5 mb-6">
-                    {featuredArticle.tags.slice(0, 3).map((tag, idx) => (
+                    {(featuredArticle.tags || []).slice(0, 3).map((tag, idx) => (
                       <span key={idx} className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs rounded-md font-medium">
                         #{tag}
                       </span>
@@ -318,7 +330,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                       {/* Thumbnail */}
                       <div className="relative h-48 w-full overflow-hidden bg-slate-900">
                         <img
-                          src={art.thumbnail}
+                          src={art.thumbnail || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=800&q=80"}
                           alt={art.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           referrerPolicy="no-referrer"
@@ -341,7 +353,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                           <span>{art.publishedAt}</span>
                           <span>•</span>
                           <Eye className="w-3 h-3" />
-                          <span>{art.viewsCount.toLocaleString("vi-VN")} lượt xem</span>
+                          <span>{(art.viewsCount || 0).toLocaleString("vi-VN")} lượt xem</span>
                         </div>
 
                         <h4 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 mb-2.5">
@@ -353,7 +365,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                         </p>
 
                         <div className="flex flex-wrap gap-1">
-                          {art.tags.slice(0, 2).map((tag, i) => (
+                          {(art.tags || []).slice(0, 2).map((tag, i) => (
                             <span key={i} className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
                               #{tag}
                             </span>
@@ -391,7 +403,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                 </h4>
                 
                 <p className="text-slate-300 text-xs leading-relaxed mb-4">
-                  Trực tiếp chuyên viên khúc xạ tại <strong>178 Phan Đăng Lưu, Phú Nhuận</strong>. Cắt kính lấy ngay trong 15-20 phút.
+                  Trực tiếp chuyên viên khúc xạ tại <strong>178 Phan Đăng Lưu, Phường Đức Nhuận, TP.HCM</strong>. Cắt kính lấy ngay trong 15-20 phút.
                 </p>
 
                 <div className="space-y-2 mb-5 text-xs text-slate-200">
@@ -447,7 +459,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                       <div className="flex items-center gap-2 text-[10px] text-slate-400">
                         <span>{art.publishedAt}</span>
                         <span>•</span>
-                        <span>{art.viewsCount.toLocaleString("vi-VN")} đọc</span>
+                        <span>{(art.viewsCount || 0).toLocaleString("vi-VN")} đọc</span>
                       </div>
                     </div>
                   </div>
