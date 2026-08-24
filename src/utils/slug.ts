@@ -38,22 +38,23 @@ export function createSlug(text: string): string {
 /**
  * Generate Product URL Slug (format: mã-tên-sản-phẩm or custom slug)
  */
-export function getProductSlug(product: { sku?: string; name: string; slug?: string }): string {
+export function getProductSlug(product?: { sku?: string; name?: string; slug?: string; id?: string }): string {
+  if (!product) return "san-pham";
   if (product.slug && product.slug.trim() !== "") {
     return createSlug(product.slug);
   }
   const skuPart = product.sku ? createSlug(product.sku) : "";
-  const namePart = createSlug(product.name);
+  const namePart = product.name ? createSlug(product.name) : "";
   if (skuPart && namePart) {
     return `${skuPart}-${namePart}`;
   }
-  return namePart || skuPart || "san-pham";
+  return namePart || skuPart || (product.id ? createSlug(product.id) : "san-pham");
 }
 
 /**
  * Full relative path for Product
  */
-export function getProductUrl(product: { sku?: string; name: string; slug?: string; id?: string }): string {
+export function getProductUrl(product?: { sku?: string; name?: string; slug?: string; id?: string }): string {
   return `/san-pham/${getProductSlug(product)}`;
 }
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Eye, MessageSquare, Tag } from "lucide-react";
 import { Product, ProductColor } from "../types";
+import { getProductUrl } from "../utils/routes";
 
 interface ProductCardProps {
   product: Product;
@@ -13,10 +14,11 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onOpenDetail,
-  onQuickTryOn,
+  onQuickTryOn: _onQuickTryOn,
 }) => {
   const [selectedColor] = useState<ProductColor>(product.colors[0]);
   const [isHovered, setIsHovered] = useState(false);
+  const productUrl = getProductUrl(product);
 
   const getCategoryBadgeLabel = (cat: string) => {
     switch (cat) {
@@ -61,12 +63,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     return map[mat] || mat;
   };
 
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) {
+      // Let browser open new tab / window natively
+      return;
+    }
+    e.preventDefault();
+    onOpenDetail(product, selectedColor);
+  };
+
   return (
-    <div 
-      className="group relative bg-white rounded-2xl border border-neutral-200 shadow-xs hover:shadow-xl hover:border-neutral-300 transition-all duration-300 flex flex-col overflow-hidden cursor-pointer"
+    <a 
+      id={`product-card-${product.id}`}
+      href={productUrl}
+      onClick={handleClick}
+      className="group relative bg-white rounded-2xl border border-neutral-200 shadow-xs hover:shadow-xl hover:border-neutral-300 transition-all duration-300 flex flex-col overflow-hidden cursor-pointer no-underline block"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={() => onOpenDetail(product, selectedColor)}
     >
       {/* Image Showcase Box - Full Frame */}
       <div className="relative aspect-[4/3] w-full bg-[#fafafa] overflow-hidden flex items-center justify-center border-b border-neutral-100">
@@ -134,19 +147,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Full-width Action Button: LIÊN HỆ ĐẶT HÀNG */}
-        <button
-          id={`btn-contact-${product.id}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenDetail(product, selectedColor);
-          }}
-          className="w-full flex items-center justify-center gap-2 bg-[#18181b] hover:bg-black active:bg-neutral-900 text-white font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-xs transition-all duration-200 cursor-pointer"
-        >
+        <div className="w-full flex items-center justify-center gap-2 bg-[#18181b] group-hover:bg-black active:bg-neutral-900 text-white font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-xs transition-all duration-200">
           <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
           <span>LIÊN HỆ ĐẶT HÀNG</span>
-        </button>
+        </div>
       </div>
-    </div>
+    </a>
   );
 };
 

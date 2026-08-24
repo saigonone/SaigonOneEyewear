@@ -207,28 +207,37 @@ export function parseCurrentRoute(products: Product[] = [], articles: Article[] 
     };
   }
 
-  // 9. Chi tiết sản phẩm: /san-pham/:slug (vd: /san-pham/sgo-1001-gong-kinh-titan)
+  // 9. Chi tiết sản phẩm: /san-pham/:slug (vd: /san-pham/sgo-titan-8021-gong-kinh-titan-sieu-nhe...)
   if (rawPath.startsWith("/san-pham/")) {
-    const prodKey = rawPath.replace("/san-pham/", "");
+    const rawProdKey = rawPath.replace("/san-pham/", "");
+    const decodedKey = decodeURIComponent(rawProdKey).toLowerCase().trim();
+    const cleanKey = createSlug(decodedKey);
+
     const foundProduct = products.find((p) => {
-      const pSlug = getProductSlug(p);
-      const pNameSlug = createSlug(p.name);
-      const pSku = (p.sku || "").toLowerCase();
-      const pKeyLower = prodKey.toLowerCase();
+      const pSlug = getProductSlug(p).toLowerCase();
+      const pNameSlug = createSlug(p.name).toLowerCase();
+      const pSkuSlug = createSlug(p.sku || "").toLowerCase();
+      const pId = (p.id || "").toLowerCase();
+      const pCustomSlug = (p.slug || "").toLowerCase();
       
       return (
-        p.id.toLowerCase() === pKeyLower ||
-        (p.slug && p.slug.toLowerCase() === pKeyLower) ||
-        pSlug === pKeyLower ||
-        (pSku && pSku === pKeyLower) ||
-        pNameSlug === pKeyLower ||
-        (pSku && pKeyLower.startsWith(`${pSku}-`))
+        pId === decodedKey ||
+        pCustomSlug === decodedKey ||
+        pSlug === decodedKey ||
+        pSkuSlug === decodedKey ||
+        pNameSlug === decodedKey ||
+        pId === cleanKey ||
+        pCustomSlug === cleanKey ||
+        pSlug === cleanKey ||
+        pSkuSlug === cleanKey ||
+        pNameSlug === cleanKey ||
+        (pSkuSlug && cleanKey.startsWith(`${pSkuSlug}-`))
       );
     });
 
     return {
       path: rawPath,
-      productId: foundProduct ? foundProduct.id : prodKey,
+      productId: foundProduct ? foundProduct.id : decodedKey,
       title: foundProduct
         ? `${foundProduct.name} - ${foundProduct.brand} | Saigon One Eyewear`
         : "Chi Tiết Sản Phẩm | Saigon One Eyewear",

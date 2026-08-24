@@ -11,6 +11,7 @@ import {
   Filter
 } from "lucide-react";
 import { Article, ArticleCategory } from "../types";
+import { getArticleUrl } from "../utils/routes";
 
 interface LatestArticlesSectionProps {
   articles: Article[];
@@ -57,7 +58,7 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setSelectedCategory("all")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 selectedCategory === "all"
                   ? "bg-slate-900 text-white shadow-xs"
                   : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-100"
@@ -69,7 +70,7 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.name)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   selectedCategory === cat.name
                     ? "bg-slate-900 text-white shadow-xs"
                     : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-100"
@@ -86,9 +87,15 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
           
           {/* Featured Large Article (5 Cols) */}
           {featuredArticle && selectedCategory === "all" && (
-            <div 
-              onClick={() => onSelectArticle(featuredArticle)}
-              className="lg:col-span-5 group cursor-pointer bg-white rounded-2xl border border-gray-200/90 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col"
+            <a 
+              href={getArticleUrl(featuredArticle)}
+              onClick={(e) => {
+                if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                  e.preventDefault();
+                  onSelectArticle(featuredArticle);
+                }
+              }}
+              className="lg:col-span-5 group bg-white rounded-2xl border border-gray-200/90 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col block"
             >
               <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-slate-900">
                 <img
@@ -135,16 +142,22 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                   </span>
                 </div>
               </div>
-            </div>
+            </a>
           )}
 
           {/* Grid of Other Articles */}
           <div className={`${featuredArticle && selectedCategory === "all" ? "lg:col-span-7" : "lg:col-span-12"} grid grid-cols-1 sm:grid-cols-2 gap-6`}>
             {(selectedCategory === "all" ? regularArticles : filteredArticles).map((art) => (
-              <div
+              <a
                 key={art.id}
-                onClick={() => onSelectArticle(art)}
-                className="group cursor-pointer bg-white rounded-2xl border border-gray-200/90 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col"
+                href={getArticleUrl(art)}
+                onClick={(e) => {
+                  if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                    e.preventDefault();
+                    onSelectArticle(art);
+                  }
+                }}
+                className="group bg-white rounded-2xl border border-gray-200/90 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col block"
               >
                 <div className="relative h-44 w-full overflow-hidden bg-slate-900">
                   <img
@@ -190,7 +203,7 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                     </span>
                   </div>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
 
@@ -199,14 +212,20 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
         {/* Bottom CTA: Link to full standalone Articles Page */}
         {onOpenAllArticles && (
           <div className="mt-12 text-center">
-            <button
-              onClick={onOpenAllArticles}
+            <a
+              href="/cam-nang"
+              onClick={(e) => {
+                if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                  e.preventDefault();
+                  onOpenAllArticles();
+                }
+              }}
               className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-slate-900 hover:bg-blue-600 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
             >
               <BookOpen className="w-4 h-4 text-blue-400 group-hover:text-white" />
               <span>Xem Tất Cả Bài Viết Trong Trang Cẩm Nang</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
+            </a>
           </div>
         )}
 

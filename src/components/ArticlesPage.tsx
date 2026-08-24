@@ -7,7 +7,7 @@ import {
   ArrowRight, 
   ChevronRight, 
   Sparkles, 
-  User,
+  User, 
   Filter,
   Search,
   Tag,
@@ -21,6 +21,7 @@ import {
   HelpCircle
 } from "lucide-react";
 import { Article, ArticleCategory } from "../types";
+import { getArticleUrl } from "../utils/routes";
 
 interface ArticlesPageProps {
   articles: Article[];
@@ -210,9 +211,15 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
               <span>Bài Viết Nổi Bật Tuần Này</span>
             </div>
 
-            <div 
-              onClick={() => onSelectArticle(featuredArticle)}
-              className="group cursor-pointer bg-white rounded-3xl border border-gray-200/90 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 grid grid-cols-1 lg:grid-cols-12"
+            <a 
+              href={getArticleUrl(featuredArticle)}
+              onClick={(e) => {
+                if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                  e.preventDefault();
+                  onSelectArticle(featuredArticle);
+                }
+              }}
+              className="group bg-white rounded-3xl border border-gray-200/90 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 grid grid-cols-1 lg:grid-cols-12 block"
             >
               {/* Featured Image: ~35% width on desktop */}
               <div className="lg:col-span-4 relative h-64 sm:h-80 lg:h-full overflow-hidden bg-slate-900">
@@ -282,7 +289,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
+            </a>
           </div>
         )}
 
@@ -323,10 +330,16 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {filteredArticles.map((art) => (
-                  <article
+                  <a
                     key={art.id}
-                    onClick={() => onSelectArticle(art)}
-                    className="group cursor-pointer bg-white rounded-2xl border border-gray-200/90 overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+                    href={getArticleUrl(art)}
+                    onClick={(e) => {
+                      if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                        e.preventDefault();
+                        onSelectArticle(art);
+                      }
+                    }}
+                    className="group bg-white rounded-2xl border border-gray-200/90 overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between block"
                   >
                     <div>
                       {/* Thumbnail */}
@@ -382,7 +395,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                         Chi tiết <ChevronRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
-                  </article>
+                  </a>
                 ))}
               </div>
             )}
@@ -446,10 +459,16 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
 
               <div className="space-y-3.5">
                 {mostViewedArticles.map((art, idx) => (
-                  <div
+                  <a
                     key={art.id}
-                    onClick={() => onSelectArticle(art)}
-                    className="group cursor-pointer flex items-start gap-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0"
+                    href={getArticleUrl(art)}
+                    onClick={(e) => {
+                      if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                        e.preventDefault();
+                        onSelectArticle(art);
+                      }
+                    }}
+                    className="group flex items-start gap-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0 block"
                   >
                     <span className="text-lg font-black text-slate-300 group-hover:text-blue-600 transition-colors w-4 shrink-0">
                       {idx + 1}
@@ -464,7 +483,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                         <span>{(art.viewsCount || 0).toLocaleString("vi-VN")} đọc</span>
                       </div>
                     </div>
-                  </div>
+                  </a>
                 ))}
               </div>
             </div>

@@ -9,8 +9,8 @@ import {
   ProductCard 
 } from "./components/ProductCard";
 import { 
-  ProductDetailModal 
-} from "./components/ProductDetailModal";
+  ProductDetailPage 
+} from "./components/ProductDetailPage";
 import { 
   VirtualTryOnModal 
 } from "./components/VirtualTryOnModal";
@@ -42,8 +42,8 @@ import {
   ArticlesPage 
 } from "./components/ArticlesPage";
 import { 
-  ArticleDetailModal 
-} from "./components/ArticleDetailModal";
+  ArticleDetailPage 
+} from "./components/ArticleDetailPage";
 import { 
   EyewearAiChat 
 } from "./components/EyewearAiChat";
@@ -83,7 +83,12 @@ import {
   navigateTo, 
   replaceRoute, 
   updateSEOMeta, 
-  CATEGORY_TO_PATH 
+  CATEGORY_TO_PATH,
+  getArticleSlug,
+  getArticleUrl,
+  getProductSlug,
+  getProductUrl,
+  createSlug
 } from "./utils/routes";
 import { 
   Filter, 
@@ -228,25 +233,66 @@ export default function App() {
       }
 
       if (route.productId) {
-        const found = products.find(
-          (p) =>
-            p.id.toLowerCase() === route.productId?.toLowerCase() ||
-            (p.sku && p.sku.toLowerCase() === route.productId?.toLowerCase()) ||
-            p.name.toLowerCase().replace(/\s+/g, "-") === route.productId
-        );
+        const decodedProdId = decodeURIComponent(route.productId).toLowerCase().trim();
+        const cleanKey = createSlug(decodedProdId);
+        const found = products.find((p) => {
+          const pSlug = getProductSlug(p).toLowerCase();
+          const pNameSlug = createSlug(p.name).toLowerCase();
+          const pSkuSlug = createSlug(p.sku || "").toLowerCase();
+          const pId = (p.id || "").toLowerCase();
+          const pCustomSlug = (p.slug || "").toLowerCase();
+          return (
+            pId === decodedProdId ||
+            pCustomSlug === decodedProdId ||
+            pSlug === decodedProdId ||
+            pSkuSlug === decodedProdId ||
+            pNameSlug === decodedProdId ||
+            pId === cleanKey ||
+            pCustomSlug === cleanKey ||
+            pSlug === cleanKey ||
+            pSkuSlug === cleanKey ||
+            pNameSlug === cleanKey ||
+            (pSkuSlug && cleanKey.startsWith(`${pSkuSlug}-`))
+          );
+        });
         if (found) {
           setSelectedDetailProduct({ product: found });
+          setIsArticlesPage(false);
+          setSelectedArticle(null);
+          updateSEOMeta(
+            `${found.name} - ${found.brand} | Saigon One Eyewear`,
+            `${found.name} chính hãng ${found.brand}. Chất liệu ${found.material}. Giá: ${found.price.toLocaleString("vi-VN")}đ.`
+          );
+        } else {
+          setSelectedDetailProduct(null);
         }
       } else {
         setSelectedDetailProduct(null);
       }
 
       if (route.articleId) {
-        const foundArt = articles.find(
-          (a) => a.id === route.articleId || a.id.toLowerCase() === route.articleId?.toLowerCase()
-        );
+        const decodedArticleId = decodeURIComponent(route.articleId).toLowerCase().trim();
+        const foundArt = articles.find((a) => {
+          const artSlug = getArticleSlug(a).toLowerCase();
+          const titleSlug = createSlug(a.title).toLowerCase();
+          const aId = (a.id || "").toLowerCase();
+          const aCustomSlug = (a.slug || "").toLowerCase();
+          return (
+            aId === decodedArticleId ||
+            aCustomSlug === decodedArticleId ||
+            artSlug === decodedArticleId ||
+            titleSlug === decodedArticleId
+          );
+        });
         if (foundArt) {
           setSelectedArticle(foundArt);
+          setIsArticlesPage(false);
+          updateSEOMeta(
+            `${foundArt.title} | Saigon One Eyewear`,
+            foundArt.summary
+          );
+        } else {
+          setSelectedArticle(null);
         }
       } else {
         setSelectedArticle(null);
@@ -316,22 +362,28 @@ export default function App() {
   };
 
   const handleOpenProductDetail = (product: Product, color?: ProductColor) => {
-    const slug = product.sku ? product.sku.toLowerCase() : product.id;
-    navigateTo(`/san-pham/${slug}`);
+    const productUrl = getProductUrl(product);
+    navigateTo(productUrl);
     setSelectedDetailProduct({ product, color });
+    setSelectedArticle(null);
+    setIsArticlesPage(false);
     updateSEOMeta(
       `${product.name} - ${product.brand} | Saigon One Eyewear`,
       `${product.name} chính hãng ${product.brand}. Chất liệu ${product.material}. Giá: ${product.price.toLocaleString("vi-VN")}đ.`
     );
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleOpenArticleDetail = (art: Article) => {
-    navigateTo(`/cam-nang/${art.id}`);
+    const articleUrl = getArticleUrl(art);
+    navigateTo(articleUrl);
     setSelectedArticle(art);
+    setIsArticlesPage(false);
     updateSEOMeta(
       `${art.title} | Saigon One Eyewear`,
       art.summary
     );
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleOpenOrderLookup = () => {
@@ -568,8 +620,41 @@ export default function App() {
         onSelectGender={setSelectedGender}
       />
 
-      {/* Standalone Articles Page vs Catalog Home Page */}
-      {isArticlesPage ? (
+      {/* Standalone Product Detail Page vs Standalone Article Detail Page vs Articles Index Page vs Home Catalog Page */}
+      {selectedDetailProduct ? (
+        <ProductDetailPage
+          product={selectedDetailProduct.product}
+          initialColor={selectedDetailProduct.color}
+          allProducts={products}
+          onGoBack={() => {
+            setSelectedDetailProduct(null);
+            handleSelectCategory(selectedCategory || "all");
+          }}
+          onGoHome={() => handleSelectCategory("all")}
+          onSelectCategory={handleSelectCategory}
+          onSelectProduct={handleOpenProductDetail}
+          onOpenTryOn={handleOpenTryOn}
+          onOpenStores={handleOpenStores}
+        />
+      ) : selectedArticle ? (
+        <ArticleDetailPage
+          article={selectedArticle}
+          allArticles={articles}
+          categories={articleCategories}
+          onGoBack={() => {
+            setSelectedArticle(null);
+            handleOpenArticles();
+          }}
+          onGoHome={() => handleSelectCategory("all")}
+          onSelectArticle={handleOpenArticleDetail}
+          onOpenStores={handleOpenStores}
+          onOpenTryOn={() => handleOpenTryOn()}
+          onOpenCategory={(_catName) => {
+            setSelectedArticle(null);
+            handleOpenArticles();
+          }}
+        />
+      ) : isArticlesPage ? (
         <ArticlesPage
           articles={articles}
           categories={articleCategories}
@@ -799,33 +884,11 @@ export default function App() {
       )}
 
       {/* Modals */}
-      {selectedArticle && (
-        <ArticleDetailModal
-          article={selectedArticle}
-          onClose={handleCloseModals}
-          onSelectCategory={(catName) => {
-            const el = document.getElementById("articles-blog-section");
-            if (el) el.scrollIntoView({ behavior: "smooth" });
-          }}
-        />
-      )}
-
       {isAdminLoginOpen && (
         <AdminLoginModal
           isOpen={isAdminLoginOpen}
           onClose={handleCloseModals}
           onLoginSuccess={handleLoginSuccess}
-        />
-      )}
-
-      {selectedDetailProduct && (
-        <ProductDetailModal
-          product={selectedDetailProduct.product}
-          initialColor={selectedDetailProduct.color}
-          isFavorite={favoriteIds.includes(selectedDetailProduct.product.id)}
-          onToggleFavorite={handleToggleFavorite}
-          onClose={handleCloseModals}
-          onOpenTryOn={handleOpenTryOn}
         />
       )}
 
