@@ -82,6 +82,7 @@ import {
 } from "../firebase";
 import { INITIAL_BANNER_SLIDES } from "../data/mockBanners";
 import { AdminBannerManager } from "./AdminBannerManager";
+import { RichTextEditor } from "./RichTextEditor";
 
 interface AdminPanelProps {
   onClose: () => void;
@@ -89,6 +90,8 @@ interface AdminPanelProps {
   onAddProduct: (p: Product) => void;
   onUpdateProduct: (p: Product) => void;
   onDeleteProduct: (id: string) => void;
+  articles?: Article[];
+  onUpdateArticles?: (articles: Article[]) => void;
   banners?: BannerSlide[];
   onUpdateBanners?: (banners: BannerSlide[]) => void;
   onLogout?: () => void;
@@ -102,6 +105,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
+  articles: initialArticles = [],
+  onUpdateArticles,
   banners: initialBanners = INITIAL_BANNER_SLIDES,
   onUpdateBanners,
   onLogout,
@@ -109,7 +114,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [activeTab, setActiveTab] = useState<AdminTab>("products");
   const [banners, setBanners] = useState<BannerSlide[]>(initialBanners);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [articles, setArticles] = useState<Article[]>([]);
+  const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [articleCategories, setArticleCategories] = useState<ArticleCategory[]>([]);
   const [productCategories, setProductCategories] = useState<ProductCategoryItem[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
@@ -153,6 +158,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [artContent, setArtContent] = useState("");
   const [artThumbnail, setArtThumbnail] = useState("https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80");
   const [artAuthor, setArtAuthor] = useState("Chuyên Gia Sài Gòn One");
+  const [artIsFeatured, setArtIsFeatured] = useState<boolean>(false);
   const [artSearchFilter, setArtSearchFilter] = useState("");
   const [artCategoryFilter, setArtCategoryFilter] = useState("all");
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
@@ -453,6 +459,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setArtContent("");
     setArtThumbnail("https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80");
     setArtAuthor("Chuyên Gia Sài Gòn One");
+    setArtIsFeatured(false);
     setShowAddArticleModal(true);
   };
 
@@ -466,6 +473,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setArtContent(art.content);
     setArtThumbnail(art.thumbnail);
     setArtAuthor(art.author);
+    setArtIsFeatured(!!art.isFeatured);
     setShowAddArticleModal(true);
   };
 
@@ -485,9 +493,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         content: artContent,
         thumbnail: artThumbnail,
         author: artAuthor,
+        isFeatured: artIsFeatured,
       };
       await updateArticleInFirebase(updated);
-      setArticles(prev => prev.map(a => a.id === updated.id ? updated : a));
+      setArticles(prev => {
+        const next = prev.map(a => a.id === updated.id ? updated : a);
+        onUpdateArticles?.(next);
+        return next;
+      });
     } else {
       const id = `art-${Date.now()}`;
       const newArt: Article = {
@@ -503,19 +516,40 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         publishedAt: new Date().toLocaleDateString("vi-VN"),
         viewsCount: 1,
         tags: ["CamNang", "KinhMat", "SaigonOne"],
-        isFeatured: false,
+        isFeatured: artIsFeatured,
         isPublished: true,
       };
       await addArticleToFirebase(newArt);
-      setArticles(prev => [newArt, ...prev]);
+      setArticles(prev => {
+        const next = [newArt, ...prev];
+        onUpdateArticles?.(next);
+        return next;
+      });
     }
     setShowAddArticleModal(false);
+  };
+
+  const handleToggleFeaturedArticle = async (art: Article) => {
+    const updated: Article = {
+      ...art,
+      isFeatured: !art.isFeatured,
+    };
+    await updateArticleInFirebase(updated);
+    setArticles(prev => {
+      const next = prev.map(a => a.id === updated.id ? updated : a);
+      onUpdateArticles?.(next);
+      return next;
+    });
   };
 
   const handleDeleteArticle = async (id: string) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa bài viết này không?")) {
       await deleteArticleFromFirebase(id);
-      setArticles(prev => prev.filter(a => a.id !== id));
+      setArticles(prev => {
+        const next = prev.filter(a => a.id !== id);
+        onUpdateArticles?.(next);
+        return next;
+      });
     }
   };
 
@@ -994,6 +1028,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <th className="p-3.5">Bài Viết</th>
                         <th className="p-3.5">Đường Dẫn URL (Slug SEO)</th>
                         <th className="p-3.5">Chuyên Mục</th>
+                        <th className="p-3.5 text-center">Nổi Bật (Trang Chủ)</th>
                         <th className="p-3.5">Tác Giả</th>
                         <th className="p-3.5">Lượt Xem</th>
                         <th className="p-3.5 text-right">Thao Tác</th>
@@ -1076,6 +1111,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 </span>
                               </td>
 
+                              <td className="p-3.5 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleFeaturedArticle(art)}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+                                    art.isFeatured
+                                      ? "bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200"
+                                      : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 border border-slate-200"
+                                  }`}
+                                  title={art.isFeatured ? "Đang nổi bật trên Trang Chủ (Bấm để gỡ bỏ)" : "Bấm để ghim làm Bài Viết Nổi Bật Trang Chủ"}
+                                >
+                                  <Star className={`w-3.5 h-3.5 ${art.isFeatured ? "fill-amber-500 text-amber-500" : "text-slate-400"}`} />
+                                  <span>{art.isFeatured ? "★ Nổi Bật" : "Bình Thường"}</span>
+                                </button>
+                              </td>
+
                               <td className="p-3.5">
                                 <div className="font-semibold text-slate-800">{art.author}</div>
                                 <div className="text-[10px] text-slate-400">Biên tập viên</div>
@@ -1111,7 +1162,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         })}
                       {articles.length === 0 && (
                         <tr>
-                          <td colSpan={6} className="text-center py-10 text-slate-400">
+                          <td colSpan={7} className="text-center py-10 text-slate-400">
                             Chưa có bài viết nào trong hệ thống. Hãy nhấn "Viết Bài Mới" để tạo bài viết đầu tiên!
                           </td>
                         </tr>
@@ -2034,6 +2085,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
+              {/* Toggle Bài Viết Nổi Bật Trang Chủ */}
+              <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl p-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                      <span>Đặt làm Bài Viết Nổi Bật Trang Chủ</span>
+                      <span className="px-1.5 py-0.5 text-[10px] bg-amber-600 text-white rounded font-extrabold uppercase">Tiêu Điểm</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Bài viết này sẽ được ghim ở vị trí lớn nổi bật nhất trên Trang Chủ và đầu trang Cẩm Nang Thị Lực.
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-3">
+                  <input
+                    type="checkbox"
+                    checked={artIsFeatured}
+                    onChange={(e) => setArtIsFeatured(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+              </div>
+
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Link Ảnh Bìa (URL)</label>
                 <input
@@ -2055,13 +2133,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Nội Dung Chi Tiết</label>
-                <textarea
-                  rows={6}
+                <label className="block font-semibold text-slate-700 mb-1.5 flex items-center justify-between">
+                  <span>Nội Dung Chi Tiết (Bộ Soạn Thảo Đa Năng Chuẩn SEO)</span>
+                  <span className="text-[11px] text-blue-600 font-normal">Hỗ trợ chèn ảnh, màu sắc, font chữ & HTML</span>
+                </label>
+                <RichTextEditor
                   value={artContent}
-                  onChange={(e) => setArtContent(e.target.value)}
-                  placeholder="Nội dung bài viết, hỗ trợ định dạng ### Tiêu đề phụ và - Danh sách..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs"
+                  onChange={setArtContent}
+                  placeholder="Nhập nội dung bài viết cẩm nang thị lực, hướng dẫn chọn kính, chèn ảnh thực tế..."
+                  minHeight="340px"
                 />
               </div>
 

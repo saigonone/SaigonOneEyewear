@@ -876,6 +876,8 @@ export default function App() {
           onAddProduct={handleAddProduct}
           onUpdateProduct={handleUpdateProduct}
           onDeleteProduct={handleDeleteProduct}
+          articles={articles}
+          onUpdateArticles={(updated) => setArticles(updated)}
           banners={banners}
           onUpdateBanners={(updated) => setBanners(updated)}
           onLogout={handleAdminLogout}

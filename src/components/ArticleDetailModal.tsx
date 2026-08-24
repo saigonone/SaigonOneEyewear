@@ -113,31 +113,38 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
           )}
 
           {/* Article Content */}
-          <div className="prose prose-slate max-w-none space-y-4 text-sm sm:text-base leading-relaxed text-slate-700">
-            {(article.content || "").split("\n\n").map((paragraph, index) => {
-              if (paragraph.startsWith("### ")) {
+          {article.content && /<[a-z][\s\S]*>/i.test(article.content) ? (
+            <div 
+              className="prose prose-slate max-w-none text-sm sm:text-base leading-relaxed text-slate-800 space-y-4"
+              dangerouslySetInnerHTML={{ __html: article.content }}
+            />
+          ) : (
+            <div className="prose prose-slate max-w-none space-y-4 text-sm sm:text-base leading-relaxed text-slate-700">
+              {(article.content || "").split("\n\n").map((paragraph, index) => {
+                if (paragraph.startsWith("### ")) {
+                  return (
+                    <h3 key={index} className="text-lg sm:text-xl font-bold text-slate-900 mt-6 mb-2">
+                      {paragraph.replace("### ", "")}
+                    </h3>
+                  );
+                }
+                if (paragraph.startsWith("- ")) {
+                  return (
+                    <ul key={index} className="list-disc pl-5 space-y-1.5 text-slate-700">
+                      {paragraph.split("\n").map((line, liIdx) => (
+                        <li key={liIdx}>{line.replace("- ", "")}</li>
+                      ))}
+                    </ul>
+                  );
+                }
                 return (
-                  <h3 key={index} className="text-lg sm:text-xl font-bold text-slate-900 mt-6 mb-2">
-                    {paragraph.replace("### ", "")}
-                  </h3>
+                  <p key={index} className="text-slate-700">
+                    {paragraph}
+                  </p>
                 );
-              }
-              if (paragraph.startsWith("- ")) {
-                return (
-                  <ul key={index} className="list-disc pl-5 space-y-1.5 text-slate-700">
-                    {paragraph.split("\n").map((line, liIdx) => (
-                      <li key={liIdx}>{line.replace("- ", "")}</li>
-                    ))}
-                  </ul>
-                );
-              }
-              return (
-                <p key={index} className="text-slate-700">
-                  {paragraph}
-                </p>
-              );
-            })}
-          </div>
+              })}
+            </div>
+          )}
 
           {/* Tags & Footer Advice */}
           <div className="pt-6 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4">

@@ -214,7 +214,8 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
               onClick={() => onSelectArticle(featuredArticle)}
               className="group cursor-pointer bg-white rounded-3xl border border-gray-200/90 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 grid grid-cols-1 lg:grid-cols-12"
             >
-              <div className="lg:col-span-7 relative h-72 sm:h-96 lg:h-full overflow-hidden bg-slate-900">
+              {/* Featured Image: ~35% width on desktop */}
+              <div className="lg:col-span-4 relative h-64 sm:h-80 lg:h-full overflow-hidden bg-slate-900">
                 <img
                   src={featuredArticle.thumbnail || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=800&q=80"}
                   alt={featuredArticle.title}
@@ -231,7 +232,8 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                 </div>
               </div>
 
-              <div className="lg:col-span-5 p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
+              {/* Featured Content: ~65% width on desktop */}
+              <div className="lg:col-span-8 p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-3 text-xs text-slate-500 mb-3 font-medium">
                     <span className="flex items-center gap-1">
