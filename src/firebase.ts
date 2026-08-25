@@ -23,7 +23,7 @@ import {
   onValue 
 } from "firebase/database";
 import { getAuth } from "firebase/auth";
-import { Product, Order, Article, ArticleCategory, ProductCategoryItem, AdminUser, BannerSlide, Appointment } from "./types";
+import { Product, Order, Article, ArticleCategory, ProductCategoryItem, AdminUser, BannerSlide, Appointment, LensBrandCategory } from "./types";
 import { MOCK_PRODUCTS } from "./data/mockProducts";
 import { 
   INITIAL_ARTICLES, 
@@ -32,6 +32,7 @@ import {
   INITIAL_ADMINS 
 } from "./data/mockArticles";
 import { INITIAL_BANNER_SLIDES } from "./data/mockBanners";
+import { INITIAL_LENS_BRANDS, INITIAL_LENS_ARTICLES } from "./data/mockLensBrands";
 
 // Web app's Firebase configuration provided by user
 export const firebaseConfig = {
@@ -190,8 +191,9 @@ export async function getArticlesFromFirebase(): Promise<Article[]> {
   } catch (e) {}
 
   // Nạp bài viết mẫu ban đầu lên Firebase
+  const combinedInitialArticles = [...INITIAL_ARTICLES, ...INITIAL_LENS_ARTICLES];
   await seedInitialArticlesToFirebase();
-  return INITIAL_ARTICLES;
+  return combinedInitialArticles;
 }
 
 export async function addArticleToFirebase(article: Article): Promise<boolean> {
@@ -244,7 +246,8 @@ export async function deleteArticleFromFirebase(articleId: string): Promise<bool
 }
 
 export async function seedInitialArticlesToFirebase() {
-  for (const art of INITIAL_ARTICLES) {
+  const combinedInitialArticles = [...INITIAL_ARTICLES, ...INITIAL_LENS_ARTICLES];
+  for (const art of combinedInitialArticles) {
     try {
       await setDoc(doc(db, "articles", art.id), art);
       await set(ref(rtdb, `articles/${art.id}`), art);
@@ -698,6 +701,122 @@ export async function deleteAppointmentFromFirebase(id: string): Promise<boolean
     localStorage.setItem("saigonone_appointments", JSON.stringify(updated));
   } catch (e) {}
 
+  return true;
+}
+
+// =========================================================================
+// 9. LENS BRAND CATEGORIES (DANH MỤC THƯƠNG HIỆU TRÒNG KÍNH) CRUD
+// =========================================================================
+
+export async function getLensBrandsFromFirebase(): Promise<LensBrandCategory[]> {
+  try {
+    const local = localStorage.getItem("saigonone_lens_brands");
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const snap = await getDocs(collection(db, "lens_brands"));
+    if (!snap.empty) {
+      const list: LensBrandCategory[] = [];
+      snap.forEach((d) => list.push({ id: d.id, ...d.data() } as LensBrandCategory));
+      list.sort((a, b) => (a.order || 0) - (b.order || 0));
+      localStorage.setItem("saigonone_lens_brands", JSON.stringify(list));
+      return list;
+    }
+  } catch (e) {}
+
+  try {
+    const snap = await get(child(ref(rtdb), "lens_brands"));
+    if (snap.exists()) {
+      const list = Object.values(snap.val()) as LensBrandCategory[];
+      if (list && list.length > 0) {
+        list.sort((a, b) => (a.order || 0) - (b.order || 0));
+        localStorage.setItem("saigonone_lens_brands", JSON.stringify(list));
+        return list;
+      }
+    }
+  } catch (e) {}
+
+  // Seed initial lens brands
+  for (const lb of INITIAL_LENS_BRANDS) {
+    try {
+      await setDoc(doc(db, "lens_brands", lb.id), lb);
+      await set(ref(rtdb, `lens_brands/${lb.id}`), lb);
+    } catch (e) {}
+  }
+  localStorage.setItem("saigonone_lens_brands", JSON.stringify(INITIAL_LENS_BRANDS));
+  return INITIAL_LENS_BRANDS;
+}
+
+export async function addLensBrandToFirebase(brand: LensBrandCategory): Promise<boolean> {
+  try {
+    await setDoc(doc(db, "lens_brands", brand.id), brand);
+  } catch (e) {}
+
+  try {
+    await set(ref(rtdb, `lens_brands/${brand.id}`), brand);
+  } catch (e) {}
+
+  try {
+    const current = await getLensBrandsFromFirebase();
+    const updated = [...current.filter(b => b.id !== brand.id), brand];
+    updated.sort((a, b) => (a.order || 0) - (b.order || 0));
+    localStorage.setItem("saigonone_lens_brands", JSON.stringify(updated));
+  } catch (e) {}
+
+  return true;
+}
+
+export async function updateLensBrandInFirebase(brand: LensBrandCategory): Promise<boolean> {
+  try {
+    await setDoc(doc(db, "lens_brands", brand.id), brand);
+  } catch (e) {}
+
+  try {
+    await update(ref(rtdb, `lens_brands/${brand.id}`), brand);
+  } catch (e) {}
+
+  try {
+    const current = await getLensBrandsFromFirebase();
+    const updated = current.map(b => b.id === brand.id ? brand : b);
+    updated.sort((a, b) => (a.order || 0) - (b.order || 0));
+    localStorage.setItem("saigonone_lens_brands", JSON.stringify(updated));
+  } catch (e) {}
+
+  return true;
+}
+
+export async function deleteLensBrandFromFirebase(brandId: string): Promise<boolean> {
+  try {
+    await deleteDoc(doc(db, "lens_brands", brandId));
+  } catch (e) {}
+
+  try {
+    await remove(ref(rtdb, `lens_brands/${brandId}`));
+  } catch (e) {}
+
+  try {
+    const current = await getLensBrandsFromFirebase();
+    const updated = current.filter(b => b.id !== brandId);
+    localStorage.setItem("saigonone_lens_brands", JSON.stringify(updated));
+  } catch (e) {}
+
+  return true;
+}
+
+export async function saveAllLensBrandsToFirebase(brands: LensBrandCategory[]): Promise<boolean> {
+  localStorage.setItem("saigonone_lens_brands", JSON.stringify(brands));
+  try {
+    for (const b of brands) {
+      await setDoc(doc(db, "lens_brands", b.id), b);
+      await set(ref(rtdb, `lens_brands/${b.id}`), b);
+    }
+  } catch (e) {}
   return true;
 }
 

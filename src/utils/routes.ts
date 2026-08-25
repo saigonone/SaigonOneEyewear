@@ -1,4 +1,4 @@
-import { ProductCategory, Product, Article } from "../types";
+import { ProductCategory, Product, Article, LensBrandCategory } from "../types";
 import { 
   createSlug, 
   getProductSlug, 
@@ -20,6 +20,9 @@ export interface RouteState {
   category?: ProductCategory;
   productId?: string;
   articleId?: string;
+  lensBrandSlug?: string;
+  isLensBrandPage?: boolean;
+  isLensArticlesPage?: boolean;
   isAbout?: boolean;
   isStores?: boolean;
   isTryOn?: boolean;
@@ -103,7 +106,11 @@ export function updateSEOMeta(title: string, description?: string, canonicalUrl?
 /**
  * Parses current window.location.pathname into structured route state
  */
-export function parseCurrentRoute(products: Product[] = [], articles: Article[] = []): RouteState {
+export function parseCurrentRoute(
+  products: Product[] = [], 
+  articles: Article[] = [],
+  lensBrands: LensBrandCategory[] = []
+): RouteState {
   if (typeof window === "undefined") {
     return {
       path: "/",
@@ -179,12 +186,41 @@ export function parseCurrentRoute(products: Product[] = [], articles: Article[] 
     return {
       path: "/cam-nang",
       isArticlesPage: true,
-      title: "Cẩm Nang Thị Lực & Tin Tức Kính Mắt - Saigon One Eyewear",
+      title: "Cẩm Nang Kính Mắt & Thị Lực - Saigon One Eyewear",
       description: "Chia sẻ kinh nghiệm chọn gọng kính hợp khuôn mặt, chăm sóc mắt và công nghệ tròng kính chống ánh sáng xanh mới nhất."
     };
   }
 
-  // 8. Chi tiết bài viết: /bai-viet/:slug, /cam-nang/:slug hoặc /tin-tuc/:slug
+  // 7.5 Danh mục Tròng Kính (Tất cả bài viết tròng kính & các hãng)
+  if (rawPath === "/trong-kinh" || rawPath === "/bang-gia-trong-kinh" || rawPath === "/danh-muc-trong-kinh") {
+    return {
+      path: "/trong-kinh",
+      isLensArticlesPage: true,
+      title: "Bảng Giá & Các Loại Tròng Kính Chính Hãng - Saigon One Eyewear",
+      description: "Tổng hợp thông tin, bảng giá và cẩm nang các dòng tròng kính Essilor, Chemi, Hoya, Kodak, Zeiss chính hãng tại Sài Gòn One."
+    };
+  }
+
+  // 8. Thương hiệu tròng kính: /trong-kinh/:slug (e.g. /trong-kinh/trong-kinh-hoya-nhat-ban, /trong-kinh/hoya-nhat-ban)
+  if (rawPath.startsWith("/trong-kinh/") && rawPath !== "/trong-kinh") {
+    const brandSlug = rawPath.replace("/trong-kinh/", "").trim();
+    const foundBrand = lensBrands.find(b => 
+      b.slug.toLowerCase() === brandSlug ||
+      b.id.toLowerCase() === brandSlug ||
+      b.brandKey.toLowerCase() === brandSlug ||
+      createSlug(b.name).toLowerCase() === brandSlug
+    );
+
+    return {
+      path: rawPath,
+      isLensBrandPage: true,
+      lensBrandSlug: foundBrand ? foundBrand.slug : brandSlug,
+      title: foundBrand ? `${foundBrand.name} Chính Hãng | Saigon One Eyewear` : "Thương Hiệu Tròng Kính - Saigon One Eyewear",
+      description: foundBrand ? foundBrand.description : "Thông tin chi tiết về các thương hiệu tròng kính hàng đầu thế giới tại Saigon One."
+    };
+  }
+
+  // 9. Chi tiết bài viết: /bai-viet/:slug, /cam-nang/:slug hoặc /tin-tuc/:slug
   if (rawPath.startsWith("/bai-viet/") || rawPath.startsWith("/cam-nang/") || rawPath.startsWith("/tin-tuc/")) {
     const slug = rawPath.replace(/^\/(bai-viet|cam-nang|tin-tuc)\//, "");
     const foundArticle = articles.find((a) => {
@@ -202,12 +238,12 @@ export function parseCurrentRoute(products: Product[] = [], articles: Article[] 
     return {
       path: rawPath,
       articleId: foundArticle ? foundArticle.id : slug,
-      title: foundArticle ? `${foundArticle.title} | Saigon One Eyewear` : "Tin Tức Kính Mắt - Saigon One Eyewear",
+      title: foundArticle ? `${foundArticle.title} | Saigon One Eyewear` : "Cẩm Nang Kính Mắt - Saigon One Eyewear",
       description: foundArticle ? foundArticle.summary : "Bài viết cẩm nang kính mắt và chăm sóc thị lực."
     };
   }
 
-  // 9. Chi tiết sản phẩm: /san-pham/:slug (vd: /san-pham/sgo-titan-8021-gong-kinh-titan-sieu-nhe...)
+  // 10. Chi tiết sản phẩm: /san-pham/:slug (vd: /san-pham/sgo-titan-8021-gong-kinh-titan-sieu-nhe...)
   if (rawPath.startsWith("/san-pham/")) {
     const rawProdKey = rawPath.replace("/san-pham/", "");
     const decodedKey = decodeURIComponent(rawProdKey).toLowerCase().trim();

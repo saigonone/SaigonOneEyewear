@@ -45,6 +45,12 @@ import {
   ArticleDetailPage 
 } from "./components/ArticleDetailPage";
 import { 
+  LensBrandDetail 
+} from "./components/LensBrandDetail";
+import { 
+  LensArticlesPage 
+} from "./components/LensArticlesPage";
+import { 
   EyewearAiChat 
 } from "./components/EyewearAiChat";
 import { 
@@ -63,11 +69,13 @@ import {
   EyePrescription,
   Article,
   ArticleCategory,
-  BannerSlide
+  BannerSlide,
+  LensBrandCategory
 } from "./types";
 import { MOCK_PRODUCTS } from "./data/mockProducts";
 import { INITIAL_ARTICLES, INITIAL_ARTICLE_CATEGORIES } from "./data/mockArticles";
 import { INITIAL_BANNER_SLIDES } from "./data/mockBanners";
+import { INITIAL_LENS_BRANDS } from "./data/mockLensBrands";
 import { 
   getProductsFromFirebase, 
   addProductToFirebase, 
@@ -76,7 +84,8 @@ import {
   subscribeToProductsFromFirebase,
   getArticlesFromFirebase,
   getArticleCategoriesFromFirebase,
-  getBannersFromFirebase
+  getBannersFromFirebase,
+  getLensBrandsFromFirebase
 } from "./firebase";
 import { 
   parseCurrentRoute, 
@@ -168,12 +177,17 @@ export default function App() {
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState<boolean>(false);
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false);
   const [isArticlesPage, setIsArticlesPage] = useState<boolean>(false);
+  const [isLensArticlesPage, setIsLensArticlesPage] = useState<boolean>(false);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
 
   // Articles & News state loaded from Firebase
   const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
   const [articleCategories, setArticleCategories] = useState<ArticleCategory[]>(INITIAL_ARTICLE_CATEGORIES);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+
+  // Lens Brands state loaded from Firebase
+  const [lensBrands, setLensBrands] = useState<LensBrandCategory[]>(INITIAL_LENS_BRANDS);
+  const [selectedLensBrand, setSelectedLensBrand] = useState<LensBrandCategory | null>(null);
 
   // Hero Banners state loaded from Firebase
   const [banners, setBanners] = useState<BannerSlide[]>(INITIAL_BANNER_SLIDES);
@@ -187,20 +201,22 @@ export default function App() {
     }
   });
 
-  // Sync articles, categories and banners from Firebase
+  // Sync articles, categories, banners and lens brands from Firebase
   useEffect(() => {
     const loadContentData = async () => {
       try {
-        const [arts, cats, fetchedBanners] = await Promise.all([
+        const [arts, cats, fetchedBanners, fetchedBrands] = await Promise.all([
           getArticlesFromFirebase(),
           getArticleCategoriesFromFirebase(),
-          getBannersFromFirebase()
+          getBannersFromFirebase(),
+          getLensBrandsFromFirebase()
         ]);
         if (arts && arts.length > 0) setArticles(arts);
         if (cats && cats.length > 0) setArticleCategories(cats);
         if (fetchedBanners && fetchedBanners.length > 0) setBanners(fetchedBanners);
+        if (fetchedBrands && fetchedBrands.length > 0) setLensBrands(fetchedBrands);
       } catch (e) {
-        console.error("Error loading articles and banners:", e);
+        console.error("Error loading articles, banners and lens brands:", e);
       }
     };
     loadContentData();
@@ -209,7 +225,7 @@ export default function App() {
   // Sync route on initial load and on popstate (Back/Forward buttons)
   useEffect(() => {
     const handlePopState = () => {
-      const route = parseCurrentRoute(products, articles);
+      const route = parseCurrentRoute(products, articles, lensBrands);
       updateSEOMeta(route.title, route.description);
 
       if (route.category) {
@@ -220,6 +236,7 @@ export default function App() {
       setIsTryOnModalOpen(!!route.isTryOn);
       setIsOrderLookupOpen(!!route.isOrderLookup);
       setIsArticlesPage(!!route.isArticlesPage);
+      setIsLensArticlesPage(!!route.isLensArticlesPage);
 
       if (route.isAdmin) {
         if (isAdminAuthenticated) {
@@ -258,7 +275,9 @@ export default function App() {
         if (found) {
           setSelectedDetailProduct({ product: found });
           setIsArticlesPage(false);
+          setIsLensArticlesPage(false);
           setSelectedArticle(null);
+          setSelectedLensBrand(null);
           updateSEOMeta(
             `${found.name} - ${found.brand} | Saigon One Eyewear`,
             `${found.name} chính hãng ${found.brand}. Chất liệu ${found.material}. Giá: ${found.price.toLocaleString("vi-VN")}đ.`
@@ -287,6 +306,9 @@ export default function App() {
         if (foundArt) {
           setSelectedArticle(foundArt);
           setIsArticlesPage(false);
+          setIsLensArticlesPage(false);
+          setSelectedDetailProduct(null);
+          setSelectedLensBrand(null);
           updateSEOMeta(
             `${foundArt.title} | Saigon One Eyewear`,
             foundArt.summary
@@ -297,6 +319,37 @@ export default function App() {
       } else {
         setSelectedArticle(null);
       }
+
+      if (route.isLensBrandPage && route.lensBrandSlug) {
+        const decodedBrandSlug = decodeURIComponent(route.lensBrandSlug).toLowerCase().trim();
+        const foundBrand = lensBrands.find((b) => {
+          const bSlug = (b.slug || "").toLowerCase();
+          const bId = (b.id || "").toLowerCase();
+          const bKey = (b.brandKey || "").toLowerCase();
+          const bNameSlug = createSlug(b.name).toLowerCase();
+          return (
+            bSlug === decodedBrandSlug ||
+            bId === decodedBrandSlug ||
+            bKey === decodedBrandSlug ||
+            bNameSlug === decodedBrandSlug
+          );
+        });
+        if (foundBrand) {
+          setSelectedLensBrand(foundBrand);
+          setSelectedDetailProduct(null);
+          setSelectedArticle(null);
+          setIsArticlesPage(false);
+          setIsLensArticlesPage(false);
+          updateSEOMeta(
+            `${foundBrand.name} (${foundBrand.origin}) Chính Hãng | Saigon One Eyewear`,
+            foundBrand.description
+          );
+        } else {
+          setSelectedLensBrand(null);
+        }
+      } else {
+        setSelectedLensBrand(null);
+      }
     };
 
     // Run once on load
@@ -304,15 +357,17 @@ export default function App() {
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [products, articles, isAdminAuthenticated]);
+  }, [products, articles, lensBrands, isAdminAuthenticated]);
 
   // Navigation handlers with HTML5 History API & SEO Title/Meta updates
   const handleSelectCategory = (cat: ProductCategory) => {
     setIsArticlesPage(false);
+    setIsLensArticlesPage(false);
+    setSelectedLensBrand(null);
     setSelectedCategory(cat);
     const targetPath = cat === "all" ? "/san-pham" : CATEGORY_TO_PATH[cat] || "/san-pham";
     navigateTo(targetPath);
-    const route = parseCurrentRoute(products, articles);
+    const route = parseCurrentRoute(products, articles, lensBrands);
     updateSEOMeta(route.title, route.description);
 
     // Close open modals
@@ -322,6 +377,26 @@ export default function App() {
     setIsOrderLookupOpen(false);
     setSelectedDetailProduct(null);
     setSelectedArticle(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSelectLensBrand = (brand: LensBrandCategory) => {
+    navigateTo(`/trong-kinh/${brand.slug}`);
+    setSelectedLensBrand(brand);
+    setIsArticlesPage(false);
+    setIsLensArticlesPage(false);
+    setIsAboutOpen(false);
+    setIsStoresOpen(false);
+    setIsTryOnModalOpen(false);
+    setIsOrderLookupOpen(false);
+    setIsAdminOpen(false);
+    setIsAdminLoginOpen(false);
+    setSelectedDetailProduct(null);
+    setSelectedArticle(null);
+    updateSEOMeta(
+      `${brand.name} (${brand.origin}) Chính Hãng | Saigon One Eyewear`,
+      brand.description
+    );
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -346,6 +421,8 @@ export default function App() {
   const handleOpenArticles = () => {
     navigateTo("/cam-nang");
     setIsArticlesPage(true);
+    setIsLensArticlesPage(false);
+    setSelectedLensBrand(null);
     setIsAboutOpen(false);
     setIsStoresOpen(false);
     setIsTryOnModalOpen(false);
@@ -361,12 +438,34 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleOpenLensArticles = () => {
+    navigateTo("/trong-kinh");
+    setIsLensArticlesPage(true);
+    setIsArticlesPage(false);
+    setSelectedLensBrand(null);
+    setIsAboutOpen(false);
+    setIsStoresOpen(false);
+    setIsTryOnModalOpen(false);
+    setIsOrderLookupOpen(false);
+    setIsAdminOpen(false);
+    setIsAdminLoginOpen(false);
+    setSelectedDetailProduct(null);
+    setSelectedArticle(null);
+    updateSEOMeta(
+      "Bảng Giá & Các Loại Tròng Kính Chính Hãng - Saigon One Eyewear",
+      "Tổng hợp thông tin, bảng giá và cẩm nang các dòng tròng kính Essilor, Chemi, Hoya, Kodak, Zeiss chính hãng tại Sài Gòn One."
+    );
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleOpenProductDetail = (product: Product, color?: ProductColor) => {
     const productUrl = getProductUrl(product);
     navigateTo(productUrl);
     setSelectedDetailProduct({ product, color });
     setSelectedArticle(null);
+    setSelectedLensBrand(null);
     setIsArticlesPage(false);
+    setIsLensArticlesPage(false);
     updateSEOMeta(
       `${product.name} - ${product.brand} | Saigon One Eyewear`,
       `${product.name} chính hãng ${product.brand}. Chất liệu ${product.material}. Giá: ${product.price.toLocaleString("vi-VN")}đ.`
@@ -378,7 +477,9 @@ export default function App() {
     const articleUrl = getArticleUrl(art);
     navigateTo(articleUrl);
     setSelectedArticle(art);
+    setSelectedLensBrand(null);
     setIsArticlesPage(false);
+    setIsLensArticlesPage(false);
     updateSEOMeta(
       `${art.title} | Saigon One Eyewear`,
       art.summary
@@ -598,6 +699,8 @@ export default function App() {
         favoritesCount={favoriteIds.length}
         onOpenFavorites={() => {
           setIsArticlesPage(false);
+          setIsLensArticlesPage(false);
+          setSelectedLensBrand(null);
           setShowOnlyFavorites(!showOnlyFavorites);
         }}
         onOpenTryOn={() => handleOpenTryOn()}
@@ -609,9 +712,16 @@ export default function App() {
         onOpenAbout={handleOpenAbout}
         onOpenArticles={handleOpenArticles}
         isArticlesActive={isArticlesPage}
+        onOpenLensArticles={handleOpenLensArticles}
+        isLensArticlesActive={isLensArticlesPage}
+        lensBrands={lensBrands}
+        onSelectLensBrand={handleSelectLensBrand}
+        selectedLensBrandSlug={selectedLensBrand?.slug}
         searchQuery={searchQuery}
         onSearchChange={(q) => {
           setIsArticlesPage(false);
+          setIsLensArticlesPage(false);
+          setSelectedLensBrand(null);
           setSearchQuery(q);
         }}
         selectedCategory={selectedCategory}
@@ -620,7 +730,7 @@ export default function App() {
         onSelectGender={setSelectedGender}
       />
 
-      {/* Standalone Product Detail Page vs Standalone Article Detail Page vs Articles Index Page vs Home Catalog Page */}
+      {/* Standalone Product Detail Page vs Standalone Article Detail Page vs Standalone Lens Brand Page vs Lens Articles Page vs Articles Index Page vs Home Catalog Page */}
       {selectedDetailProduct ? (
         <ProductDetailPage
           product={selectedDetailProduct.product}
@@ -643,7 +753,11 @@ export default function App() {
           categories={articleCategories}
           onGoBack={() => {
             setSelectedArticle(null);
-            handleOpenArticles();
+            if (selectedArticle.lensBrandId || selectedArticle.category === "Tròng Kính") {
+              handleOpenLensArticles();
+            } else {
+              handleOpenArticles();
+            }
           }}
           onGoHome={() => handleSelectCategory("all")}
           onSelectArticle={handleOpenArticleDetail}
@@ -653,6 +767,29 @@ export default function App() {
             setSelectedArticle(null);
             handleOpenArticles();
           }}
+        />
+      ) : selectedLensBrand ? (
+        <LensBrandDetail
+          brand={selectedLensBrand}
+          articles={articles}
+          allBrands={lensBrands}
+          onSelectArticle={handleOpenArticleDetail}
+          onSelectBrand={handleSelectLensBrand}
+          onGoHome={() => handleSelectCategory("all")}
+          onOpenStores={handleOpenStores}
+          onOpenTryOn={() => handleOpenTryOn()}
+          onOpenLensGuide={() => setIsLensGuideOpen(true)}
+        />
+      ) : isLensArticlesPage ? (
+        <LensArticlesPage
+          articles={articles}
+          lensBrands={lensBrands}
+          onSelectArticle={handleOpenArticleDetail}
+          onSelectBrand={handleSelectLensBrand}
+          onGoHome={() => handleSelectCategory("all")}
+          onOpenStores={handleOpenStores}
+          onOpenTryOn={() => handleOpenTryOn()}
+          onOpenLensGuide={() => setIsLensGuideOpen(true)}
         />
       ) : isArticlesPage ? (
         <ArticlesPage
@@ -943,6 +1080,8 @@ export default function App() {
           onUpdateArticles={(updated) => setArticles(updated)}
           banners={banners}
           onUpdateBanners={(updated) => setBanners(updated)}
+          lensBrands={lensBrands}
+          onUpdateLensBrands={(updated) => setLensBrands(updated)}
           onLogout={handleAdminLogout}
         />
       )}

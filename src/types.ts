@@ -166,6 +166,7 @@ export interface Article {
   title: string;
   slug: string;
   category: string;
+  lensBrandId?: string; // Liên kết với Thương hiệu tròng kính (Hoya, Kodak, Essilor, Chemi, Zeiss,...)
   summary: string;
   content: string;
   thumbnail: string;
@@ -175,7 +176,24 @@ export interface Article {
   viewsCount?: number;
   tags?: string[];
   isFeatured?: boolean;
+  isPinned?: boolean; // Ghim bài viết lên đầu trang chuyên mục tròng kính
   isPublished: boolean;
+}
+
+export interface LensBrandCategory {
+  id: string;
+  name: string; // Tên hiển thị (ví dụ: "Tròng kính Hoya Nhật Bản")
+  brandKey: string; // Khóa thương hiệu: hoya, kodak, essilor, chemi, zeiss
+  country?: string; // Quốc gia xuất xứ: Nhật Bản, Mỹ, Pháp, Hàn Quốc, Đức
+  origin?: string; // Quốc gia xuất xứ alias
+  slug: string; // Đường dẫn URL: trong-kinh-hoya-nhat-ban
+  description: string; // Giới thiệu tóm tắt công nghệ
+  bannerImage?: string; // Ảnh bìa chuyên mục
+  logo?: string;
+  featuredArticleId?: string; // ID bài viết được ghim lên trên cùng
+  order?: number; // Thứ tự hiển thị trên menu
+  displayOrder?: number; // Thứ tự hiển thị
+  isActive: boolean;
 }
 
 export interface ArticleCategory {

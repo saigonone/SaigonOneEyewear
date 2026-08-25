@@ -41,7 +41,8 @@ import {
   Calendar,
   Mail,
   Phone,
-  MessageCircle
+  MessageCircle,
+  Pin
 } from "lucide-react";
 import { 
   Product, 
@@ -56,7 +57,8 @@ import {
   ProductCategoryItem, 
   AdminUser,
   BannerSlide,
-  Appointment
+  Appointment,
+  LensBrandCategory
 } from "../types";
 import { 
   createSlug, 
@@ -85,11 +87,18 @@ import {
   getAppointmentsFromFirebase,
   updateAppointmentStatusInFirebase,
   deleteAppointmentFromFirebase,
+  getLensBrandsFromFirebase,
+  addLensBrandToFirebase,
+  updateLensBrandInFirebase,
+  deleteLensBrandFromFirebase,
   db, 
   rtdb 
 } from "../firebase";
 import { INITIAL_BANNER_SLIDES } from "../data/mockBanners";
+import { INITIAL_LENS_BRANDS } from "../data/mockLensBrands";
 import { AdminBannerManager } from "./AdminBannerManager";
+import { AdminLensBrandsManager } from "./AdminLensBrandsManager";
+import { AdminLensArticlesManager } from "./AdminLensArticlesManager";
 import { RichTextEditor } from "./RichTextEditor";
 
 interface AdminPanelProps {
@@ -100,12 +109,24 @@ interface AdminPanelProps {
   onDeleteProduct: (id: string) => void;
   articles?: Article[];
   onUpdateArticles?: (articles: Article[]) => void;
+  lensBrands?: LensBrandCategory[];
+  onUpdateLensBrands?: (brands: LensBrandCategory[]) => void;
   banners?: BannerSlide[];
   onUpdateBanners?: (banners: BannerSlide[]) => void;
   onLogout?: () => void;
 }
 
-type AdminTab = "products" | "banners" | "product_categories" | "articles" | "article_categories" | "admins" | "orders" | "appointments";
+type AdminTab = 
+  | "products" 
+  | "product_categories" 
+  | "lens_articles" 
+  | "lens_brands" 
+  | "articles" 
+  | "article_categories" 
+  | "banners" 
+  | "admins" 
+  | "orders" 
+  | "appointments";
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
   onClose,
@@ -115,6 +136,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onDeleteProduct,
   articles: initialArticles = [],
   onUpdateArticles,
+  lensBrands: initialLensBrands = INITIAL_LENS_BRANDS,
+  onUpdateLensBrands,
   banners: initialBanners = INITIAL_BANNER_SLIDES,
   onUpdateBanners,
   onLogout,
@@ -127,6 +150,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [articleCategories, setArticleCategories] = useState<ArticleCategory[]>([]);
   const [productCategories, setProductCategories] = useState<ProductCategoryItem[]>([]);
+  const [lensBrands, setLensBrands] = useState<LensBrandCategory[]>(initialLensBrands);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchFilter, setSearchFilter] = useState<string>("");
@@ -164,13 +188,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [artSlug, setArtSlug] = useState("");
   const [isCustomArtSlug, setIsCustomArtSlug] = useState(false);
   const [artCategory, setArtCategory] = useState("Cẩm Nang Chọn Kính");
+  const [artLensBrandId, setArtLensBrandId] = useState<string>("");
   const [artSummary, setArtSummary] = useState("");
   const [artContent, setArtContent] = useState("");
   const [artThumbnail, setArtThumbnail] = useState("https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80");
   const [artAuthor, setArtAuthor] = useState("Chuyên Gia Sài Gòn One");
   const [artIsFeatured, setArtIsFeatured] = useState<boolean>(false);
+  const [artIsPinned, setArtIsPinned] = useState<boolean>(false);
   const [artSearchFilter, setArtSearchFilter] = useState("");
   const [artCategoryFilter, setArtCategoryFilter] = useState("all");
+  const [artLensBrandFilter, setArtLensBrandFilter] = useState("all");
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
 
   // Category Form State
@@ -194,14 +221,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const loadData = async () => {
     setLoading(true);
     try {
-      const [fetchedOrders, fetchedArticles, fetchedArtCats, fetchedProdCats, fetchedAdmins, fetchedBanners, fetchedAppointments] = await Promise.all([
+      const [fetchedOrders, fetchedArticles, fetchedArtCats, fetchedProdCats, fetchedAdmins, fetchedBanners, fetchedAppointments, fetchedLensBrands] = await Promise.all([
         fetchOrdersFromFirebase(),
         getArticlesFromFirebase(),
         getArticleCategoriesFromFirebase(),
         getProductCategoriesFromFirebase(),
         getAdminsFromFirebase(),
         getBannersFromFirebase(),
-        getAppointmentsFromFirebase()
+        getAppointmentsFromFirebase(),
+        getLensBrandsFromFirebase(),
       ]);
       setOrders(fetchedOrders);
       setArticles(fetchedArticles);
@@ -209,6 +237,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       setProductCategories(fetchedProdCats);
       setAdmins(fetchedAdmins);
       setAppointments(fetchedAppointments);
+      if (fetchedLensBrands && fetchedLensBrands.length > 0) {
+        setLensBrands(fetchedLensBrands);
+        onUpdateLensBrands?.(fetchedLensBrands);
+      }
       if (fetchedBanners && fetchedBanners.length > 0) {
         setBanners(fetchedBanners);
       }
@@ -474,11 +506,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setArtSlug("");
     setIsCustomArtSlug(false);
     setArtCategory(articleCategories[0]?.name || "Cẩm Nang Chọn Kính");
+    setArtLensBrandId("");
     setArtSummary("");
     setArtContent("");
     setArtThumbnail("https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80");
     setArtAuthor("Chuyên Gia Sài Gòn One");
     setArtIsFeatured(false);
+    setArtIsPinned(false);
     setShowAddArticleModal(true);
   };
 
@@ -488,11 +522,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setArtSlug(art.slug || getArticleSlug(art));
     setIsCustomArtSlug(!!art.slug);
     setArtCategory(art.category);
+    setArtLensBrandId(art.lensBrandId || "");
     setArtSummary(art.summary);
     setArtContent(art.content);
     setArtThumbnail(art.thumbnail);
     setArtAuthor(art.author);
     setArtIsFeatured(!!art.isFeatured);
+    setArtIsPinned(!!art.isPinned);
     setShowAddArticleModal(true);
   };
 
@@ -508,11 +544,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         title: artTitle,
         slug: effectiveSlug,
         category: artCategory,
+        lensBrandId: artLensBrandId || undefined,
         summary: artSummary,
         content: artContent,
         thumbnail: artThumbnail,
         author: artAuthor,
         isFeatured: artIsFeatured,
+        isPinned: artIsPinned,
       };
       await updateArticleInFirebase(updated);
       setArticles(prev => {
@@ -527,6 +565,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         title: artTitle,
         slug: effectiveSlug,
         category: artCategory,
+        lensBrandId: artLensBrandId || undefined,
         summary: artSummary,
         content: artContent,
         thumbnail: artThumbnail,
@@ -536,6 +575,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         viewsCount: 1,
         tags: ["CamNang", "KinhMat", "SaigonOne"],
         isFeatured: artIsFeatured,
+        isPinned: artIsPinned,
         isPublished: true,
       };
       await addArticleToFirebase(newArt);
@@ -561,6 +601,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
   };
 
+  const handleTogglePinnedArticle = async (art: Article) => {
+    const updated: Article = {
+      ...art,
+      isPinned: !art.isPinned,
+    };
+    await updateArticleInFirebase(updated);
+    setArticles(prev => {
+      const next = prev.map(a => a.id === updated.id ? updated : a);
+      onUpdateArticles?.(next);
+      return next;
+    });
+  };
+
   const handleDeleteArticle = async (id: string) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa bài viết này không?")) {
       await deleteArticleFromFirebase(id);
@@ -570,6 +623,87 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         return next;
       });
     }
+  };
+
+  // ==========================================
+  // HANDLERS: LENS ARTICLES (DEDICATED)
+  // ==========================================
+  const handleAddLensArticle = async (newArt: Article) => {
+    await addArticleToFirebase(newArt);
+    setArticles(prev => {
+      const next = [newArt, ...prev];
+      onUpdateArticles?.(next);
+      return next;
+    });
+  };
+
+  const handleUpdateLensArticle = async (updated: Article) => {
+    await updateArticleInFirebase(updated);
+    setArticles(prev => {
+      const next = prev.map(a => a.id === updated.id ? updated : a);
+      onUpdateArticles?.(next);
+      return next;
+    });
+  };
+
+  const handleDeleteLensArticle = async (id: string) => {
+    await deleteArticleFromFirebase(id);
+    setArticles(prev => {
+      const next = prev.filter(a => a.id !== id);
+      onUpdateArticles?.(next);
+      return next;
+    });
+  };
+
+  const handleTogglePinLensArticle = async (art: Article) => {
+    const updated: Article = {
+      ...art,
+      isPinned: !art.isPinned,
+    };
+    await updateArticleInFirebase(updated);
+    setArticles(prev => {
+      const next = prev.map(a => a.id === updated.id ? updated : a);
+      onUpdateArticles?.(next);
+      return next;
+    });
+  };
+
+  // ==========================================
+  // HANDLERS: LENS BRANDS
+  // ==========================================
+  const handleAddLensBrand = async (brand: LensBrandCategory) => {
+    await addLensBrandToFirebase(brand);
+    setLensBrands(prev => {
+      const next = [...prev, brand];
+      onUpdateLensBrands?.(next);
+      return next;
+    });
+  };
+
+  const handleUpdateLensBrand = async (brand: LensBrandCategory) => {
+    await updateLensBrandInFirebase(brand);
+    setLensBrands(prev => {
+      const next = prev.map(b => b.id === brand.id ? brand : b);
+      onUpdateLensBrands?.(next);
+      return next;
+    });
+  };
+
+  const handleDeleteLensBrand = async (id: string) => {
+    await deleteLensBrandFromFirebase(id);
+    setLensBrands(prev => {
+      const next = prev.filter(b => b.id !== id);
+      onUpdateLensBrands?.(next);
+      return next;
+    });
+  };
+
+  const handleResetLensBrands = async () => {
+    for (const b of INITIAL_LENS_BRANDS) {
+      await addLensBrandToFirebase(b);
+    }
+    setLensBrands(INITIAL_LENS_BRANDS);
+    onUpdateLensBrands?.(INITIAL_LENS_BRANDS);
   };
 
   // ==========================================
@@ -740,81 +874,73 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 px-6 py-2.5 bg-slate-850 border-b border-slate-800 overflow-x-auto shrink-0 bg-slate-900/95 text-slate-300">
+        <div className="flex items-center gap-1.5 px-6 py-2.5 bg-slate-900 border-b border-slate-800 overflow-x-auto shrink-0 text-slate-300">
+          {/* Nhóm 1: Sản Phẩm */}
           <button
             onClick={() => setActiveTab("products")}
-            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 ${
-              activeTab === "products" ? "bg-blue-600 text-white" : "hover:bg-slate-800 text-slate-300"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+              activeTab === "products" || activeTab === "product_categories"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "hover:bg-slate-800 text-slate-300 hover:text-white"
             }`}
           >
             <Package className="w-4 h-4" />
             <span>Sản Phẩm ({products.length})</span>
           </button>
 
+          {/* Nhóm 2: Tròng Kính (Tách riêng biệt theo yêu cầu) */}
+          <button
+            onClick={() => setActiveTab("lens_articles")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+              activeTab === "lens_articles" || activeTab === "lens_brands"
+                ? "bg-blue-600 text-white shadow-xs ring-1 ring-blue-400/40"
+                : "hover:bg-slate-800 text-slate-300 hover:text-white"
+            }`}
+          >
+            <Layers className="w-4 h-4 text-cyan-400" />
+            <span>Tròng Kính ({articles.filter(a => !!a.lensBrandId || (a.category && a.category.toLowerCase().includes("tròng"))).length})</span>
+          </button>
+
+          {/* Nhóm 3: Cẩm Nang & Tin Tức (Giữ nguyên) */}
+          <button
+            onClick={() => setActiveTab("articles")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+              activeTab === "articles" || activeTab === "article_categories"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "hover:bg-slate-800 text-slate-300 hover:text-white"
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Cẩm Nang & Tin Tức ({articles.filter(a => !a.lensBrandId && !(a.category && a.category.toLowerCase().includes("tròng"))).length})</span>
+          </button>
+
+          {/* Nhóm 4: Banners */}
           <button
             onClick={() => setActiveTab("banners")}
-            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 ${
-              activeTab === "banners" ? "bg-blue-600 text-white" : "hover:bg-slate-800 text-slate-300"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+              activeTab === "banners" ? "bg-blue-600 text-white shadow-xs" : "hover:bg-slate-800 text-slate-300 hover:text-white"
             }`}
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span>Banner Trang Chủ ({banners.length})</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab("product_categories")}
-            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 ${
-              activeTab === "product_categories" ? "bg-blue-600 text-white" : "hover:bg-slate-800 text-slate-300"
-            }`}
-          >
-            <FolderTree className="w-4 h-4" />
-            <span>Danh Mục Kính ({productCategories.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("articles")}
-            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 ${
-              activeTab === "articles" ? "bg-blue-600 text-white" : "hover:bg-slate-800 text-slate-300"
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Bài Viết ({articles.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("article_categories")}
-            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 ${
-              activeTab === "article_categories" ? "bg-blue-600 text-white" : "hover:bg-slate-800 text-slate-300"
-            }`}
-          >
-            <Tag className="w-4 h-4" />
-            <span>Chuyên Mục Tin ({articleCategories.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("admins")}
-            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 ${
-              activeTab === "admins" ? "bg-blue-600 text-white" : "hover:bg-slate-800 text-slate-300"
-            }`}
-          >
-            <Shield className="w-4 h-4" />
-            <span>Quản Trị Viên ({admins.length})</span>
-          </button>
-
+          {/* Nhóm 5: Đơn Hàng */}
           <button
             onClick={() => setActiveTab("orders")}
-            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 ${
-              activeTab === "orders" ? "bg-blue-600 text-white" : "hover:bg-slate-800 text-slate-300"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+              activeTab === "orders" ? "bg-blue-600 text-white shadow-xs" : "hover:bg-slate-800 text-slate-300 hover:text-white"
             }`}
           >
             <ShoppingBag className="w-4 h-4" />
             <span>Đơn Hàng ({orders.length})</span>
           </button>
 
+          {/* Nhóm 6: Lịch Hẹn */}
           <button
             onClick={() => setActiveTab("appointments")}
-            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 relative ${
-              activeTab === "appointments" ? "bg-amber-600 text-white" : "hover:bg-slate-800 text-slate-300"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 relative cursor-pointer ${
+              activeTab === "appointments" ? "bg-amber-600 text-white shadow-xs" : "hover:bg-slate-800 text-slate-300 hover:text-white"
             }`}
           >
             <Calendar className="w-4 h-4 text-amber-300" />
@@ -825,7 +951,97 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </span>
             )}
           </button>
+
+          {/* Nhóm 7: Quản Trị Viên */}
+          <button
+            onClick={() => setActiveTab("admins")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+              activeTab === "admins" ? "bg-blue-600 text-white shadow-xs" : "hover:bg-slate-800 text-slate-300 hover:text-white"
+            }`}
+          >
+            <Shield className="w-4 h-4" />
+            <span>Quản Trị Viên ({admins.length})</span>
+          </button>
         </div>
+
+        {/* Dynamic Sub-Navigation Bar for Multi-Item Sections */}
+        {(activeTab === "products" || activeTab === "product_categories") && (
+          <div className="flex items-center gap-2 px-6 py-2 bg-slate-950 border-b border-slate-800 text-xs shrink-0">
+            <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider mr-1 flex items-center gap-1.5">
+              <Package className="w-3.5 h-3.5 text-blue-400" /> Quản Lý Sản Phẩm:
+            </span>
+            <button
+              onClick={() => setActiveTab("products")}
+              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === "products" ? "bg-blue-600 text-white shadow-xs" : "text-slate-300 hover:text-white hover:bg-slate-800"
+              }`}
+            >
+              <Package className="w-3.5 h-3.5" />
+              <span>Danh Sách Sản Phẩm ({products.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("product_categories")}
+              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === "product_categories" ? "bg-blue-600 text-white shadow-xs" : "text-slate-300 hover:text-white hover:bg-slate-800"
+              }`}
+            >
+              <FolderTree className="w-3.5 h-3.5" />
+              <span>Danh Mục Kính ({productCategories.length})</span>
+            </button>
+          </div>
+        )}
+
+        {(activeTab === "lens_articles" || activeTab === "lens_brands") && (
+          <div className="flex items-center gap-2 px-6 py-2 bg-slate-950 border-b border-slate-800 text-xs shrink-0">
+            <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider mr-1 flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-cyan-400" /> Quản Lý Tròng Kính:
+            </span>
+            <button
+              onClick={() => setActiveTab("lens_articles")}
+              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === "lens_articles" ? "bg-blue-600 text-white shadow-xs" : "text-slate-300 hover:text-white hover:bg-slate-800"
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Bài Viết Tròng Kính ({articles.filter(a => !!a.lensBrandId || (a.category && a.category.toLowerCase().includes("tròng"))).length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("lens_brands")}
+              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === "lens_brands" ? "bg-blue-600 text-white shadow-xs" : "text-slate-300 hover:text-white hover:bg-slate-800"
+              }`}
+            >
+              <Tag className="w-3.5 h-3.5" />
+              <span>Thương Hiệu Tròng Kính ({lensBrands.length})</span>
+            </button>
+          </div>
+        )}
+
+        {(activeTab === "articles" || activeTab === "article_categories") && (
+          <div className="flex items-center gap-2 px-6 py-2 bg-slate-950 border-b border-slate-800 text-xs shrink-0">
+            <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider mr-1 flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-blue-400" /> Cẩm Nang & Tin Tức:
+            </span>
+            <button
+              onClick={() => setActiveTab("articles")}
+              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === "articles" ? "bg-blue-600 text-white shadow-xs" : "text-slate-300 hover:text-white hover:bg-slate-800"
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Danh Sách Bài Viết ({articles.filter(a => !a.lensBrandId && !(a.category && a.category.toLowerCase().includes("tròng"))).length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("article_categories")}
+              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === "article_categories" ? "bg-blue-600 text-white shadow-xs" : "text-slate-300 hover:text-white hover:bg-slate-800"
+              }`}
+            >
+              <Tag className="w-3.5 h-3.5" />
+              <span>Chuyên Mục Tin Tức ({articleCategories.length})</span>
+            </button>
+          </div>
+        )}
 
         {/* Tab Content Body */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
@@ -1065,13 +1281,40 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           )}
 
           {/* ======================================================== */}
-          {/* TAB 3: QUẢN TRỊ BÀI VIẾT (ARTICLES) */}
+          {/* TAB: BÀI VIẾT TRÒNG KÍNH (DEDICATED LENS ARTICLES) */}
+          {/* ======================================================== */}
+          {activeTab === "lens_articles" && (
+            <AdminLensArticlesManager
+              articles={articles}
+              lensBrands={lensBrands}
+              onAddArticle={handleAddLensArticle}
+              onUpdateArticle={handleUpdateLensArticle}
+              onDeleteArticle={handleDeleteLensArticle}
+              onTogglePinArticle={handleTogglePinLensArticle}
+            />
+          )}
+
+          {/* ======================================================== */}
+          {/* TAB: THƯƠNG HIỆU TRÒNG KÍNH (LENS BRANDS) */}
+          {/* ======================================================== */}
+          {activeTab === "lens_brands" && (
+            <AdminLensBrandsManager
+              brands={lensBrands}
+              onAddBrand={handleAddLensBrand}
+              onUpdateBrand={handleUpdateLensBrand}
+              onDeleteBrand={handleDeleteLensBrand}
+              onResetToDefaults={handleResetLensBrands}
+            />
+          )}
+
+          {/* ======================================================== */}
+          {/* TAB 3: QUẢN TRỊ BÀI VIẾT CẨM NANG & TIN TỨC (ARTICLES) */}
           {/* ======================================================== */}
           {activeTab === "articles" && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-200">
-                <div className="flex flex-1 items-center gap-3">
-                  <div className="relative flex-1 max-w-md">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-200">
+                <div className="flex flex-1 flex-wrap items-center gap-3">
+                  <div className="relative flex-1 min-w-[200px] max-w-md">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
@@ -1087,7 +1330,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     onChange={(e) => setArtCategoryFilter(e.target.value)}
                     className="px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs text-slate-700 font-medium focus:ring-2 focus:ring-blue-600 cursor-pointer"
                   >
-                    <option value="all">Tất Cả Chuyên Mục ({articles.length})</option>
+                    <option value="all">Tất Cả Chuyên Mục</option>
                     {articleCategories.map((c) => (
                       <option key={c.id} value={c.name}>
                         {c.name}
@@ -1101,7 +1344,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-2 shrink-0 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Viết Bài Mới Lên Firebase</span>
+                  <span>Viết Bài Cẩm Nang Mới</span>
                 </button>
               </div>
 
@@ -1121,6 +1364,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {articles
+                        .filter((art) => !art.lensBrandId && !(art.category && art.category.toLowerCase().includes("tròng")))
                         .filter((art) => {
                           const matchSearch =
                             art.title.toLowerCase().includes(artSearchFilter.toLowerCase()) ||
@@ -1134,6 +1378,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         .map((art) => {
                           const slugVal = art.slug || getArticleSlug(art);
                           const fullUrl = `https://matkinhsaigonone.com/bai-viet/${slugVal}`;
+
                           return (
                             <tr key={art.id} className="hover:bg-slate-50/80 transition-colors">
                               <td className="p-3.5 max-w-sm">
@@ -1146,7 +1391,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   />
                                   <div className="min-w-0">
                                     <div className="font-bold text-slate-900 line-clamp-1 hover:text-blue-600 transition-colors">
-                                      {art.title}
+                                      <span className="truncate">{art.title}</span>
                                     </div>
                                     <div className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
                                       {art.summary}
@@ -1247,7 +1492,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         })}
                       {articles.length === 0 && (
                         <tr>
-                          <td colSpan={7} className="text-center py-10 text-slate-400">
+                          <td colSpan={9} className="text-center py-10 text-slate-400">
                             Chưa có bài viết nào trong hệ thống. Hãy nhấn "Viết Bài Mới" để tạo bài viết đầu tiên!
                           </td>
                         </tr>
