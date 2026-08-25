@@ -36,11 +36,11 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenOrderLookup,
 }) => {
   return (
-    <footer className="bg-white text-slate-600 pt-16 pb-8 border-t border-gray-100">
+    <footer className="bg-white text-slate-600 pt-5 pb-5 border-t border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Main Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-gray-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10 pb-10 border-b border-gray-100">
           
           {/* Col 1: Brand & Bio (2 cols) */}
           <div className="lg:col-span-2 space-y-4">
@@ -195,36 +195,39 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         {/* Sleek Technical Status Bar & Socials (As in Sleek Interface Design) */}
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
+        <div className="pt-5 pb-2 flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
           
-          {/* Live Cloud DB Indicators */}
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span className="text-[10px] font-mono text-gray-500">DB: saigononeeyewear-default-rtdb</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-[10px] font-mono text-gray-500">PROJECT: saigononeeyewear</span>
-            </div>
-          </div>
-
           {/* Copyright */}
-          <div className="text-[10px] text-gray-400 uppercase tracking-widest">
-            &copy; 2026 Saigon One Eyewear - Premium Optical Solutions
+          <div className="text-xs text-gray-500 tracking-normal">
+            &copy; 2026 Mắt Kính Sài Gòn One. Tất cả các quyền được bảo lưu.
           </div>
 
           {/* Sleek Social Media Circular Badges */}
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-[10px] font-bold text-slate-700 hover:border-slate-900 transition-colors cursor-pointer">
+            <a
+              href="https://facebook.com"
+              target="_blank"
+              rel="noreferrer"
+              className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-[10px] font-bold text-slate-700 hover:border-amber-800 hover:text-amber-800 transition-colors"
+            >
               FB
-            </div>
-            <div className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-[10px] font-bold text-slate-700 hover:border-slate-900 transition-colors cursor-pointer">
+            </a>
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noreferrer"
+              className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-[10px] font-bold text-slate-700 hover:border-amber-800 hover:text-amber-800 transition-colors"
+            >
               IG
-            </div>
-            <div className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-[10px] font-bold text-slate-700 hover:border-slate-900 transition-colors cursor-pointer">
+            </a>
+            <a
+              href="https://youtube.com"
+              target="_blank"
+              rel="noreferrer"
+              className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-[10px] font-bold text-slate-700 hover:border-amber-800 hover:text-amber-800 transition-colors"
+            >
               YT
-            </div>
+            </a>
           </div>
 
         </div>

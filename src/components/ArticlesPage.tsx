@@ -242,10 +242,9 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
               {/* Featured Content: ~65% width on desktop */}
               <div className="lg:col-span-8 p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center gap-3 text-xs text-slate-500 mb-3 font-medium">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                      {featuredArticle.publishedAt}
+                  <div className="flex items-center gap-2.5 text-xs text-slate-500 mb-3 font-medium">
+                    <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 font-bold rounded text-[11px]">
+                      {featuredArticle.category}
                     </span>
                     <span>•</span>
                     <span className="flex items-center gap-1">
@@ -254,7 +253,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                     </span>
                   </div>
 
-                  <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-tight mb-4">
+                  <h2 className="text-2xl sm:text-3xl font-bold font-sans text-slate-900 group-hover:text-blue-600 transition-colors leading-tight mb-4 tracking-tight">
                     {featuredArticle.title}
                   </h2>
 
@@ -363,19 +362,20 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
 
                       {/* Content */}
                       <div className="p-5">
-                        <div className="flex items-center gap-2 text-[11px] text-slate-400 mb-2">
-                          <Calendar className="w-3 h-3" />
-                          <span>{art.publishedAt}</span>
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 mb-2">
+                          <span className="text-blue-700 font-semibold">{art.category}</span>
                           <span>•</span>
-                          <Eye className="w-3 h-3" />
-                          <span>{(art.viewsCount || 0).toLocaleString("vi-VN")} lượt xem</span>
+                          <span className="flex items-center gap-1 text-slate-400">
+                            <Clock className="w-3 h-3" />
+                            {art.readTime}
+                          </span>
                         </div>
 
-                        <h4 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 mb-2.5">
+                        <h4 className="text-base sm:text-[17px] font-bold font-sans text-slate-900 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 mb-2 tracking-tight">
                           {art.title}
                         </h4>
 
-                        <p className="text-slate-600 text-xs leading-relaxed line-clamp-3 mb-4">
+                        <p className="text-slate-600 text-xs sm:text-sm leading-relaxed line-clamp-3 mb-4">
                           {art.summary}
                         </p>
 
@@ -474,11 +474,11 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                       {idx + 1}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <h5 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 mb-1">
+                      <h5 className="text-xs sm:text-[13px] font-bold font-sans text-slate-800 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 mb-1">
                         {art.title}
                       </h5>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                        <span>{art.publishedAt}</span>
+                        <span>{art.category}</span>
                         <span>•</span>
                         <span>{(art.viewsCount || 0).toLocaleString("vi-VN")} đọc</span>
                       </div>

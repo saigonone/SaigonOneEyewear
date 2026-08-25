@@ -73,22 +73,18 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
           
           {/* Article Header */}
           <div className="space-y-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold font-sans text-slate-950 leading-tight tracking-tight">
               {article.title}
             </h1>
 
             <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-slate-500 pb-4 border-b border-gray-100">
-              <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+              <div className="flex items-center gap-1.5 text-slate-800 font-medium">
                 <User className="w-4 h-4 text-blue-600" />
                 {article.author}
               </div>
               <div className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-slate-400" />
-                {article.publishedAt}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Eye className="w-4 h-4 text-slate-400" />
-                {(article.viewsCount || 0).toLocaleString("vi-VN")} lượt xem
+                <Clock className="w-4 h-4 text-slate-400" />
+                <span>{article.readTime}</span>
               </div>
             </div>
           </div>

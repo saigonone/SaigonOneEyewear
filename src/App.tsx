@@ -677,7 +677,7 @@ export default function App() {
           )}
 
       {/* Main Catalog Content */}
-      <main id="products-catalog-section" className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+      <main id="products-catalog-section" className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 w-full">
         
         {/* Section Title & Filter Controls Bar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gray-100">

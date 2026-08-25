@@ -166,7 +166,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Center Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8 text-sm font-semibold text-neutral-800">
+        <nav className="hidden lg:flex items-center space-x-7 xl:space-x-9 text-[15px] xl:text-base font-bold text-neutral-800">
           
           {/* 1. Trang Chủ */}
           <button
@@ -188,7 +188,7 @@ export const Header: React.FC<HeaderProps> = ({
             className={`transition-colors py-1 cursor-pointer whitespace-nowrap ${
               isAboutActive
                 ? "text-amber-800 font-extrabold"
-                : "text-neutral-700 hover:text-amber-800 font-semibold"
+                : "text-neutral-700 hover:text-amber-800"
             }`}
           >
             Giới Thiệu
@@ -367,7 +367,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onSelectCategory("all");
                 setMobileMenuOpen(false);
               }}
-              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
+              className={`w-full text-left px-3.5 py-3 rounded-xl text-sm font-bold tracking-tight transition-colors ${
                 selectedCategory === "all" && !isAboutActive && !isArticlesActive
                   ? "bg-amber-100 text-amber-900 font-extrabold"
                   : "text-neutral-800 hover:bg-neutral-50"
@@ -383,7 +383,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onOpenAbout();
                 setMobileMenuOpen(false);
               }}
-              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
+              className={`w-full text-left px-3.5 py-3 rounded-xl text-sm font-bold tracking-tight transition-colors ${
                 isAboutActive
                   ? "bg-amber-100 text-amber-900 font-extrabold"
                   : "text-neutral-800 hover:bg-neutral-50"
@@ -397,7 +397,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="mobile-nav-products-toggle"
                 onClick={() => setMobileProductsOpen(!mobileProductsOpen)}
-                className="w-full flex items-center justify-between px-3 py-2.5 bg-neutral-50 text-xs font-bold uppercase tracking-wider text-neutral-800"
+                className="w-full flex items-center justify-between px-3.5 py-3 bg-neutral-50 text-sm font-bold tracking-tight text-neutral-800"
               >
                 <span>Tất Cả Sản Phẩm</span>
                 <ChevronDown className={`w-4 h-4 transition-transform ${mobileProductsOpen ? "rotate-180" : ""}`} />
@@ -434,7 +434,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }
                 setMobileMenuOpen(false);
               }}
-              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider ${
+              className={`w-full text-left px-3.5 py-3 rounded-xl text-sm font-bold tracking-tight ${
                 isArticlesActive ? "bg-amber-50 text-amber-900 font-black" : "text-neutral-800 hover:bg-neutral-50"
               }`}
             >
@@ -448,9 +448,9 @@ export const Header: React.FC<HeaderProps> = ({
                 onOpenStores();
                 setMobileMenuOpen(false);
               }}
-              className="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-neutral-800 hover:bg-neutral-50 flex items-center gap-1.5"
+              className="w-full text-left px-3.5 py-3 rounded-xl text-sm font-bold tracking-tight text-neutral-800 hover:bg-neutral-50 flex items-center gap-1.5"
             >
-              <MapPin className="w-3.5 h-3.5 text-amber-600" />
+              <MapPin className="w-4 h-4 text-amber-600" />
               <span>Liên Hệ</span>
             </button>
           </div>

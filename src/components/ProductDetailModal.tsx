@@ -173,8 +173,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           {/* Right Column: Title, Specs, Features, Guarantees & Zalo Action */}
           <div className="flex flex-col justify-between">
             <div>
-              {/* Product Title */}
-              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 leading-tight mb-2.5 font-serif">
+              {/* Product Title - Modern Sans-Serif font matching menu */}
+              <h2 className="text-xl sm:text-2xl lg:text-[26px] font-bold font-sans text-neutral-950 leading-tight mb-2.5 tracking-tight">
                 {product.name}
               </h2>
 

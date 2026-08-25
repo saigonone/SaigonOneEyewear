@@ -171,36 +171,26 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
               </button>
             </div>
 
-            {/* Article Headline */}
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight mb-6">
+            {/* Article Headline - Modern Sans-Serif font */}
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-sans text-slate-950 leading-tight mb-6 tracking-tight">
               {article.title}
             </h1>
 
-            {/* Author Meta Strip */}
+            {/* Author Meta Strip (No publish date) */}
             <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs sm:text-sm text-slate-500 pb-6 mb-8 border-b border-gray-100">
               <div className="flex items-center gap-2 text-slate-800 font-semibold">
                 <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
                   SO
                 </div>
                 <div>
-                  <div className="leading-tight">{article.author || "Chuyên Gia Saigon One"}</div>
-                  <div className="text-[11px] text-slate-400 font-normal">Chuyên viên khúc xạ y khoa</div>
+                  <div className="leading-tight font-bold">{article.author || "Chuyên Gia Saigon One"}</div>
+                  <div className="text-[11px] text-slate-400 font-normal">Cố vấn thị lực y khoa</div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-slate-400" />
-                <span>{article.publishedAt}</span>
-              </div>
-
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 font-medium">
                 <Clock className="w-4 h-4 text-slate-400" />
                 <span>{article.readTime}</span>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <Eye className="w-4 h-4 text-slate-400" />
-                <span>{(article.viewsCount || 0).toLocaleString("vi-VN")} lượt xem</span>
               </div>
             </div>
 
@@ -459,11 +449,11 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h5 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 mb-1">
+                        <h5 className="text-xs sm:text-[13px] font-bold font-sans text-slate-800 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 mb-1">
                           {art.title}
                         </h5>
                         <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                          <span>{art.publishedAt}</span>
+                          <span>{art.category}</span>
                           <span>•</span>
                           <span>{art.readTime}</span>
                         </div>
@@ -499,11 +489,11 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <h5 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 mb-1">
+                        <h5 className="text-xs sm:text-[13px] font-bold font-sans text-slate-800 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 mb-1">
                           {art.title}
                         </h5>
                         <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                          <span>{art.publishedAt}</span>
+                          <span>{art.category}</span>
                           <span>•</span>
                           <span>{(art.viewsCount || 0).toLocaleString("vi-VN")} đọc</span>
                         </div>

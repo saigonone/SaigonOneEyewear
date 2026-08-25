@@ -72,20 +72,20 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
   };
 
   return (
-    <section id="articles-blog-section" className="py-16 sm:py-20 bg-[#fbfaf8] border-t border-stone-200/90">
+    <section id="articles-blog-section" className="py-4 sm:py-5 bg-[#fbfaf8] border-t border-stone-200/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-8 sm:mb-10 pb-6 border-b border-stone-200 gap-5">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100/70 border border-amber-300/60 text-amber-900 text-xs font-bold rounded-full mb-3 shadow-2xs">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-amber-100/80 border border-amber-300/70 text-amber-900 text-xs font-bold rounded-full mb-3 shadow-2xs">
               <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-              <span>Cẩm Nang & Xu Hướng Thị Lực 2026</span>
+              <span>Cẩm Nang & Xu Hướng Thị Lực</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-serif text-stone-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-sans text-stone-950 tracking-tight">
               Góc Tư Vấn & Cẩm Nang Mắt Kính
             </h2>
-            <p className="text-stone-600 text-xs sm:text-sm mt-1.5 max-w-2xl">
+            <p className="text-stone-600 text-sm sm:text-base mt-2 max-w-2xl leading-relaxed">
               Kiến thức y khoa khúc xạ, mẹo chọn dáng kính chuẩn tỉ lệ khuôn mặt và xu hướng thời trang mắt kính chính hãng.
             </p>
           </div>
@@ -94,7 +94,7 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <button
               onClick={() => setSelectedCategory("all")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 selectedCategory === "all"
                   ? "bg-stone-900 text-white shadow-sm ring-1 ring-stone-900"
                   : "bg-white text-stone-600 border border-stone-200/90 hover:bg-stone-100 hover:text-stone-900"
@@ -106,7 +106,7 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.name)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   selectedCategory === cat.name
                     ? "bg-stone-900 text-white shadow-sm ring-1 ring-stone-900"
                     : "bg-white text-stone-600 border border-stone-200/90 hover:bg-stone-100 hover:text-stone-900"
@@ -159,26 +159,25 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                 {/* Bottom Content Excerpt Box */}
                 <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between bg-white">
                   <div>
-                    {/* Meta Row */}
-                    <div className="flex items-center gap-3 text-xs text-stone-500 font-medium mb-3">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-amber-700" />
-                        {featuredArticle.publishedAt}
+                    {/* Meta Row: Reading time (No published date or views) */}
+                    <div className="flex items-center gap-2.5 text-xs text-stone-500 font-medium mb-3">
+                      <span className="px-2.5 py-0.5 bg-amber-50 text-amber-900 border border-amber-200/80 font-bold rounded text-[11px]">
+                        {featuredArticle.category}
                       </span>
                       <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3.5 h-3.5 text-amber-700" />
-                        {(featuredArticle.viewsCount || 1250).toLocaleString("vi-VN")} lượt xem
+                      <span className="flex items-center gap-1 text-stone-500">
+                        <Clock className="w-3.5 h-3.5 text-stone-400" />
+                        {featuredArticle.readTime}
                       </span>
                     </div>
 
-                    {/* Main Headline */}
-                    <h3 className="text-xl sm:text-2xl lg:text-[26px] font-bold font-serif text-stone-950 group-hover:text-amber-800 transition-colors leading-snug sm:leading-tight mb-3 line-clamp-2">
+                    {/* Main Headline - Znews Style: Bold, Crisp Sans-Serif, Larger Size */}
+                    <h3 className="text-xl sm:text-2xl lg:text-[28px] font-bold font-sans text-stone-950 group-hover:text-amber-800 transition-colors leading-snug sm:leading-tight mb-3 line-clamp-2 tracking-tight">
                       {featuredArticle.title}
                     </h3>
 
-                    {/* Short Summary Excerpt */}
-                    <p className="text-stone-600 text-xs sm:text-sm leading-relaxed line-clamp-3 mb-5">
+                    {/* Short Summary Excerpt - Larger, Clearer */}
+                    <p className="text-stone-600 text-sm sm:text-[15px] leading-relaxed line-clamp-3 sm:line-clamp-4 mb-5">
                       {featuredArticle.summary}
                     </p>
                   </div>
@@ -212,10 +211,10 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                 key={art.id || idx}
                 href={getArticleUrl(art)}
                 onClick={(e) => handleArticleClick(e, art)}
-                className="group relative bg-white rounded-2xl border border-stone-200/90 hover:border-stone-300 p-3.5 sm:p-4 shadow-2xs hover:shadow-lg transition-all duration-300 flex items-start gap-4 flex-1 cursor-pointer no-underline block"
+                className="group relative bg-white rounded-2xl border border-stone-200/90 hover:border-stone-300 p-4 sm:p-4.5 shadow-2xs hover:shadow-lg transition-all duration-300 flex items-start gap-4 flex-1 cursor-pointer no-underline block"
               >
                 {/* Thumbnail on Left */}
-                <div className="relative w-28 sm:w-32 md:w-36 aspect-[4/3] rounded-xl overflow-hidden bg-stone-900 shrink-0 mt-0.5">
+                <div className="relative w-28 sm:w-36 md:w-40 aspect-[4/3] rounded-xl overflow-hidden bg-stone-900 shrink-0 mt-0.5">
                   <img
                     src={art.thumbnail || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=400&q=80"}
                     alt={art.title}
@@ -232,33 +231,33 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                 {/* Right Details in Item (Title + Excerpt + Meta) */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
                   <div>
-                    {/* Category & Date */}
-                    <div className="flex items-center gap-1.5 text-[10px] text-stone-500 font-semibold mb-1">
-                      <span className="text-amber-800 font-bold truncate max-w-[120px]">{art.category}</span>
+                    {/* Category */}
+                    <div className="flex items-center gap-1.5 text-[11px] text-stone-500 font-semibold mb-1.5">
+                      <span className="text-amber-800 font-bold truncate max-w-[140px]">{art.category}</span>
                       <span>•</span>
-                      <span className="text-stone-400">{art.publishedAt}</span>
+                      <span className="text-stone-400">Cẩm nang</span>
                     </div>
 
-                    {/* Article Title */}
-                    <h4 className="text-xs sm:text-sm font-bold font-serif text-stone-900 group-hover:text-amber-800 transition-colors leading-snug line-clamp-2 mb-1.5">
+                    {/* Article Title - Znews Style: Bold Sans-Serif, Larger size */}
+                    <h4 className="text-sm sm:text-base font-bold font-sans text-stone-900 group-hover:text-amber-800 transition-colors leading-snug line-clamp-2 mb-2 tracking-tight">
                       {art.title}
                     </h4>
 
-                    {/* Short Summary Description */}
-                    <p className="text-stone-500 text-[11px] sm:text-xs leading-relaxed line-clamp-2 mb-2">
+                    {/* Short Summary Description - Larger, High Legibility */}
+                    <p className="text-stone-600 text-xs sm:text-[13px] leading-relaxed line-clamp-2 mb-2.5">
                       {art.summary}
                     </p>
                   </div>
 
                   {/* Footer Info: Read Time & Arrow */}
                   <div className="flex items-center justify-between text-[11px] text-stone-500 pt-1.5 border-t border-stone-100 mt-auto">
-                    <span className="flex items-center gap-1 text-[10px] text-stone-400">
+                    <span className="flex items-center gap-1 text-[11px] text-stone-500">
                       <Clock className="w-3 h-3 text-stone-400" />
                       {art.readTime}
                     </span>
-                    <span className="text-amber-800 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-0.5 text-[11px]">
+                    <span className="text-amber-800 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-0.5 text-xs">
                       <span>Chi tiết</span>
-                      <ChevronRight className="w-3 h-3" />
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
                 </div>
@@ -276,12 +275,12 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                 <span className="text-[11px] font-extrabold text-amber-800 uppercase tracking-widest block mb-0.5">
                   CHUYÊN MỤC CHỌN LỌC
                 </span>
-                <h3 className="text-xl sm:text-2xl font-bold font-serif text-stone-900">
+                <h3 className="text-xl sm:text-2xl font-bold font-sans text-stone-950">
                   Bài Viết Khác Cùng Chủ Đề
                 </h3>
               </div>
               <span className="text-xs text-stone-500 font-medium hidden sm:inline">
-                Cập nhật liên tục những kiến thức thị lực mới nhất
+                Cập nhật liên tục những kiến thức thị lực hữu ích
               </span>
             </div>
 
@@ -315,19 +314,19 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
 
                     {/* Content */}
                     <div className="p-4 sm:p-5">
-                      <div className="flex items-center gap-2 text-[11px] text-stone-400 mb-2">
-                        <Calendar className="w-3 h-3 text-amber-700" />
-                        <span>{art.publishedAt}</span>
+                      <div className="flex items-center gap-2 text-[11px] text-stone-500 mb-2">
+                        <span className="text-amber-800 font-semibold">{art.category}</span>
                         <span>•</span>
-                        <Eye className="w-3 h-3 text-amber-700" />
-                        <span>{(art.viewsCount || 0).toLocaleString("vi-VN")} lượt xem</span>
+                        <span className="text-stone-400">Cẩm nang thị lực</span>
                       </div>
 
-                      <h4 className="text-sm sm:text-base font-bold font-serif text-stone-900 group-hover:text-amber-800 transition-colors leading-snug line-clamp-2 mb-2">
+                      {/* Znews Style: Bold Sans-Serif Title, Larger size */}
+                      <h4 className="text-base sm:text-[17px] font-bold font-sans text-stone-900 group-hover:text-amber-800 transition-colors leading-snug line-clamp-2 mb-2 tracking-tight">
                         {art.title}
                       </h4>
 
-                      <p className="text-stone-500 text-xs leading-relaxed line-clamp-2 mb-3">
+                      {/* Larger Summary text */}
+                      <p className="text-stone-600 text-xs sm:text-sm leading-relaxed line-clamp-2 mb-3">
                         {art.summary}
                       </p>
                     </div>

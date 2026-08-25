@@ -135,13 +135,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </span>
           </div>
 
-          {/* Product Name */}
-          <h3 className="font-bold text-neutral-900 text-sm sm:text-base leading-snug line-clamp-2 hover:text-amber-700 transition-colors mb-1.5 font-serif">
+          {/* Product Name - Crisp Sans-Serif font matching menu */}
+          <h3 className="font-bold font-sans text-neutral-950 text-base sm:text-[17px] leading-snug line-clamp-2 group-hover:text-amber-800 transition-colors mb-1.5 tracking-tight">
             {product.name}
           </h3>
 
           {/* Material & Shape Subtitle */}
-          <p className="text-xs text-neutral-500 line-clamp-1 mb-4">
+          <p className="text-xs sm:text-[13px] text-neutral-500 line-clamp-1 mb-4 leading-normal">
             {getMaterialLabel(product.material)} • {getShapeLabel(product.frameShape)}
           </p>
         </div>

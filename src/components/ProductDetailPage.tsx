@@ -319,8 +319,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   </span>
                 </div>
 
-                {/* Product Title */}
-                <h1 className="text-2xl sm:text-3xl lg:text-3xl font-bold text-stone-950 font-serif leading-tight mb-3">
+                {/* Product Title - Modern Sans Font matching menu */}
+                <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-bold text-stone-950 font-sans leading-tight mb-3 tracking-tight">
                   {product.name}
                 </h1>
 
@@ -341,7 +341,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 {/* Price Display */}
                 <div className="bg-stone-50/90 rounded-2xl p-4 sm:p-5 border border-stone-200/90 mb-5">
                   <div className="flex items-baseline gap-3">
-                    <span className="text-3xl font-extrabold text-amber-800 font-serif">
+                    <span className="text-3xl font-extrabold text-amber-800 font-sans tracking-tight">
                       {product.price.toLocaleString("vi-VN")}đ
                     </span>
                     {product.originalPrice > product.price && (
@@ -497,14 +497,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         </div>
 
         {/* Section 2: GỢI Ý CÁC DÒNG TRÒNG KÍNH PHÙ HỢP */}
-        <div className="bg-white rounded-3xl border border-stone-200 p-6 sm:p-8 lg:p-10 mb-12 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-stone-200">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-stone-200 gap-4">
             <div>
-              <div className="flex items-center gap-2 text-xs font-extrabold text-amber-800 uppercase tracking-widest mb-1">
-                <Layers className="w-4 h-4 text-amber-600" />
-                <span>BẢNG GIÁ & TÍNH NĂNG TRÒNG KÍNH CHÍNH HÃNG</span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-stone-900 font-serif">
+              <span className="text-xs font-extrabold text-amber-800 uppercase tracking-widest">
+                ĐỒNG HÀNH BẢO VỆ MẮT
+              </span>
+              <h2 className="text-xl sm:text-2xl font-bold text-stone-900 font-sans tracking-tight">
                 Lựa Chọn Tròng Kính Cắt Theo Độ Cận Của Bạn
               </h2>
             </div>
@@ -582,7 +581,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <span className="text-xs font-extrabold text-amber-800 uppercase tracking-widest">
                   GỢI Ý DÀNH CHO BẠN
                 </span>
-                <h2 className="text-xl sm:text-2xl font-bold text-stone-900 font-serif">
+                <h2 className="text-xl sm:text-2xl font-bold text-stone-900 font-sans tracking-tight">
                   Sản Phẩm Cùng Bộ Sưu Tập
                 </h2>
               </div>
