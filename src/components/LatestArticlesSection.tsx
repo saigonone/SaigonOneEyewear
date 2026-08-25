@@ -30,7 +30,23 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  const publishedArticles = articles.filter(a => a.isPublished !== false);
+  const isLensArticle = (art: Article): boolean => {
+    if (!art) return false;
+    if (art.lensBrandId) return true;
+    const cat = (art.category || "").toLowerCase();
+    if (cat.includes("tròng kính") || cat.startsWith("tròng") || cat === "trong-kinh") return true;
+    const tags = Array.isArray(art.tags) ? art.tags : [];
+    if (tags.some(t => t && ["hoya", "kodak", "essilor", "chemi", "zeiss"].includes(t.toLowerCase()))) return true;
+    return false;
+  };
+
+  const generalCategories = categories.filter(c => {
+    const name = (c.name || "").toLowerCase();
+    const slug = (c.slug || "").toLowerCase();
+    return !name.includes("tròng") && !slug.includes("trong-kinh");
+  });
+
+  const publishedArticles = articles.filter(a => a && a.isPublished !== false && !isLensArticle(a));
 
   const filteredArticles = selectedCategory === "all" 
     ? publishedArticles 
@@ -102,7 +118,7 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
             >
               Tất Cả
             </button>
-            {categories.map((cat) => (
+            {generalCategories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.name)}

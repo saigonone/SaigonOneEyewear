@@ -43,8 +43,26 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  const isLensArticle = (art: Article): boolean => {
+    if (!art) return false;
+    if (art.lensBrandId) return true;
+    const cat = (art.category || "").toLowerCase();
+    if (cat.includes("tròng kính") || cat.startsWith("tròng") || cat === "trong-kinh") return true;
+    const tags = Array.isArray(art.tags) ? art.tags : [];
+    if (tags.some(t => t && ["hoya", "kodak", "essilor", "chemi", "zeiss"].includes(t.toLowerCase()))) return true;
+    return false;
+  };
+
+  const generalCategories = useMemo(() => {
+    return (categories || []).filter(c => {
+      const name = (c.name || "").toLowerCase();
+      const slug = (c.slug || "").toLowerCase();
+      return !name.includes("tròng") && !slug.includes("trong-kinh");
+    });
+  }, [categories]);
+
   const publishedArticles = useMemo(() => {
-    return (articles || []).filter(a => a && a.isPublished !== false);
+    return (articles || []).filter(a => a && a.isPublished !== false && !isLensArticle(a));
   }, [articles]);
 
   const filteredArticles = useMemo(() => {
@@ -173,7 +191,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
                 Tất Cả Bài Viết ({publishedArticles.length})
               </button>
               
-              {(categories || []).map((cat) => {
+              {generalCategories.map((cat) => {
                 const count = publishedArticles.filter(a => (a.category || "").toLowerCase() === (cat.name || "").toLowerCase()).length;
                 return (
                   <button

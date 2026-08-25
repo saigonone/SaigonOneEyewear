@@ -69,9 +69,31 @@ export const LensBrandDetail: React.FC<LensBrandDetailProps> = ({
   const [searchFilter, setSearchFilter] = useState("");
 
   // Filter articles for this brand
-  const brandArticles = articles.filter(
-    (art) => art.lensBrandId === brand.id || art.lensBrandId === brand.brandKey || (art.tags && art.tags.some(t => t.toLowerCase().includes(brand.name.toLowerCase()) || t.toLowerCase().includes(brand.brandKey?.toLowerCase() || "")))
-  );
+  const brandArticles = articles.filter((art) => {
+    if (!art) return false;
+    const bKey = (brand.brandKey || "").toLowerCase();
+    const bId = (brand.id || "").toLowerCase();
+    const bSlug = (brand.slug || "").toLowerCase();
+    const bName = (brand.name || "").toLowerCase();
+    
+    const artBrand = (art.lensBrandId || "").toLowerCase();
+    const artTags = Array.isArray(art.tags) ? art.tags.map(t => (t || "").toLowerCase()) : [];
+    const artTitle = (art.title || "").toLowerCase();
+    const artCat = (art.category || "").toLowerCase();
+
+    return (
+      artBrand === bId ||
+      artBrand === bKey ||
+      artBrand === bSlug ||
+      artCat.includes(bName) ||
+      (bKey && artCat.includes(bKey)) ||
+      artTags.includes(bId) ||
+      (bKey && artTags.includes(bKey)) ||
+      artTags.some(t => t.includes(bName) || (bKey && t.includes(bKey))) ||
+      artTitle.includes(bName) ||
+      (bKey && artTitle.includes(bKey))
+    );
+  });
 
   // Search filtered
   const displayedArticles = brandArticles.filter((art) => {
@@ -279,7 +301,7 @@ export const LensBrandDetail: React.FC<LensBrandDetailProps> = ({
                   {/* Article Thumbnail */}
                   <div className="relative aspect-16/9 overflow-hidden bg-neutral-100">
                     <img
-                      src={article.image}
+                      src={article.thumbnail || (article as any).image || (article as any).imageUrl || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80"}
                       alt={article.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       referrerPolicy="no-referrer"
@@ -301,7 +323,7 @@ export const LensBrandDetail: React.FC<LensBrandDetailProps> = ({
                       <div className="flex items-center gap-3 text-xs text-neutral-500 font-medium">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5" />
-                          {article.publishedDate}
+                          {article.publishedAt || (article as any).publishedDate || "2026"}
                         </span>
                         <span>•</span>
                         <span>{article.readTime}</span>
@@ -367,7 +389,7 @@ export const LensBrandDetail: React.FC<LensBrandDetailProps> = ({
                   {/* Thumbnail */}
                   <div className="relative aspect-16/10 overflow-hidden bg-neutral-100">
                     <img
-                      src={article.image}
+                      src={article.thumbnail || (article as any).image || (article as any).imageUrl || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80"}
                       alt={article.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       referrerPolicy="no-referrer"
@@ -382,7 +404,7 @@ export const LensBrandDetail: React.FC<LensBrandDetailProps> = ({
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-[11px] text-neutral-400">
                         <Calendar className="w-3 h-3" />
-                        <span>{article.publishedDate}</span>
+                        <span>{article.publishedAt || (article as any).publishedDate || "2026"}</span>
                         <span>•</span>
                         <span>{article.readTime}</span>
                       </div>

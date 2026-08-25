@@ -370,7 +370,7 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
                     {/* Thumbnail */}
                     <div className="relative aspect-16/9 overflow-hidden bg-slate-100">
                       <img
-                        src={art.imageUrl || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&q=80&w=800"}
+                        src={art.thumbnail || (art as any).image || (art as any).imageUrl || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&q=80&w=800"}
                         alt={art.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         referrerPolicy="no-referrer"
@@ -406,7 +406,7 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
                       <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-slate-400">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5" />
-                          <span>{art.publishedDate || "Mới nhất 2026"}</span>
+                          <span>{art.publishedAt || (art as any).publishedDate || "Mới nhất 2026"}</span>
                         </span>
                         <span className="text-blue-600 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1 text-xs">
                           <span>Xem Chi Tiết</span>
@@ -463,7 +463,7 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
                     {/* Thumbnail */}
                     <div className="relative aspect-16/9 overflow-hidden bg-slate-100">
                       <img
-                        src={art.imageUrl || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&q=80&w=800"}
+                        src={art.thumbnail || (art as any).image || (art as any).imageUrl || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&q=80&w=800"}
                         alt={art.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         referrerPolicy="no-referrer"
@@ -500,7 +500,7 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
                       <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-slate-400">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5" />
-                          <span>{art.publishedDate || "2026"}</span>
+                          <span>{art.publishedAt || (art as any).publishedDate || "2026"}</span>
                         </span>
                         <span className="text-blue-600 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1 text-xs">
                           <span>Xem bài viết</span>
