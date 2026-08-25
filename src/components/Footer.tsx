@@ -75,7 +75,7 @@ export const Footer: React.FC<FooterProps> = ({
               </p>
               <p className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>Giờ mở cửa: <strong>08:30 - 21:30 (Cả tuần)</strong></span>
+                <span>Giờ mở cửa: <strong>08:30 - 21:00 (Cả tuần)</strong></span>
               </p>
             </div>
           </div>
@@ -181,7 +181,7 @@ export const Footer: React.FC<FooterProps> = ({
                   Saigon One Eyewear:
                 </strong>
                 <p className="text-slate-700 font-medium">178 Phan Đăng Lưu, Phường Đức Nhuận, TP. Hồ Chí Minh</p>
-                <p className="text-slate-500 mt-1">Giờ mở cửa: 08:30 - 21:30 (Cả tuần)</p>
+                <p className="text-slate-500 mt-1">Giờ mở cửa: 08:30 - 21:00 (Cả tuần)</p>
               </div>
               <button 
                 onClick={onOpenStores}

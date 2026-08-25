@@ -464,7 +464,7 @@ export const STORE_LOCATIONS: StoreLocation[] = [
     city: "TP. Hồ Chí Minh",
     phone: "0973.819.928",
     hotline: "0973.819.928",
-    openHours: "08:30 - 21:30 (Mở cửa tất cả các ngày trong tuần)",
+    openHours: "08:30 - 21:00 (Mở cửa tất cả các ngày trong tuần)",
     services: [
       "Đo khám khúc xạ mắt miễn phí bằng máy đo tự động Topcon chuẩn y khoa Nhật Bản",
       "Cắt mài lắp kính lấy ngay siêu tốc trong 15 - 20 phút",

@@ -23,7 +23,7 @@ import {
   onValue 
 } from "firebase/database";
 import { getAuth } from "firebase/auth";
-import { Product, Order, Article, ArticleCategory, ProductCategoryItem, AdminUser, BannerSlide } from "./types";
+import { Product, Order, Article, ArticleCategory, ProductCategoryItem, AdminUser, BannerSlide, Appointment } from "./types";
 import { MOCK_PRODUCTS } from "./data/mockProducts";
 import { 
   INITIAL_ARTICLES, 
@@ -584,3 +584,120 @@ export async function saveAllBannersToFirebase(slides: BannerSlide[]): Promise<b
     return true;
   }
 }
+
+// =========================================================================
+// 8. APPOINTMENTS (LỊCH HẸN ĐO MẮT) - FIRESTORE + RTDB + LOCALSTORAGE
+// =========================================================================
+
+export async function getAppointmentsFromFirebase(): Promise<Appointment[]> {
+  try {
+    const apptsRef = collection(db, "appointments");
+    const snapshot = await getDocs(apptsRef);
+    if (!snapshot.empty) {
+      const list: Appointment[] = [];
+      snapshot.forEach((docSnap) => {
+        list.push({ id: docSnap.id, ...docSnap.data() } as Appointment);
+      });
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      localStorage.setItem("saigonone_appointments", JSON.stringify(list));
+      return list;
+    }
+  } catch (err) {
+    console.warn("[Firebase Firestore] Lỗi đọc appointments:", err);
+  }
+
+  try {
+    const rtdbRef = ref(rtdb);
+    const snapshot = await get(child(rtdbRef, "appointments"));
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      const list = Object.values(data) as Appointment[];
+      if (list && list.length > 0) {
+        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        localStorage.setItem("saigonone_appointments", JSON.stringify(list));
+        return list;
+      }
+    }
+  } catch (err) {
+    console.warn("[Firebase RTDB] Lỗi đọc appointments:", err);
+  }
+
+  try {
+    const cached = localStorage.getItem("saigonone_appointments");
+    if (cached) {
+      return JSON.parse(cached) as Appointment[];
+    }
+  } catch (e) {}
+
+  return [];
+}
+
+export async function addAppointmentToFirebase(appointment: Omit<Appointment, "id">): Promise<{ success: boolean; id: string }> {
+  const id = `apt-${Date.now()}`;
+  const record: Appointment = {
+    ...appointment,
+    id,
+    status: appointment.status || "pending",
+    createdAt: appointment.createdAt || new Date().toISOString(),
+  };
+
+  try {
+    await setDoc(doc(db, "appointments", id), record);
+  } catch (e) {
+    console.error("[Firestore] Lưu lịch hẹn thất bại:", e);
+  }
+
+  try {
+    await set(ref(rtdb, `appointments/${id}`), record);
+  } catch (e) {
+    console.error("[RTDB] Lưu lịch hẹn thất bại:", e);
+  }
+
+  try {
+    const current = await getAppointmentsFromFirebase();
+    const updated = [record, ...current.filter(a => a.id !== id)];
+    localStorage.setItem("saigonone_appointments", JSON.stringify(updated));
+  } catch (e) {}
+
+  return { success: true, id };
+}
+
+export async function updateAppointmentStatusInFirebase(
+  id: string, 
+  status: "pending" | "confirmed" | "completed" | "cancelled"
+): Promise<boolean> {
+  try {
+    await updateDoc(doc(db, "appointments", id), { status });
+  } catch (e) {}
+
+  try {
+    await update(ref(rtdb, `appointments/${id}`), { status });
+  } catch (e) {}
+
+  try {
+    const current = await getAppointmentsFromFirebase();
+    const updated = current.map(a => a.id === id ? { ...a, status } : a);
+    localStorage.setItem("saigonone_appointments", JSON.stringify(updated));
+  } catch (e) {}
+
+  return true;
+}
+
+export async function deleteAppointmentFromFirebase(id: string): Promise<boolean> {
+  try {
+    await deleteDoc(doc(db, "appointments", id));
+  } catch (e) {}
+
+  try {
+    await remove(ref(rtdb, `appointments/${id}`));
+  } catch (e) {}
+
+  try {
+    const current = await getAppointmentsFromFirebase();
+    const updated = current.filter(a => a.id !== id);
+    localStorage.setItem("saigonone_appointments", JSON.stringify(updated));
+  } catch (e) {}
+
+  return true;
+}
+

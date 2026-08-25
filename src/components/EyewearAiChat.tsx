@@ -95,7 +95,7 @@ export const EyewearAiChat: React.FC<EyewearAiChatProps> = ({
           { label: "Thử kính AR ngay", action: onOpenTryOn }
         ];
       } else if (lower.includes("địa chỉ") || lower.includes("ở đâu") || lower.includes("chi nhánh")) {
-        botResponse = "Hệ thống có các chi nhánh tại TP.HCM & Hà Nội, mở cửa 08:30 - 21:30 tất cả các ngày. Quý khách liên hệ Zalo 0973.819.928 để được gửi định vị chi tiết nhất!";
+        botResponse = "Showroom Saigon One Eyewear tại 178 Phan Đăng Lưu, Phường Đức Nhuận, TP.HCM, mở cửa 08:30 - 21:00 tất cả các ngày trong tuần. Quý khách liên hệ Zalo 0973.819.928 để được hỗ trợ định vị và đặt lịch hẹn đo mắt!";
         botActions = [
           { label: "Chỉ đường chi nhánh", action: onOpenStores },
           { label: "Chat Zalo ngay", action: () => window.open("https://zalo.me/0973819928", "_blank") }

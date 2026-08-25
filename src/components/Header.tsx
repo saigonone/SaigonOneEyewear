@@ -147,26 +147,26 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Brand Logo - Saigon One */}
         <div 
-          className="flex items-center gap-3 cursor-pointer select-none" 
+          className="flex items-center gap-2.5 cursor-pointer select-none shrink-0" 
           onClick={() => onSelectCategory("all")}
         >
-          <div className="w-10 h-10 bg-[#0f172a] rounded-lg flex items-center justify-center shadow-md shrink-0">
-            <div className="w-6 h-6 border-2 border-white rounded-full flex items-center justify-center">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+          <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[#0f172a] rounded-lg flex items-center justify-center shadow-md shrink-0">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-white rounded-full flex items-center justify-center">
+              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full"></div>
             </div>
           </div>
-          <div>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight uppercase text-slate-900 leading-none">
+          <div className="whitespace-nowrap shrink-0">
+            <div className="text-lg sm:text-xl xl:text-2xl font-bold tracking-tight uppercase text-slate-900 leading-none whitespace-nowrap">
               SAIGON ONE<span className="text-blue-600">.</span>
             </div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">
+            <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-[0.16em] sm:tracking-[0.2em] mt-0.5 sm:mt-1 whitespace-nowrap">
               PREMIUM OPTICAL SOLUTIONS
             </p>
           </div>
         </div>
 
         {/* Center Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center space-x-7 xl:space-x-9 text-[15px] xl:text-base font-bold text-neutral-800">
+        <nav className="hidden lg:flex items-center space-x-4 xl:space-x-6 text-[14px] xl:text-[15px] font-bold text-neutral-800 whitespace-nowrap">
           
           {/* 1. Trang Chủ */}
           <button
@@ -207,14 +207,14 @@ export const Header: React.FC<HeaderProps> = ({
                 setIsProductsDropdownOpen(!isProductsDropdownOpen);
                 onSelectCategory("all");
               }}
-              className={`flex items-center gap-1.5 py-1 transition-colors cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-1 py-1 transition-colors cursor-pointer whitespace-nowrap ${
                 !isAboutActive && !isArticlesActive && (selectedCategory !== "all" || isProductsDropdownOpen)
                   ? "text-amber-800 font-extrabold"
                   : "text-neutral-700 hover:text-amber-800"
               }`}
             >
               <span>Tất Cả Sản Phẩm</span>
-              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isProductsDropdownOpen ? "rotate-180 text-amber-600" : "text-neutral-400"}`} />
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isProductsDropdownOpen ? "rotate-180 text-amber-600" : "text-neutral-400"}`} />
             </button>
 
             {/* Submenu Dropdown */}
@@ -277,13 +277,13 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </nav>
 
-        {/* Right Actions: Search & Chat Zalo Button */}
-        <div className="flex items-center space-x-3 shrink-0">
+        {/* Right Actions: Search, TryOn & Zalo Button */}
+        <div className="flex items-center space-x-2.5 sm:space-x-3 shrink-0">
           
           {/* Search Toggle or Search Box */}
           <div className="relative">
             {showSearchInput ? (
-              <div className="flex items-center bg-neutral-100 rounded-full px-3 py-1.5 border border-neutral-300 w-48 sm:w-64 animate-in fade-in">
+              <div className="flex items-center bg-neutral-100 rounded-full px-3 py-1.5 border border-neutral-300 w-44 sm:w-56 animate-in fade-in">
                 <Search className="w-4 h-4 text-neutral-500 mr-2 shrink-0" />
                 <input
                   type="text"
@@ -327,17 +327,17 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden md:inline">Thử Kính AR</span>
           </button>
 
-          {/* Chat Zalo Button */}
+          {/* Zalo Button (Gọn gàng) */}
           <a
             id="btn-header-chat-zalo"
             href="https://zalo.me/0973819928"
             target="_blank"
             rel="noreferrer"
-            className="bg-[#0068FF] hover:bg-[#0052cc] text-white font-bold text-xs uppercase tracking-wider px-4 sm:px-5 py-2.5 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"
+            className="bg-[#0068FF] hover:bg-[#0052cc] text-white font-bold text-xs uppercase px-3 sm:px-4 py-2 sm:py-2.5 rounded-full shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
             title="Nhắn Zalo tư vấn 0973.819.928"
           >
-            <MessageSquare className="w-4 h-4 fill-white text-[#0068FF] shrink-0" />
-            <span className="text-[11px] font-extrabold tracking-wide">CHAT ZALO</span>
+            <MessageSquare className="w-3.5 h-3.5 fill-white text-[#0068FF] shrink-0" />
+            <span className="text-[11px] font-extrabold tracking-wider">ZALO</span>
           </a>
 
         </div>

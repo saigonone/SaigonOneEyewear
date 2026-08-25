@@ -150,7 +150,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({
 
                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200/90 flex items-center gap-2">
                   <Clock className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>Mở cửa liên tục: <strong>08:30 - 21:30</strong> (Tất cả các ngày trong tuần)</span>
+                  <span>Mở cửa liên tục: <strong>08:30 - 21:00</strong> (Tất cả các ngày trong tuần)</span>
                 </div>
               </div>
             </div>
@@ -588,7 +588,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({
                   </div>
                   <div>
                     <span className="text-neutral-500">Thời gian phục vụ: </span>
-                    <strong className="text-slate-900">08:30 - 21:30</strong> (Mở cửa tất cả các ngày trong tuần)
+                    <strong className="text-slate-900">08:30 - 21:00</strong> (Mở cửa tất cả các ngày trong tuần)
                   </div>
                 </div>
 

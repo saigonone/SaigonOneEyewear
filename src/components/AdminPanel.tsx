@@ -37,7 +37,11 @@ import {
   Link2,
   Globe,
   ExternalLink,
-  Copy
+  Copy,
+  Calendar,
+  Mail,
+  Phone,
+  MessageCircle
 } from "lucide-react";
 import { 
   Product, 
@@ -51,7 +55,8 @@ import {
   ArticleCategory, 
   ProductCategoryItem, 
   AdminUser,
-  BannerSlide
+  BannerSlide,
+  Appointment
 } from "../types";
 import { 
   createSlug, 
@@ -77,6 +82,9 @@ import {
   addAdminToFirebase,
   deleteAdminFromFirebase,
   getBannersFromFirebase,
+  getAppointmentsFromFirebase,
+  updateAppointmentStatusInFirebase,
+  deleteAppointmentFromFirebase,
   db, 
   rtdb 
 } from "../firebase";
@@ -97,7 +105,7 @@ interface AdminPanelProps {
   onLogout?: () => void;
 }
 
-type AdminTab = "products" | "banners" | "product_categories" | "articles" | "article_categories" | "admins" | "orders";
+type AdminTab = "products" | "banners" | "product_categories" | "articles" | "article_categories" | "admins" | "orders" | "appointments";
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
   onClose,
@@ -114,6 +122,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [activeTab, setActiveTab] = useState<AdminTab>("products");
   const [banners, setBanners] = useState<BannerSlide[]>(initialBanners);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointmentFilter, setAppointmentFilter] = useState<string>("all");
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [articleCategories, setArticleCategories] = useState<ArticleCategory[]>([]);
   const [productCategories, setProductCategories] = useState<ProductCategoryItem[]>([]);
@@ -184,19 +194,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const loadData = async () => {
     setLoading(true);
     try {
-      const [fetchedOrders, fetchedArticles, fetchedArtCats, fetchedProdCats, fetchedAdmins, fetchedBanners] = await Promise.all([
+      const [fetchedOrders, fetchedArticles, fetchedArtCats, fetchedProdCats, fetchedAdmins, fetchedBanners, fetchedAppointments] = await Promise.all([
         fetchOrdersFromFirebase(),
         getArticlesFromFirebase(),
         getArticleCategoriesFromFirebase(),
         getProductCategoriesFromFirebase(),
         getAdminsFromFirebase(),
-        getBannersFromFirebase()
+        getBannersFromFirebase(),
+        getAppointmentsFromFirebase()
       ]);
       setOrders(fetchedOrders);
       setArticles(fetchedArticles);
       setArticleCategories(fetchedArtCats);
       setProductCategories(fetchedProdCats);
       setAdmins(fetchedAdmins);
+      setAppointments(fetchedAppointments);
       if (fetchedBanners && fetchedBanners.length > 0) {
         setBanners(fetchedBanners);
       }
@@ -209,6 +221,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   useEffect(() => {
     loadData();
+    const handleAppointmentUpdate = () => {
+      getAppointmentsFromFirebase().then(setAppointments);
+    };
+    window.addEventListener("appointment_updated", handleAppointmentUpdate);
+    return () => {
+      window.removeEventListener("appointment_updated", handleAppointmentUpdate);
+    };
   }, []);
 
   const formatPrice = (p: number) => {
@@ -644,6 +663,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     await updateOrderStatusInFirebase(orderCode, newStatus);
   };
 
+  const handleUpdateAppointmentStatus = async (id: string, newStatus: Appointment["status"]) => {
+    const updated = appointments.map((a) => {
+      if (a.id === id) {
+        return { ...a, status: newStatus };
+      }
+      return a;
+    });
+    setAppointments(updated);
+    await updateAppointmentStatusInFirebase(id, newStatus);
+  };
+
+  const handleDeleteAppointment = async (id: string) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa lịch hẹn đo mắt này?")) {
+      await deleteAppointmentFromFirebase(id);
+      setAppointments(prev => prev.filter(a => a.id !== id));
+    }
+  };
+
+  const pendingAppointmentsCount = appointments.filter(a => a.status === "pending").length;
+
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
 
   return (
@@ -770,6 +809,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           >
             <ShoppingBag className="w-4 h-4" />
             <span>Đơn Hàng ({orders.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("appointments")}
+            className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 relative ${
+              activeTab === "appointments" ? "bg-amber-600 text-white" : "hover:bg-slate-800 text-slate-300"
+            }`}
+          >
+            <Calendar className="w-4 h-4 text-amber-300" />
+            <span>Lịch Hẹn Đo Mắt ({appointments.length})</span>
+            {pendingAppointmentsCount > 0 && (
+              <span className="px-1.5 py-0.2 bg-rose-500 text-white text-[10px] font-extrabold rounded-full animate-pulse">
+                {pendingAppointmentsCount} mới
+              </span>
+            )}
           </button>
         </div>
 
@@ -1381,6 +1435,224 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* TAB 7: QUẢN LÝ LỊCH HẸN ĐO MẮT (178 PHAN ĐĂNG LƯU) */}
+          {/* ======================================================== */}
+          {activeTab === "appointments" && (
+            <div className="space-y-6">
+              {/* Header metrics banner */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs">
+                  <div className="text-xs text-slate-400 font-medium">Tổng Lịch Hẹn Đã Đặt</div>
+                  <div className="text-2xl font-bold text-slate-900 mt-1">{appointments.length} lượt</div>
+                </div>
+
+                <div className="bg-amber-50/80 p-5 rounded-xl border border-amber-200 shadow-xs">
+                  <div className="text-xs text-amber-700 font-medium flex items-center justify-between">
+                    <span>Chờ Xác Nhận</span>
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                  </div>
+                  <div className="text-2xl font-bold text-amber-900 mt-1">
+                    {appointments.filter(a => a.status === "pending").length} lịch
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50/80 p-5 rounded-xl border border-emerald-200 shadow-xs">
+                  <div className="text-xs text-emerald-700 font-medium">Đã Đo Khám Xong</div>
+                  <div className="text-2xl font-bold text-emerald-900 mt-1">
+                    {appointments.filter(a => a.status === "completed").length} lượt
+                  </div>
+                </div>
+
+                <div className="bg-blue-50/80 p-5 rounded-xl border border-blue-200 shadow-xs">
+                  <div className="text-xs text-blue-700 font-medium">Email Thông Báo Tự Động</div>
+                  <div className="text-xs font-bold text-blue-900 mt-2 font-mono truncate" title="matkinhsaigonone@gmail.com">
+                    matkinhsaigonone@gmail.com
+                  </div>
+                  <div className="text-[10px] text-blue-600 mt-0.5">Lưu đồng thời trong Firestore Cloud</div>
+                </div>
+              </div>
+
+              {/* Filter bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-gray-200">
+                <div className="flex items-center gap-2 overflow-x-auto">
+                  <span className="text-xs font-semibold text-slate-600 shrink-0">Lọc theo:</span>
+                  <button
+                    onClick={() => setAppointmentFilter("all")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+                      appointmentFilter === "all" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    Tất cả ({appointments.length})
+                  </button>
+                  <button
+                    onClick={() => setAppointmentFilter("pending")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+                      appointmentFilter === "pending" ? "bg-amber-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    Chờ xác nhận ({appointments.filter(a => a.status === "pending").length})
+                  </button>
+                  <button
+                    onClick={() => setAppointmentFilter("confirmed")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+                      appointmentFilter === "confirmed" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    Đã xác nhận ({appointments.filter(a => a.status === "confirmed").length})
+                  </button>
+                  <button
+                    onClick={() => setAppointmentFilter("completed")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+                      appointmentFilter === "completed" ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    Đã hoàn tất ({appointments.filter(a => a.status === "completed").length})
+                  </button>
+                </div>
+
+                <div className="text-xs text-slate-500">
+                  📍 Địa điểm đo mắt: <strong className="text-slate-800">178 Phan Đăng Lưu, P. Đức Nhuận, TP.HCM</strong>
+                </div>
+              </div>
+
+              {/* Appointments List */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
+                {appointments.filter(a => appointmentFilter === "all" || a.status === appointmentFilter).length === 0 ? (
+                  <div className="p-12 text-center text-slate-400">
+                    <Calendar className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                    <p className="font-semibold text-slate-600">Chưa có lịch hẹn nào</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Khi khách hàng đăng ký đo mắt qua biểu mẫu tại 178 Phan Đăng Lưu, thông tin sẽ được tự động lưu tại đây và gửi tới matkinhsaigonone@gmail.com
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-600">
+                      <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-gray-200">
+                        <tr>
+                          <th className="p-3.5">Khách Hàng</th>
+                          <th className="p-3.5">Ngày & Khung Giờ Đo</th>
+                          <th className="p-3.5">Ghi Chú Yêu Cầu</th>
+                          <th className="p-3.5">Kênh Thông Báo</th>
+                          <th className="p-3.5">Trạng Thái</th>
+                          <th className="p-3.5 text-right">Thao Tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {appointments
+                          .filter(a => appointmentFilter === "all" || a.status === appointmentFilter)
+                          .map((apt) => (
+                            <tr key={apt.id || apt.createdAt} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="p-3.5">
+                                <div className="font-bold text-slate-900 text-sm">{apt.fullName}</div>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <Phone className="w-3.5 h-3.5 text-blue-600" />
+                                  <a href={`tel:${apt.phone}`} className="font-mono font-bold text-blue-600 hover:underline">
+                                    {apt.phone}
+                                  </a>
+                                </div>
+                                <div className="text-[10px] text-slate-400 mt-0.5">
+                                  Đặt lúc: {apt.createdAt ? new Date(apt.createdAt).toLocaleString("vi-VN") : "Hôm nay"}
+                                </div>
+                              </td>
+
+                              <td className="p-3.5">
+                                <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                                  <Calendar className="w-4 h-4 text-amber-600 shrink-0" />
+                                  <span>{apt.date || "Chưa chọn ngày"}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[11px] text-slate-600 font-semibold mt-1">
+                                  <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <span>{apt.time || "08:30 - 10:00"}</span>
+                                </div>
+                                <div className="text-[10px] text-slate-400 mt-0.5">
+                                  {apt.storeAddress || "178 Phan Đăng Lưu, P. Đức Nhuận, TP.HCM"}
+                                </div>
+                              </td>
+
+                              <td className="p-3.5 max-w-xs">
+                                {apt.note ? (
+                                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 text-slate-700 italic text-[11px]">
+                                    "{apt.note}"
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-400 italic">Không có ghi chú thêm</span>
+                                )}
+                              </td>
+
+                              <td className="p-3.5">
+                                <div className="flex items-center gap-1 text-slate-700 font-mono text-[11px]">
+                                  <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                  <span>matkinhsaigonone@gmail.com</span>
+                                </div>
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 mt-1">
+                                  Đã kích hoạt thông báo
+                                </span>
+                              </td>
+
+                              <td className="p-3.5">
+                                <select
+                                  value={apt.status}
+                                  onChange={(e) => apt.id && handleUpdateAppointmentStatus(apt.id, e.target.value as any)}
+                                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border focus:outline-none cursor-pointer ${
+                                    apt.status === "pending"
+                                      ? "bg-amber-50 text-amber-900 border-amber-300"
+                                      : apt.status === "confirmed"
+                                      ? "bg-blue-50 text-blue-900 border-blue-300"
+                                      : apt.status === "completed"
+                                      ? "bg-emerald-50 text-emerald-900 border-emerald-300"
+                                      : "bg-rose-50 text-rose-900 border-rose-300"
+                                  }`}
+                                >
+                                  <option value="pending">⏳ Chờ xác nhận</option>
+                                  <option value="confirmed">📞 Đã gọi xác nhận</option>
+                                  <option value="completed">✅ Đã đo khám xong</option>
+                                  <option value="cancelled">❌ Khách hủy hẹn</option>
+                                </select>
+                              </td>
+
+                              <td className="p-3.5 text-right space-x-1">
+                                <a
+                                  href={`https://zalo.me/${apt.phone}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-lg transition-colors text-[11px]"
+                                  title="Nhắn tin Zalo cho khách"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                  <span>Zalo</span>
+                                </a>
+
+                                <a
+                                  href={`tel:${apt.phone}`}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-lg transition-colors text-[11px]"
+                                  title="Gọi điện xác nhận lịch"
+                                >
+                                  <Phone className="w-3.5 h-3.5" />
+                                  <span>Gọi</span>
+                                </a>
+
+                                {apt.id && (
+                                  <button
+                                    onClick={() => handleDeleteAppointment(apt.id!)}
+                                    className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center"
+                                    title="Xóa lịch hẹn này"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}

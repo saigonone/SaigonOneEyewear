@@ -220,3 +220,16 @@ export interface BannerSlide {
   isActive: boolean;
   order?: number;
 }
+
+export interface Appointment {
+  id?: string;
+  fullName: string;
+  phone: string;
+  email?: string;
+  date: string;
+  time: string;
+  note?: string;
+  status: "pending" | "confirmed" | "completed" | "cancelled";
+  createdAt: string;
+  storeAddress?: string;
+}

@@ -110,7 +110,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                     <Clock className="w-4 h-4 text-amber-600 shrink-0" />
                     <div>
                       <span className="text-neutral-500">Giờ mở cửa: </span>
-                      <strong className="text-neutral-900">08:30 - 21:30</strong> (Tất cả các ngày trong tuần)
+                      <strong className="text-neutral-900">08:30 - 21:00</strong> (Tất cả các ngày trong tuần)
                     </div>
                   </div>
 

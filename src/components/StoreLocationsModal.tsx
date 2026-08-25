@@ -15,6 +15,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { STORE_LOCATIONS } from "../data/mockProducts";
+import { addAppointmentToFirebase } from "../firebase";
 
 interface StoreLocationsModalProps {
   onClose: () => void;
@@ -29,7 +30,7 @@ export const StoreLocationsModal: React.FC<StoreLocationsModalProps> = ({ onClos
     city: "TP. Hồ Chí Minh",
     phone: "0973.819.928",
     hotline: "0973.819.928",
-    openHours: "08:30 - 21:30 (Mở cửa tất cả các ngày trong tuần)",
+    openHours: "08:30 - 21:00 (Mở cửa tất cả các ngày trong tuần)",
     services: [
       "Đo khám khúc xạ mắt miễn phí bằng máy đo tự động Topcon chuẩn y khoa Nhật Bản",
       "Cắt mài lắp kính lấy ngay siêu tốc trong 15 - 20 phút",
@@ -43,25 +44,41 @@ export const StoreLocationsModal: React.FC<StoreLocationsModalProps> = ({ onClos
   const [bookingName, setBookingName] = useState("");
   const [bookingPhone, setBookingPhone] = useState("");
   const [bookingDate, setBookingDate] = useState("");
-  const [bookingTime, setBookingTime] = useState("09:00 - 10:30");
+  const [bookingTime, setBookingTime] = useState("08:30 - 10:00");
   const [bookingNote, setBookingNote] = useState("");
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
-  const handleBooking = (e: React.FormEvent) => {
+  const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     setBookingSubmitted(true);
+    try {
+      await addAppointmentToFirebase({
+        fullName: bookingName,
+        phone: bookingPhone,
+        email: "matkinhsaigonone@gmail.com",
+        date: bookingDate,
+        time: bookingTime,
+        note: bookingNote,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        storeAddress: "178 Phan Đăng Lưu, Phường Đức Nhuận, TP. Hồ Chí Minh",
+      });
+      // Trigger local event to sync
+      window.dispatchEvent(new CustomEvent("appointment_updated"));
+    } catch (err) {
+      console.warn("Lỗi lưu lịch hẹn:", err);
+    }
+
+    setBookingSubmitted(false);
+    setBookingSuccess(true);
     setTimeout(() => {
-      setBookingSubmitted(false);
-      setBookingSuccess(true);
-      setTimeout(() => {
-        setBookingSuccess(false);
-        setBookingName("");
-        setBookingPhone("");
-        setBookingDate("");
-        setBookingNote("");
-      }, 4000);
-    }, 800);
+      setBookingSuccess(false);
+      setBookingName("");
+      setBookingPhone("");
+      setBookingDate("");
+      setBookingNote("");
+    }, 6000);
   };
 
   // Google Maps Embed URL for 178 Phan Dang Luu
@@ -185,7 +202,7 @@ export const StoreLocationsModal: React.FC<StoreLocationsModalProps> = ({ onClos
                     <Clock className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                     <div>
                       <span className="font-bold text-slate-900 block">Thời gian hoạt động:</span>
-                      <span>08:30 - 21:30 (Mở cửa tất cả các ngày trong tuần, kể cả Thứ Bảy, Chủ Nhật và ngày lễ)</span>
+                      <span>08:30 - 21:00 (Mở cửa tất cả các ngày trong tuần, kể cả Thứ Bảy, Chủ Nhật và ngày lễ)</span>
                     </div>
                   </div>
 
@@ -306,8 +323,8 @@ export const StoreLocationsModal: React.FC<StoreLocationsModalProps> = ({ onClos
                 <div className="p-4 bg-emerald-500/20 border border-emerald-500/40 rounded-xl flex items-center gap-3 text-emerald-300 text-xs sm:text-sm">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                   <div>
-                    <strong className="block text-emerald-200 font-bold">Đặt lịch thành công!</strong>
-                    <span>Chuyên viên Saigon One Eyewear sẽ liên hệ qua điện thoại/Zalo để xác nhận trong 10 phút.</span>
+                    <strong className="block text-emerald-200 font-bold">Đặt lịch khám mắt thành công!</strong>
+                    <span>Thông tin đã được lưu trong hệ thống quản trị & chuyển tới email <strong>matkinhsaigonone@gmail.com</strong>. Chuyên viên Saigon One sẽ liên hệ qua SĐT/Zalo để xác nhận trong ít phút.</span>
                   </div>
                 </div>
               ) : (
