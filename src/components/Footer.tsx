@@ -16,6 +16,7 @@ import { ProductCategory } from "../types";
 
 interface FooterProps {
   onSelectCategory: (cat: ProductCategory) => void;
+  onGoHome?: () => void;
   onOpenStores: () => void;
   onOpenAbout?: () => void;
   onOpenArticles?: () => void;
@@ -27,6 +28,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({
   onSelectCategory,
+  onGoHome,
   onOpenStores,
   onOpenAbout,
   onOpenArticles,
@@ -44,21 +46,29 @@ export const Footer: React.FC<FooterProps> = ({
           
           {/* Col 1: Brand & Bio (2 cols) */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#0f172a] rounded-lg flex items-center justify-center shadow-md">
+            <a 
+              href="/" 
+              onClick={(e) => {
+                e.preventDefault();
+                if (onGoHome) onGoHome();
+                else onSelectCategory("all");
+              }}
+              className="inline-flex items-center gap-3 cursor-pointer group"
+            >
+              <div className="w-10 h-10 bg-[#0f172a] rounded-lg flex items-center justify-center shadow-md group-hover:bg-blue-900 transition-colors">
                 <div className="w-6 h-6 border-2 border-white rounded-full flex items-center justify-center">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 </div>
               </div>
               <div>
-                <span className="text-xl font-bold tracking-tight uppercase text-slate-900 leading-none">
+                <span className="text-xl font-bold tracking-tight uppercase text-slate-900 leading-none group-hover:text-blue-600 transition-colors">
                   SAIGON ONE<span className="text-blue-600">.</span>
                 </span>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">
                   Premium Optical Solutions
                 </p>
               </div>
-            </div>
+            </a>
 
             <p className="text-xs text-slate-500 leading-relaxed max-w-sm">
               Khám phá sự kết hợp tinh tế giữa công nghệ đo mắt chuẩn quốc tế và phong cách thời trang đương đại tại Saigon One Eyewear.

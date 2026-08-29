@@ -64,7 +64,7 @@ export const INITIAL_LENS_BRANDS: LensBrandCategory[] = [
 ];
 
 export const INITIAL_LENS_ARTICLES: Article[] = [
-  // HOYA ARTICLES
+  // 1. HOYA (NHẬT BẢN)
   {
     id: "art-lens-hoya-01",
     title: "Đánh Giá Toàn Diện Tròng Kính Hoya Nhật Bản: Công Nghệ Hi-Vision LongLife & Stellify BlueControl",
@@ -98,66 +98,8 @@ Thiết kế mặt cầu phẳng phi cầu (Single Vision Aspheric) giúp triệ
     isPinned: true,
     isPublished: true,
   },
-  {
-    id: "art-lens-hoya-02",
-    title: "Bảng Giá Tròng Kính Hoya Nhật Bản Mới Nhất 2026: Chiết Suất 1.55, 1.60, 1.67, 1.74",
-    slug: "bang-gia-trong-kinh-hoya-nhat-ban-2026",
-    category: "Tròng Kính Hoya Nhật Bản",
-    lensBrandId: "lens-brand-hoya",
-    summary: "Cập nhật bảng giá niêm yết chính hãng các dòng tròng kính Hoya Stellify, Hoya Nulux, Hoya BlueControl kèm chương trình ưu đãi cắt kính lấy liền tại Sài Gòn One.",
-    content: `Dưới đây là bảng giá tham khảo các dòng tròng kính Hoya Nhật Bản chính hãng tại Saigon One:
 
-- **Hoya Stellify 1.55 SFT / BlueControl**: Giá từ 650.000đ - 950.000đ/cặp (Phù hợp cận dưới 3.00 độ)
-- **Hoya Stellify 1.60 SFT / BlueControl (Chống bể)**: Giá từ 1.250.000đ - 1.650.000đ/cặp (Phù hợp gọng xẻ cước, khoan ốc)
-- **Hoya Nulux 1.67 Aspheric HVLL (Siêu mỏng)**: Giá từ 2.450.000đ - 2.850.000đ/cặp (Phù hợp cận 4.00 - 7.00 độ)
-- **Hoya Nulux 1.74 Aspheric HVLL (Cực mỏng cao cấp)**: Giá từ 4.500.000đ - 5.200.000đ/cặp (Phù hợp cận nặng từ 7.00 độ trở lên)
-
-*Tất cả sản phẩm đều đi kèm khăn lau chính hãng Hoya, bao bì có mã vạch check thật giả và thẻ bảo hành lớp phủ 12 - 24 tháng.*`,
-    thumbnail: "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?auto=format&fit=crop&w=900&q=80",
-    author: "KTV Trần Quang Minh",
-    readTime: "4 phút đọc",
-    publishedAt: "18/08/2026",
-    viewsCount: 1950,
-    tags: ["BangGiaHoya", "TrongKinhHoya", "Nulux167", "Nulux174"],
-    isFeatured: false,
-    isPinned: false,
-    isPublished: true,
-  },
-
-  // KODAK ARTICLES
-  {
-    id: "art-lens-kodak-01",
-    title: "Tròng Kính Kodak Của Mỹ Có Tốt Không? Khám Phá Công Nghệ Kodak City Lens & Kodak Clean&Clear",
-    slug: "trong-kinh-kodak-my-co-tot-khong-danh-gia-chi-tiet",
-    category: "Tròng Kính Kodak của Mỹ",
-    lensBrandId: "lens-brand-kodak",
-    summary: "Tìm hiểu công nghệ thấu kính quang học Kodak Lens từ Mỹ – độ truyền quang 99.6%, lớp phủ chống bám bụi và lọc tia bức xạ bảo vệ mắt tối ưu.",
-    content: `## Tròng Kính Kodak (Hoa Kỳ) – Di Sản 130 Năm Công Nghệ Hình Ảnh
-Kodak là một trong những tên tuổi lẫy lừng nhất thế giới về công nghệ quang học và tái tạo hình ảnh. Ứng dụng những nghiên cứu độc quyền về tán sắc ánh sáng, tròng kính Kodak mang lại trải nghiệm thị giác trong trẻo, chân thực như nhìn qua ống kính máy ảnh chuyên nghiệp.
-
-### Các ưu điểm vượt trội của tròng kính Kodak:
-1. **Lớp phủ Kodak Clean'N'CleAR (CNC)**:
-   - Truyền dẫn ánh sáng đến 99.6%, loại bỏ bóng mờ và quầng sáng phản xạ.
-   - Bề mặt trơn láng nano chống bám dầu mỡ vân tay, dễ dàng lau sạch bằng khăn nano.
-2. **Dòng Kodak City Lens**:
-   - Tối ưu hóa đặc biệt cho cư dân thành thị thường xuyên di chuyển dưới ánh nắng gắt và tiếp xúc khói bụi ô nhiễm.
-   - Ngăn chặn 100% tia cực tím UVA/UVB và lọc chọn lọc ánh sáng xanh có hại.
-3. **Độ bền cơ học cao**:
-   - Khả năng chịu lực uốn và va đập đạt tiêu chuẩn an toàn FDA Hoa Kỳ.
-
-Quý khách có thể ghé trực tiếp **Saigon One Eyewear** tại 178 Phan Đăng Lưu, Phú Nhuận để trải nghiệm mẫu thử tròng kính Kodak chính hãng.`,
-    thumbnail: "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?auto=format&fit=crop&w=900&q=80",
-    author: "Bác Sĩ Khúc Xạ Nguyễn Hoàng",
-    readTime: "5 phút đọc",
-    publishedAt: "19/08/2026",
-    viewsCount: 2150,
-    tags: ["KodakLens", "TrongKinhMy", "KodakCityLens", "CleanNClear"],
-    isFeatured: true,
-    isPinned: true,
-    isPublished: true,
-  },
-
-  // ESSILOR ARTICLES
+  // 2. ESSILOR (PHÁP)
   {
     id: "art-lens-essilor-01",
     title: "Essilor Pháp: Thương Hiệu Tròng Kính Số 1 Thế Giới Với Crizal Sapphire HR & Transitions Gen 8",
@@ -191,7 +133,7 @@ Trải nghiệm đo mắt chuẩn quốc tế và lắp ráp tròng Essilor lấ
     isPublished: true,
   },
 
-  // CHEMI ARTICLES
+  // 3. CHEMI (HÀN QUỐC)
   {
     id: "art-lens-chemi-01",
     title: "Tròng Kính Chemi Hàn Quốc: Lựa Chọn Quốc Dân Ngon - Bổ - Rẻ Với Công Nghệ BlueCut U6",
@@ -219,32 +161,6 @@ Tất cả tròng kính Chemi tại **Saigon One** đều có tem cào chống h
     publishedAt: "17/08/2026",
     viewsCount: 3100,
     tags: ["Chemi", "TrongKinhChemi", "BlueCutU6", "Chemi174", "TrongKinhHanQuoc"],
-    isFeatured: true,
-    isPinned: true,
-    isPublished: true,
-  },
-
-  // ZEISS ARTICLES
-  {
-    id: "art-lens-zeiss-01",
-    title: "Tròng Kính Carl Zeiss Đức: Tuyệt Tác Quang Học Đẳng Cấp Với Lớp Phủ DuraVision Platinum",
-    slug: "trong-kinh-zeiss-duc-duravision-platinum",
-    category: "Tròng Kính Zeiss Đức",
-    lensBrandId: "lens-brand-zeiss",
-    summary: "Khám phá Carl Zeiss (Đức) - biểu tượng tối thượng của ngành quang học thế giới với độ sắc nét tinh xảo và logo chữ Z khắc laser chìm độc quyền.",
-    content: `## Carl Zeiss (Đức) – Biểu Tượng Huyền Thoại Của Quang Học Thế Giới
-Hơn 175 năm lịch sử chế tác các thấu kính vũ trụ, kính hiển vi y khoa và ống kính máy ảnh cao cấp, tròng kính Carl Zeiss đại diện cho đỉnh cao chất lượng mà bất cứ người đeo kính nào cũng ao ước.
-
-### Dấu ấn đẳng cấp của tròng kính Zeiss:
-- **Logo chữ Z khắc Laser chìm**: Mỗi chiếc tròng kính Zeiss xuất xưởng đều có logo chữ Z tinh xảo khắc chìm trên bề mặt, khẳng định sản phẩm chính hãng 100%.
-- **Lớp phủ DuraVision Platinum**: Sử dụng công nghệ bắn ion chân không dày đặc, mang lại độ cứng bề mặt chống trầy gấp 3 lần và độ phản quang xanh dịu mắt sang trọng.
-- **Zeiss ClearView & SmartLife**: Công nghệ trường nhìn rộng tự do FreeForm, mở rộng góc nhìn ngoại vi rõ nét hơn 3 lần so với tròng thông thường.`,
-    thumbnail: "https://images.unsplash.com/photo-1577401239170-897942555fb3?auto=format&fit=crop&w=900&q=80",
-    author: "Bác Sĩ Khúc Xạ Nguyễn Hoàng",
-    readTime: "6 phút đọc",
-    publishedAt: "14/08/2026",
-    viewsCount: 1620,
-    tags: ["Zeiss", "CarlZeiss", "TrongKinhDuc", "DuraVisionPlatinum"],
     isFeatured: true,
     isPinned: true,
     isPublished: true,

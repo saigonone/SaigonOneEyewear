@@ -51,22 +51,10 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
   const [selectedFeatureFilter, setSelectedFeatureFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Filter only lens-related articles (either has lensBrandId OR category contains "tròng" or tags contain lens keywords)
+  // Use pure lens articles data source (3 articles)
   const allLensArticles = useMemo(() => {
-    return (articles || []).filter((art) => {
-      if (!art || art.isPublished === false) return false;
-      const isBrandAssigned = Boolean(art.lensBrandId);
-      const isLensCategory = art.category && art.category.toLowerCase().includes("tròng");
-      const hasLensTag = Array.isArray(art.tags) && art.tags.some(t => 
-        t && (
-          t.toLowerCase().includes("tròng") || 
-          t.toLowerCase().includes("lens") ||
-          lensBrands.some(b => b.name.toLowerCase().includes(t.toLowerCase()) || (b.brandKey && b.brandKey.toLowerCase() === t.toLowerCase()))
-        )
-      );
-      return isBrandAssigned || isLensCategory || hasLensTag;
-    });
-  }, [articles, lensBrands]);
+    return (articles || []).filter((art) => art && art.isPublished !== false);
+  }, [articles]);
 
   // Filtering based on active brand tab, feature tag, and search query
   const filteredArticles = useMemo(() => {
@@ -87,8 +75,8 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
         matchBrand = 
           artBrand === brandId ||
           artBrand === brandSlug ||
-          (brandKey && artBrand === brandKey) ||
-          artTags.some(t => t.toLowerCase() === brandId.toLowerCase() || (brandKey && t.toLowerCase() === brandKey.toLowerCase()) || (brandName && t.toLowerCase().includes(brandName.toLowerCase()))) ||
+          (brandKey !== "" && artBrand === brandKey) ||
+          artTags.some(t => t.toLowerCase() === brandId.toLowerCase() || (brandKey !== "" && t.toLowerCase() === brandKey.toLowerCase()) || (brandName !== "" && t.toLowerCase().includes(brandName.toLowerCase()))) ||
           artTitle.toLowerCase().includes(brandName.toLowerCase());
       }
 

@@ -165,35 +165,64 @@ export async function seedInitialProductsToFirebase() {
 }
 
 // =========================================================================
-// 2. ARTICLES / BÀI VIẾT CRUD - THAO TÁC TRỰC TIẾP VỚI FIREBASE
+// 2. ARTICLES / BÀI VIẾT CẨM NANG (CẨM NANG & TIN TỨC - 7 BÀI) CRUD
 // =========================================================================
 
 export async function getArticlesFromFirebase(): Promise<Article[]> {
+  // 1. Try LocalStorage
+  try {
+    const local = localStorage.getItem("saigonone_articles");
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Ensure pure handbook/news articles without lens contamination
+        const filtered = parsed.filter(a => !a.lensBrandId);
+        if (filtered.length > 0) {
+          return filtered;
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 2. Try Firestore 'articles' collection
   try {
     const articlesRef = collection(db, "articles");
     const snapshot = await getDocs(articlesRef);
     if (!snapshot.empty) {
       const list: Article[] = [];
-      snapshot.forEach((d) => list.push({ id: d.id, ...d.data() } as Article));
-      return list;
+      snapshot.forEach((d) => {
+        const item = { id: d.id, ...d.data() } as Article;
+        if (!item.lensBrandId) {
+          list.push(item);
+        }
+      });
+      if (list.length > 0) {
+        localStorage.setItem("saigonone_articles", JSON.stringify(list));
+        return list;
+      }
     }
   } catch (err) {
     console.warn("[Firebase Firestore] Lấy articles thất bại, thử RTDB:", err);
   }
 
+  // 3. Try RTDB 'articles'
   try {
     const rtdbRef = ref(rtdb);
     const snap = await get(child(rtdbRef, "articles"));
     if (snap.exists()) {
       const data = snap.val();
-      return Object.values(data) as Article[];
+      const list = (Object.values(data) as Article[]).filter(a => !a.lensBrandId);
+      if (list.length > 0) {
+        localStorage.setItem("saigonone_articles", JSON.stringify(list));
+        return list;
+      }
     }
   } catch (e) {}
 
-  // Nạp bài viết mẫu ban đầu lên Firebase
-  const combinedInitialArticles = [...INITIAL_ARTICLES, ...INITIAL_LENS_ARTICLES];
+  // 4. Default Seed INITIAL_ARTICLES (7 bài Cẩm Nang & Tin Tức)
   await seedInitialArticlesToFirebase();
-  return combinedInitialArticles;
+  localStorage.setItem("saigonone_articles", JSON.stringify(INITIAL_ARTICLES));
+  return INITIAL_ARTICLES;
 }
 
 export async function addArticleToFirebase(article: Article): Promise<boolean> {
@@ -210,6 +239,12 @@ export async function addArticleToFirebase(article: Article): Promise<boolean> {
 
   try {
     await set(ref(rtdb, `articles/${article.id}`), data);
+  } catch (e) {}
+
+  try {
+    const current = await getArticlesFromFirebase();
+    const updated = [data, ...current.filter(a => a.id !== article.id)];
+    localStorage.setItem("saigonone_articles", JSON.stringify(updated));
   } catch (e) {}
 
   return true;
@@ -230,6 +265,12 @@ export async function updateArticleInFirebase(article: Article): Promise<boolean
     await update(ref(rtdb, `articles/${article.id}`), data);
   } catch (e) {}
 
+  try {
+    const current = await getArticlesFromFirebase();
+    const updated = current.map(a => a.id === article.id ? { ...a, ...data } : a);
+    localStorage.setItem("saigonone_articles", JSON.stringify(updated));
+  } catch (e) {}
+
   return true;
 }
 
@@ -242,12 +283,28 @@ export async function deleteArticleFromFirebase(articleId: string): Promise<bool
     await remove(ref(rtdb, `articles/${articleId}`));
   } catch (e) {}
 
+  try {
+    const current = await getArticlesFromFirebase();
+    const updated = current.filter(a => a.id !== articleId);
+    localStorage.setItem("saigonone_articles", JSON.stringify(updated));
+  } catch (e) {}
+
+  return true;
+}
+
+export async function saveAllArticlesToFirebase(articlesList: Article[]): Promise<boolean> {
+  localStorage.setItem("saigonone_articles", JSON.stringify(articlesList));
+  try {
+    for (const art of articlesList) {
+      await setDoc(doc(db, "articles", art.id), art);
+      await set(ref(rtdb, `articles/${art.id}`), art);
+    }
+  } catch (e) {}
   return true;
 }
 
 export async function seedInitialArticlesToFirebase() {
-  const combinedInitialArticles = [...INITIAL_ARTICLES, ...INITIAL_LENS_ARTICLES];
-  for (const art of combinedInitialArticles) {
+  for (const art of INITIAL_ARTICLES) {
     try {
       await setDoc(doc(db, "articles", art.id), art);
       await set(ref(rtdb, `articles/${art.id}`), art);
@@ -819,4 +876,146 @@ export async function saveAllLensBrandsToFirebase(brands: LensBrandCategory[]): 
   } catch (e) {}
   return true;
 }
+
+// =========================================================================
+// 10. LENS ARTICLES (BÀI VIẾT TRÒNG KÍNH - BẢNG ĐỘC LẬP 3 BÀI) CRUD
+// =========================================================================
+
+export async function getLensArticlesFromFirebase(): Promise<Article[]> {
+  // 1. Try LocalStorage
+  try {
+    const local = localStorage.getItem("saigonone_lens_articles");
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {}
+
+  // 2. Try Firestore 'lens_articles' collection
+  try {
+    const lensArticlesRef = collection(db, "lens_articles");
+    const snapshot = await getDocs(lensArticlesRef);
+    if (!snapshot.empty) {
+      const list: Article[] = [];
+      snapshot.forEach((d) => {
+        list.push({ id: d.id, ...d.data() } as Article);
+      });
+      if (list.length > 0) {
+        localStorage.setItem("saigonone_lens_articles", JSON.stringify(list));
+        return list;
+      }
+    }
+  } catch (err) {
+    console.warn("[Firebase Firestore] Lấy lens_articles thất bại, thử RTDB:", err);
+  }
+
+  // 3. Try RTDB 'lens_articles'
+  try {
+    const rtdbRef = ref(rtdb);
+    const snap = await get(child(rtdbRef, "lens_articles"));
+    if (snap.exists()) {
+      const data = snap.val();
+      const list = Object.values(data) as Article[];
+      if (list && list.length > 0) {
+        localStorage.setItem("saigonone_lens_articles", JSON.stringify(list));
+        return list;
+      }
+    }
+  } catch (e) {}
+
+  // 4. Default Seed INITIAL_LENS_ARTICLES (3 bài Tròng Kính Chuyên Biệt)
+  await seedInitialLensArticlesToFirebase();
+  localStorage.setItem("saigonone_lens_articles", JSON.stringify(INITIAL_LENS_ARTICLES));
+  return INITIAL_LENS_ARTICLES;
+}
+
+export async function addLensArticleToFirebase(article: Article): Promise<boolean> {
+  const timestamp = new Date().toISOString();
+  const data = {
+    ...article,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+
+  try {
+    await setDoc(doc(db, "lens_articles", article.id), data);
+  } catch (e) {}
+
+  try {
+    await set(ref(rtdb, `lens_articles/${article.id}`), data);
+  } catch (e) {}
+
+  try {
+    const current = await getLensArticlesFromFirebase();
+    const updated = [data, ...current.filter(a => a.id !== article.id)];
+    localStorage.setItem("saigonone_lens_articles", JSON.stringify(updated));
+  } catch (e) {}
+
+  return true;
+}
+
+export async function updateLensArticleInFirebase(article: Article): Promise<boolean> {
+  const timestamp = new Date().toISOString();
+  const data = {
+    ...article,
+    updatedAt: timestamp,
+  };
+
+  try {
+    await setDoc(doc(db, "lens_articles", article.id), data);
+  } catch (e) {}
+
+  try {
+    await update(ref(rtdb, `lens_articles/${article.id}`), data);
+  } catch (e) {}
+
+  try {
+    const current = await getLensArticlesFromFirebase();
+    const updated = current.map(a => a.id === article.id ? { ...a, ...data } : a);
+    localStorage.setItem("saigonone_lens_articles", JSON.stringify(updated));
+  } catch (e) {}
+
+  return true;
+}
+
+export async function deleteLensArticleFromFirebase(articleId: string): Promise<boolean> {
+  try {
+    await deleteDoc(doc(db, "lens_articles", articleId));
+  } catch (e) {}
+
+  try {
+    await remove(ref(rtdb, `lens_articles/${articleId}`));
+  } catch (e) {}
+
+  try {
+    const current = await getLensArticlesFromFirebase();
+    const updated = current.filter(a => a.id !== articleId);
+    localStorage.setItem("saigonone_lens_articles", JSON.stringify(updated));
+  } catch (e) {}
+
+  return true;
+}
+
+export async function saveAllLensArticlesToFirebase(articlesList: Article[]): Promise<boolean> {
+  localStorage.setItem("saigonone_lens_articles", JSON.stringify(articlesList));
+  try {
+    for (const art of articlesList) {
+      await setDoc(doc(db, "lens_articles", art.id), art);
+      await set(ref(rtdb, `lens_articles/${art.id}`), art);
+    }
+  } catch (e) {}
+  return true;
+}
+
+export async function seedInitialLensArticlesToFirebase() {
+  for (const art of INITIAL_LENS_ARTICLES) {
+    try {
+      await setDoc(doc(db, "lens_articles", art.id), art);
+      await set(ref(rtdb, `lens_articles/${art.id}`), art);
+    } catch (e) {}
+  }
+}
+
 

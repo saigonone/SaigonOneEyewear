@@ -91,11 +91,15 @@ import {
   addLensBrandToFirebase,
   updateLensBrandInFirebase,
   deleteLensBrandFromFirebase,
+  getLensArticlesFromFirebase,
+  addLensArticleToFirebase,
+  updateLensArticleInFirebase,
+  deleteLensArticleFromFirebase,
   db, 
   rtdb 
 } from "../firebase";
 import { INITIAL_BANNER_SLIDES } from "../data/mockBanners";
-import { INITIAL_LENS_BRANDS } from "../data/mockLensBrands";
+import { INITIAL_LENS_BRANDS, INITIAL_LENS_ARTICLES } from "../data/mockLensBrands";
 import { AdminBannerManager } from "./AdminBannerManager";
 import { AdminLensBrandsManager } from "./AdminLensBrandsManager";
 import { AdminLensArticlesManager } from "./AdminLensArticlesManager";
@@ -109,6 +113,8 @@ interface AdminPanelProps {
   onDeleteProduct: (id: string) => void;
   articles?: Article[];
   onUpdateArticles?: (articles: Article[]) => void;
+  lensArticles?: Article[];
+  onUpdateLensArticles?: (articles: Article[]) => void;
   lensBrands?: LensBrandCategory[];
   onUpdateLensBrands?: (brands: LensBrandCategory[]) => void;
   banners?: BannerSlide[];
@@ -136,6 +142,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onDeleteProduct,
   articles: initialArticles = [],
   onUpdateArticles,
+  lensArticles: initialLensArticles = INITIAL_LENS_ARTICLES,
+  onUpdateLensArticles,
   lensBrands: initialLensBrands = INITIAL_LENS_BRANDS,
   onUpdateLensBrands,
   banners: initialBanners = INITIAL_BANNER_SLIDES,
@@ -148,6 +156,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [appointmentFilter, setAppointmentFilter] = useState<string>("all");
   const [articles, setArticles] = useState<Article[]>(initialArticles);
+  const [lensArticles, setLensArticles] = useState<Article[]>(initialLensArticles);
   const [articleCategories, setArticleCategories] = useState<ArticleCategory[]>([]);
   const [productCategories, setProductCategories] = useState<ProductCategoryItem[]>([]);
   const [lensBrands, setLensBrands] = useState<LensBrandCategory[]>(initialLensBrands);
@@ -221,9 +230,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const loadData = async () => {
     setLoading(true);
     try {
-      const [fetchedOrders, fetchedArticles, fetchedArtCats, fetchedProdCats, fetchedAdmins, fetchedBanners, fetchedAppointments, fetchedLensBrands] = await Promise.all([
+      const [fetchedOrders, fetchedArticles, fetchedLensArticles, fetchedArtCats, fetchedProdCats, fetchedAdmins, fetchedBanners, fetchedAppointments, fetchedLensBrands] = await Promise.all([
         fetchOrdersFromFirebase(),
         getArticlesFromFirebase(),
+        getLensArticlesFromFirebase(),
         getArticleCategoriesFromFirebase(),
         getProductCategoriesFromFirebase(),
         getAdminsFromFirebase(),
@@ -233,6 +243,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       ]);
       setOrders(fetchedOrders);
       setArticles(fetchedArticles);
+      setLensArticles(fetchedLensArticles);
+      onUpdateLensArticles?.(fetchedLensArticles);
       setArticleCategories(fetchedArtCats);
       setProductCategories(fetchedProdCats);
       setAdmins(fetchedAdmins);
@@ -629,30 +641,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // HANDLERS: LENS ARTICLES (DEDICATED)
   // ==========================================
   const handleAddLensArticle = async (newArt: Article) => {
-    await addArticleToFirebase(newArt);
-    setArticles(prev => {
+    await addLensArticleToFirebase(newArt);
+    setLensArticles(prev => {
       const next = [newArt, ...prev];
-      onUpdateArticles?.(next);
+      onUpdateLensArticles?.(next);
       return next;
     });
   };
 
   const handleUpdateLensArticle = async (updated: Article) => {
-    await updateArticleInFirebase(updated);
-    setArticles(prev => {
+    await updateLensArticleInFirebase(updated);
+    setLensArticles(prev => {
       const next = prev.map(a => a.id === updated.id ? updated : a);
-      onUpdateArticles?.(next);
+      onUpdateLensArticles?.(next);
       return next;
     });
   };
 
   const handleDeleteLensArticle = async (id: string) => {
-    await deleteArticleFromFirebase(id);
-    setArticles(prev => {
-      const next = prev.filter(a => a.id !== id);
-      onUpdateArticles?.(next);
-      return next;
-    });
+    if (window.confirm("Bạn có chắc chắn muốn xóa bài viết tròng kính này không?")) {
+      await deleteLensArticleFromFirebase(id);
+      setLensArticles(prev => {
+        const next = prev.filter(a => a.id !== id);
+        onUpdateLensArticles?.(next);
+        return next;
+      });
+    }
   };
 
   const handleTogglePinLensArticle = async (art: Article) => {
@@ -660,10 +674,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       ...art,
       isPinned: !art.isPinned,
     };
-    await updateArticleInFirebase(updated);
-    setArticles(prev => {
+    await updateLensArticleInFirebase(updated);
+    setLensArticles(prev => {
       const next = prev.map(a => a.id === updated.id ? updated : a);
-      onUpdateArticles?.(next);
+      onUpdateLensArticles?.(next);
       return next;
     });
   };
@@ -898,7 +912,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             }`}
           >
             <Layers className="w-4 h-4 text-cyan-400" />
-            <span>Tròng Kính ({articles.filter(a => !!a.lensBrandId || (a.category && a.category.toLowerCase().includes("tròng"))).length})</span>
+            <span>Tròng Kính ({lensArticles.length})</span>
           </button>
 
           {/* Nhóm 3: Cẩm Nang & Tin Tức (Giữ nguyên) */}
@@ -911,7 +925,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>Cẩm Nang & Tin Tức ({articles.filter(a => !a.lensBrandId && !(a.category && a.category.toLowerCase().includes("tròng"))).length})</span>
+            <span>Cẩm Nang & Tin Tức ({articles.length})</span>
           </button>
 
           {/* Nhóm 4: Banners */}
@@ -1003,7 +1017,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              <span>Bài Viết Tròng Kính ({articles.filter(a => !!a.lensBrandId || (a.category && a.category.toLowerCase().includes("tròng"))).length})</span>
+              <span>Bài Viết Tròng Kính ({lensArticles.length})</span>
             </button>
             <button
               onClick={() => setActiveTab("lens_brands")}
@@ -1029,7 +1043,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              <span>Danh Sách Bài Viết ({articles.filter(a => !a.lensBrandId && !(a.category && a.category.toLowerCase().includes("tròng"))).length})</span>
+              <span>Danh Sách Bài Viết ({articles.length})</span>
             </button>
             <button
               onClick={() => setActiveTab("article_categories")}
@@ -1285,7 +1299,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           {/* ======================================================== */}
           {activeTab === "lens_articles" && (
             <AdminLensArticlesManager
-              articles={articles}
+              articles={lensArticles}
               lensBrands={lensBrands}
               onAddArticle={handleAddLensArticle}
               onUpdateArticle={handleUpdateLensArticle}
@@ -1364,7 +1378,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {articles
-                        .filter((art) => !art.lensBrandId && !(art.category && art.category.toLowerCase().includes("tròng")))
                         .filter((art) => {
                           const matchSearch =
                             art.title.toLowerCase().includes(artSearchFilter.toLowerCase()) ||

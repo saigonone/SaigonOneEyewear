@@ -43,6 +43,7 @@ interface HeaderProps {
   onSearchChange: (q: string) => void;
   selectedCategory: ProductCategory;
   onSelectCategory: (cat: ProductCategory) => void;
+  onGoHome?: () => void;
   selectedGender: GenderTarget | "all";
   onSelectGender: (g: GenderTarget | "all") => void;
 }
@@ -69,6 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   selectedCategory,
   onSelectCategory,
+  onGoHome,
   selectedGender,
   onSelectGender,
 }) => {
@@ -185,9 +187,17 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Brand Logo - Saigon One */}
-        <div 
+        <a 
+          href="/"
           className="flex items-center gap-2 cursor-pointer select-none shrink-0" 
-          onClick={() => onSelectCategory("all")}
+          onClick={(e) => {
+            e.preventDefault();
+            if (onGoHome) {
+              onGoHome();
+            } else {
+              onSelectCategory("all");
+            }
+          }}
         >
           <div className="w-8 h-8 sm:w-9 sm:h-9 bg-[#0f172a] rounded-lg flex items-center justify-center shadow-md shrink-0">
             <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white rounded-full flex items-center justify-center">
@@ -202,23 +212,31 @@ export const Header: React.FC<HeaderProps> = ({
               PREMIUM OPTICAL SOLUTIONS
             </p>
           </div>
-        </div>
+        </a>
 
         {/* Center Desktop Navigation Links */}
         <nav className="hidden lg:flex items-center space-x-3.5 xl:space-x-5 text-[13.5px] xl:text-[14.5px] font-bold text-neutral-800 whitespace-nowrap">
           
           {/* 1. Trang Chủ */}
-          <button
+          <a
             id="nav-link-home"
-            onClick={() => onSelectCategory("all")}
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              if (onGoHome) {
+                onGoHome();
+              } else {
+                onSelectCategory("all");
+              }
+            }}
             className={`transition-colors py-1 cursor-pointer whitespace-nowrap ${
-              selectedCategory === "all" && !isAboutActive && !isArticlesActive && !selectedLensBrandSlug
+              selectedCategory === "all" && !isAboutActive && !isArticlesActive && !isLensArticlesActive && !selectedLensBrandSlug
                 ? "text-amber-800 font-extrabold"
                 : "text-neutral-700 hover:text-amber-800"
             }`}
           >
             Trang Chủ
-          </button>
+          </a>
 
           {/* 2. Giới Thiệu Saigon One */}
           <button
@@ -485,20 +503,26 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="space-y-1">
             {/* 1. Trang Chủ */}
-            <button
+            <a
               id="mobile-nav-home"
-              onClick={() => {
-                onSelectCategory("all");
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                if (onGoHome) {
+                  onGoHome();
+                } else {
+                  onSelectCategory("all");
+                }
                 setMobileMenuOpen(false);
               }}
-              className={`w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-bold tracking-tight transition-colors ${
-                selectedCategory === "all" && !isAboutActive && !isArticlesActive && !selectedLensBrandSlug
+              className={`w-full block text-left px-3.5 py-2.5 rounded-xl text-sm font-bold tracking-tight transition-colors ${
+                selectedCategory === "all" && !isAboutActive && !isArticlesActive && !isLensArticlesActive && !selectedLensBrandSlug
                   ? "bg-amber-100 text-amber-900 font-extrabold"
                   : "text-neutral-800 hover:bg-neutral-50"
               }`}
             >
               Trang Chủ
-            </button>
+            </a>
 
             {/* 2. Giới Thiệu Saigon One */}
             <button

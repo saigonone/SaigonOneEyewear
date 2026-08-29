@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Camera, Sparkles, ChevronRight, Shield, Award, Clock, RefreshCw, Eye, ArrowRight, Check } from "lucide-react";
+import { Camera, Sparkles, ChevronRight, Shield, Award, Clock, RefreshCw, Eye, ArrowRight, Check, Calendar, MapPin, Phone } from "lucide-react";
 import { ProductCategory, BannerSlide } from "../types";
 import { INITIAL_BANNER_SLIDES } from "../data/mockBanners";
 
@@ -9,6 +9,7 @@ interface HeroBannerProps {
   onOpenFaceAdvisor: () => void;
   onOpenLensGuide: () => void;
   onSelectCategory: (cat: ProductCategory) => void;
+  onOpenStores?: () => void;
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({
@@ -17,6 +18,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   onOpenFaceAdvisor,
   onOpenLensGuide,
   onSelectCategory,
+  onOpenStores,
 }) => {
   const activeSlides = (slides && slides.length > 0) 
     ? slides.filter(s => s.isActive !== false)
@@ -42,6 +44,41 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   }, [validSlides.length]);
 
   const slide = validSlides[currentSlide] || validSlides[0];
+
+  const handleSecondaryButtonClick = () => {
+    const text = (slide.secondaryButtonText || "").toLowerCase();
+    if (text.includes("đặt lịch") || text.includes("liên hệ") || text.includes("cửa hàng") || text.includes("tư vấn")) {
+      if (onOpenStores) {
+        onOpenStores();
+      } else {
+        onOpenTryOn();
+      }
+    } else if (text.includes("hướng dẫn") || text.includes("chọn tròng") || text.includes("bảng giá")) {
+      onOpenLensGuide();
+    } else if (text.includes("thử kính") || text.includes("ar") || text.includes("virtual")) {
+      onOpenTryOn();
+    } else {
+      if (onOpenStores) {
+        onOpenStores();
+      } else {
+        onOpenTryOn();
+      }
+    }
+  };
+
+  const getSecondaryIcon = () => {
+    const text = (slide.secondaryButtonText || "").toLowerCase();
+    if (text.includes("đặt lịch") || text.includes("lịch")) {
+      return <Calendar className="w-4 h-4 text-blue-600" />;
+    }
+    if (text.includes("liên hệ") || text.includes("cửa hàng")) {
+      return <MapPin className="w-4 h-4 text-blue-600" />;
+    }
+    if (text.includes("hướng dẫn") || text.includes("chọn tròng")) {
+      return <Eye className="w-4 h-4 text-blue-600" />;
+    }
+    return <Camera className="w-4 h-4 text-blue-600" />;
+  };
 
   return (
     <div className="relative overflow-hidden bg-[#fdfdfd] border-b border-gray-100">
@@ -84,10 +121,10 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
             <button
               id="btn-hero-tryon-ar"
-              onClick={onOpenTryOn}
+              onClick={handleSecondaryButtonClick}
               className="px-7 py-3.5 border border-gray-200 text-slate-800 text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-gray-50 hover:border-slate-400 transition-all duration-200 cursor-pointer flex items-center gap-2 bg-white"
             >
-              <Camera className="w-4 h-4 text-blue-600" />
+              {getSecondaryIcon()}
               <span>{slide.secondaryButtonText}</span>
             </button>
           </div>

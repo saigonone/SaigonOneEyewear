@@ -56,14 +56,8 @@ export const AdminLensArticlesManager: React.FC<AdminLensArticlesManagerProps> =
   const [isPinned, setIsPinned] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Filter articles that belong to lens brands
-  const lensArticles = articles.filter((art) => {
-    // Article explicitly has lensBrandId OR tags include lens brands
-    if (art.lensBrandId) return true;
-    if (art.category && art.category.toLowerCase().includes("tròng")) return true;
-    if (art.tags && art.tags.some(t => lensBrands.some(b => b.brandKey === t || b.id === t || b.slug === t))) return true;
-    return false;
-  });
+  // Pure lens articles (3 items) from dedicated lens articles data source
+  const lensArticles = articles;
 
   const filteredArticles = lensArticles.filter((art) => {
     const matchSearch =

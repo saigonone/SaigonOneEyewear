@@ -75,7 +75,7 @@ import {
 import { MOCK_PRODUCTS } from "./data/mockProducts";
 import { INITIAL_ARTICLES, INITIAL_ARTICLE_CATEGORIES } from "./data/mockArticles";
 import { INITIAL_BANNER_SLIDES } from "./data/mockBanners";
-import { INITIAL_LENS_BRANDS } from "./data/mockLensBrands";
+import { INITIAL_LENS_BRANDS, INITIAL_LENS_ARTICLES } from "./data/mockLensBrands";
 import { 
   getProductsFromFirebase, 
   addProductToFirebase, 
@@ -83,6 +83,7 @@ import {
   updateProductInFirebase,
   subscribeToProductsFromFirebase,
   getArticlesFromFirebase,
+  getLensArticlesFromFirebase,
   getArticleCategoriesFromFirebase,
   getBannersFromFirebase,
   getLensBrandsFromFirebase
@@ -182,6 +183,7 @@ export default function App() {
 
   // Articles & News state loaded from Firebase
   const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
+  const [lensArticles, setLensArticles] = useState<Article[]>(INITIAL_LENS_ARTICLES);
   const [articleCategories, setArticleCategories] = useState<ArticleCategory[]>(INITIAL_ARTICLE_CATEGORIES);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
@@ -205,13 +207,15 @@ export default function App() {
   useEffect(() => {
     const loadContentData = async () => {
       try {
-        const [arts, cats, fetchedBanners, fetchedBrands] = await Promise.all([
+        const [arts, fetchedLensArts, cats, fetchedBanners, fetchedBrands] = await Promise.all([
           getArticlesFromFirebase(),
+          getLensArticlesFromFirebase(),
           getArticleCategoriesFromFirebase(),
           getBannersFromFirebase(),
           getLensBrandsFromFirebase()
         ]);
         if (arts && arts.length > 0) setArticles(arts);
+        if (fetchedLensArts && fetchedLensArts.length > 0) setLensArticles(fetchedLensArts);
         if (cats && cats.length > 0) setArticleCategories(cats);
         if (fetchedBanners && fetchedBanners.length > 0) setBanners(fetchedBanners);
         if (fetchedBrands && fetchedBrands.length > 0) setLensBrands(fetchedBrands);
@@ -225,7 +229,7 @@ export default function App() {
   // Sync route on initial load and on popstate (Back/Forward buttons)
   useEffect(() => {
     const handlePopState = () => {
-      const route = parseCurrentRoute(products, articles, lensBrands);
+      const route = parseCurrentRoute(products, [...articles, ...lensArticles], lensBrands);
       updateSEOMeta(route.title, route.description);
 
       if (route.category) {
@@ -291,7 +295,8 @@ export default function App() {
 
       if (route.articleId) {
         const decodedArticleId = decodeURIComponent(route.articleId).toLowerCase().trim();
-        const foundArt = articles.find((a) => {
+        const allAvailableArticles = [...articles, ...lensArticles];
+        const foundArt = allAvailableArticles.find((a) => {
           const artSlug = getArticleSlug(a).toLowerCase();
           const titleSlug = createSlug(a.title).toLowerCase();
           const aId = (a.id || "").toLowerCase();
@@ -357,9 +362,32 @@ export default function App() {
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [products, articles, lensBrands, isAdminAuthenticated]);
+  }, [products, articles, lensArticles, lensBrands, isAdminAuthenticated]);
 
   // Navigation handlers with HTML5 History API & SEO Title/Meta updates
+  const handleGoHome = () => {
+    setIsArticlesPage(false);
+    setIsLensArticlesPage(false);
+    setSelectedLensBrand(null);
+    setSelectedCategory("all");
+    setShowOnlyFavorites(false);
+    setSearchQuery("");
+    setIsAboutOpen(false);
+    setIsStoresOpen(false);
+    setIsTryOnModalOpen(false);
+    setIsOrderLookupOpen(false);
+    setIsAdminOpen(false);
+    setIsAdminLoginOpen(false);
+    setSelectedDetailProduct(null);
+    setSelectedArticle(null);
+    navigateTo("/");
+    updateSEOMeta(
+      "Saigon One Eyewear - Kính Mắt & Tròng Kính Chính Hãng Phú Nhuận",
+      "Hệ thống kính mắt Sài Gòn One - Đo khám khúc xạ chuẩn y khoa miễn phí, cắt kính lấy ngay 15 phút tại 178 Phan Đăng Lưu, Phú Nhuận, TP.HCM."
+    );
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleSelectCategory = (cat: ProductCategory) => {
     setIsArticlesPage(false);
     setIsLensArticlesPage(false);
@@ -726,6 +754,7 @@ export default function App() {
         }}
         selectedCategory={selectedCategory}
         onSelectCategory={handleSelectCategory}
+        onGoHome={handleGoHome}
         selectedGender={selectedGender}
         onSelectGender={setSelectedGender}
       />
@@ -740,7 +769,7 @@ export default function App() {
             setSelectedDetailProduct(null);
             handleSelectCategory(selectedCategory || "all");
           }}
-          onGoHome={() => handleSelectCategory("all")}
+          onGoHome={handleGoHome}
           onSelectCategory={handleSelectCategory}
           onSelectProduct={handleOpenProductDetail}
           onOpenTryOn={handleOpenTryOn}
@@ -759,7 +788,7 @@ export default function App() {
               handleOpenArticles();
             }
           }}
-          onGoHome={() => handleSelectCategory("all")}
+          onGoHome={handleGoHome}
           onSelectArticle={handleOpenArticleDetail}
           onOpenStores={handleOpenStores}
           onOpenTryOn={() => handleOpenTryOn()}
@@ -771,22 +800,22 @@ export default function App() {
       ) : selectedLensBrand ? (
         <LensBrandDetail
           brand={selectedLensBrand}
-          articles={articles}
+          articles={lensArticles}
           allBrands={lensBrands}
           onSelectArticle={handleOpenArticleDetail}
           onSelectBrand={handleSelectLensBrand}
-          onGoHome={() => handleSelectCategory("all")}
+          onGoHome={handleGoHome}
           onOpenStores={handleOpenStores}
           onOpenTryOn={() => handleOpenTryOn()}
           onOpenLensGuide={() => setIsLensGuideOpen(true)}
         />
       ) : isLensArticlesPage ? (
         <LensArticlesPage
-          articles={articles}
+          articles={lensArticles}
           lensBrands={lensBrands}
           onSelectArticle={handleOpenArticleDetail}
           onSelectBrand={handleSelectLensBrand}
-          onGoHome={() => handleSelectCategory("all")}
+          onGoHome={handleGoHome}
           onOpenStores={handleOpenStores}
           onOpenTryOn={() => handleOpenTryOn()}
           onOpenLensGuide={() => setIsLensGuideOpen(true)}
@@ -796,7 +825,7 @@ export default function App() {
           articles={articles}
           categories={articleCategories}
           onSelectArticle={handleOpenArticleDetail}
-          onGoHome={() => handleSelectCategory("all")}
+          onGoHome={handleGoHome}
           onOpenStores={handleOpenStores}
           onOpenTryOn={() => handleOpenTryOn()}
         />
@@ -810,6 +839,7 @@ export default function App() {
               onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
               onOpenLensGuide={() => setIsLensGuideOpen(true)}
               onSelectCategory={handleSelectCategory}
+              onOpenStores={handleOpenStores}
             />
           )}
 
@@ -1078,6 +1108,8 @@ export default function App() {
           onDeleteProduct={handleDeleteProduct}
           articles={articles}
           onUpdateArticles={(updated) => setArticles(updated)}
+          lensArticles={lensArticles}
+          onUpdateLensArticles={(updated) => setLensArticles(updated)}
           banners={banners}
           onUpdateBanners={(updated) => setBanners(updated)}
           lensBrands={lensBrands}
@@ -1096,6 +1128,7 @@ export default function App() {
 
       {/* Footer */}
       <Footer
+        onGoHome={handleGoHome}
         onSelectCategory={(cat) => {
           setIsArticlesPage(false);
           handleSelectCategory(cat);
