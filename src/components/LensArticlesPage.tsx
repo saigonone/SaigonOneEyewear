@@ -51,9 +51,9 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
   const [selectedFeatureFilter, setSelectedFeatureFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Use pure lens articles data source (3 articles)
+  // Use lens articles data source directly from Firestore 'lens_articles' collection
   const allLensArticles = useMemo(() => {
-    return (articles || []).filter((art) => art && art.isPublished !== false);
+    return (articles || []).filter((art) => Boolean(art && (art.title || (art as any).name || art.id)));
   }, [articles]);
 
   // Filtering based on active brand tab, feature tag, and search query

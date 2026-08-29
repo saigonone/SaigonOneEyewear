@@ -165,17 +165,71 @@ export async function seedInitialProductsToFirebase() {
 }
 
 // =========================================================================
-// 2. ARTICLES / BÀI VIẾT CẨM NANG (CẨM NANG & TIN TỨC - 7 BÀI) CRUD
+// 2. ARTICLES / BÀI VIẾT CẨM NANG (CẨM NANG & TIN TỨC) CRUD
 // =========================================================================
 
 export async function getArticlesFromFirebase(): Promise<Article[]> {
-  // 1. Try LocalStorage
+  // 1. First Priority: Direct Firestore 'articles' collection query
+  try {
+    const articlesRef = collection(db, "articles");
+    const snapshot = await getDocs(articlesRef);
+    if (!snapshot.empty) {
+      const list: Article[] = [];
+      snapshot.forEach((d) => {
+        const raw = d.data();
+        const item: Article = {
+          id: d.id,
+          title: raw.title || raw.name || "",
+          slug: raw.slug || "",
+          summary: raw.summary || raw.description || raw.excerpt || "",
+          content: raw.content || raw.body || raw.htmlContent || "",
+          thumbnail: raw.thumbnail || raw.image || raw.imageUrl || raw.cover || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80",
+          category: raw.category || "Cẩm Nang Thị Lực",
+          author: raw.author || raw.authorName || "Ban Biên Tập Mắt Kính Sài Gòn One",
+          authorRole: raw.authorRole || raw.role || "Chuyên Viên Khúc Xạ",
+          publishedAt: raw.publishedAt || raw.publishedDate || raw.createdAt || "2026",
+          readTime: raw.readTime || "5 phút đọc",
+          views: typeof raw.views === "number" ? raw.views : 120,
+          tags: Array.isArray(raw.tags) ? raw.tags : [],
+          isFeatured: Boolean(raw.isFeatured || raw.featured || raw.isPinned || raw.pinned),
+          isPinned: Boolean(raw.isPinned || raw.pinned),
+          isPublished: raw.isPublished !== false,
+          lensBrandId: raw.lensBrandId || undefined,
+          ...raw,
+        };
+        if (!item.lensBrandId) {
+          list.push(item);
+        }
+      });
+      if (list.length > 0) {
+        try { localStorage.setItem("saigonone_articles", JSON.stringify(list)); } catch (e) {}
+        return list;
+      }
+    }
+  } catch (err) {
+    console.warn("[Firebase Firestore] Lấy articles thất bại, thử RTDB/Local:", err);
+  }
+
+  // 2. Second Priority: Try RTDB 'articles'
+  try {
+    const rtdbRef = ref(rtdb);
+    const snap = await get(child(rtdbRef, "articles"));
+    if (snap.exists()) {
+      const data = snap.val();
+      const list = (Object.values(data) as Article[]).filter(a => !a.lensBrandId);
+      if (list.length > 0) {
+        try { localStorage.setItem("saigonone_articles", JSON.stringify(list)); } catch (e) {}
+        return list;
+      }
+    }
+  } catch (e) {}
+
+  // 3. Third Priority: Try LocalStorage Cache
   try {
     const local = localStorage.getItem("saigonone_articles");
     if (local) {
       const parsed = JSON.parse(local);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Ensure pure handbook/news articles without lens contamination
         const filtered = parsed.filter(a => !a.lensBrandId);
         if (filtered.length > 0) {
           return filtered;
@@ -184,45 +238,55 @@ export async function getArticlesFromFirebase(): Promise<Article[]> {
     }
   } catch (e) {}
 
-  // 2. Try Firestore 'articles' collection
-  try {
-    const articlesRef = collection(db, "articles");
-    const snapshot = await getDocs(articlesRef);
-    if (!snapshot.empty) {
-      const list: Article[] = [];
-      snapshot.forEach((d) => {
-        const item = { id: d.id, ...d.data() } as Article;
-        if (!item.lensBrandId) {
-          list.push(item);
-        }
-      });
-      if (list.length > 0) {
-        localStorage.setItem("saigonone_articles", JSON.stringify(list));
-        return list;
-      }
-    }
-  } catch (err) {
-    console.warn("[Firebase Firestore] Lấy articles thất bại, thử RTDB:", err);
-  }
-
-  // 3. Try RTDB 'articles'
-  try {
-    const rtdbRef = ref(rtdb);
-    const snap = await get(child(rtdbRef, "articles"));
-    if (snap.exists()) {
-      const data = snap.val();
-      const list = (Object.values(data) as Article[]).filter(a => !a.lensBrandId);
-      if (list.length > 0) {
-        localStorage.setItem("saigonone_articles", JSON.stringify(list));
-        return list;
-      }
-    }
-  } catch (e) {}
-
-  // 4. Default Seed INITIAL_ARTICLES (7 bài Cẩm Nang & Tin Tức)
+  // 4. Default Seed INITIAL_ARTICLES
   await seedInitialArticlesToFirebase();
-  localStorage.setItem("saigonone_articles", JSON.stringify(INITIAL_ARTICLES));
+  try { localStorage.setItem("saigonone_articles", JSON.stringify(INITIAL_ARTICLES)); } catch (e) {}
   return INITIAL_ARTICLES;
+}
+
+export function subscribeToArticlesFromFirebase(onUpdate: (articles: Article[]) => void) {
+  try {
+    const q = collection(db, "articles");
+    return onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const list: Article[] = [];
+        snapshot.forEach((d) => {
+          const raw = d.data();
+          const item: Article = {
+            id: d.id,
+            title: raw.title || raw.name || "",
+            slug: raw.slug || "",
+            summary: raw.summary || raw.description || raw.excerpt || "",
+            content: raw.content || raw.body || raw.htmlContent || "",
+            thumbnail: raw.thumbnail || raw.image || raw.imageUrl || raw.cover || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80",
+            category: raw.category || "Cẩm Nang Thị Lực",
+            author: raw.author || raw.authorName || "Ban Biên Tập Mắt Kính Sài Gòn One",
+            authorRole: raw.authorRole || raw.role || "Chuyên Viên Khúc Xạ",
+            publishedAt: raw.publishedAt || raw.publishedDate || raw.createdAt || "2026",
+            readTime: raw.readTime || "5 phút đọc",
+            views: typeof raw.views === "number" ? raw.views : 120,
+            tags: Array.isArray(raw.tags) ? raw.tags : [],
+            isFeatured: Boolean(raw.isFeatured || raw.featured || raw.isPinned || raw.pinned),
+            isPinned: Boolean(raw.isPinned || raw.pinned),
+            isPublished: raw.isPublished !== false,
+            lensBrandId: raw.lensBrandId || undefined,
+            ...raw,
+          };
+          if (!item.lensBrandId) {
+            list.push(item);
+          }
+        });
+        if (list.length > 0) {
+          try { localStorage.setItem("saigonone_articles", JSON.stringify(list)); } catch (e) {}
+          onUpdate(list);
+        }
+      }
+    }, (err) => {
+      console.warn("[Firebase] Realtime articles listener warning:", err);
+    });
+  } catch (e) {
+    return () => {};
+  }
 }
 
 export async function addArticleToFirebase(article: Article): Promise<boolean> {
@@ -878,11 +942,64 @@ export async function saveAllLensBrandsToFirebase(brands: LensBrandCategory[]): 
 }
 
 // =========================================================================
-// 10. LENS ARTICLES (BÀI VIẾT TRÒNG KÍNH - BẢNG ĐỘC LẬP 3 BÀI) CRUD
+// 10. LENS ARTICLES (BÀI VIẾT TRÒNG KÍNH - COLLECTION 'lens_articles') CRUD
 // =========================================================================
 
 export async function getLensArticlesFromFirebase(): Promise<Article[]> {
-  // 1. Try LocalStorage
+  // 1. First Priority: Direct query to Firestore 'lens_articles' collection
+  try {
+    const lensArticlesRef = collection(db, "lens_articles");
+    const snapshot = await getDocs(lensArticlesRef);
+    if (!snapshot.empty) {
+      const list: Article[] = [];
+      snapshot.forEach((d) => {
+        const raw = d.data();
+        const item: Article = {
+          id: d.id,
+          title: raw.title || raw.name || "Bài Viết Tròng Kính",
+          slug: raw.slug || "",
+          summary: raw.summary || raw.description || raw.excerpt || "",
+          content: raw.content || raw.body || raw.htmlContent || "",
+          thumbnail: raw.thumbnail || raw.image || raw.imageUrl || raw.cover || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80",
+          category: raw.category || "Tròng Kính Chính Hãng",
+          author: raw.author || raw.authorName || "Chuyên Gia Kính Thuốc Saigon One",
+          authorRole: raw.authorRole || raw.role || "Chuyên Viên Khúc Xạ",
+          publishedAt: raw.publishedAt || raw.publishedDate || raw.createdAt || "2026",
+          readTime: raw.readTime || "5 phút đọc",
+          views: typeof raw.views === "number" ? raw.views : 150,
+          tags: Array.isArray(raw.tags) ? raw.tags : [],
+          isFeatured: Boolean(raw.isFeatured || raw.featured || raw.isPinned || raw.pinned),
+          isPinned: Boolean(raw.isPinned || raw.pinned),
+          isPublished: raw.isPublished !== false,
+          lensBrandId: raw.lensBrandId || "",
+          ...raw,
+        };
+        list.push(item);
+      });
+      if (list.length > 0) {
+        try { localStorage.setItem("saigonone_lens_articles", JSON.stringify(list)); } catch (e) {}
+        return list;
+      }
+    }
+  } catch (err) {
+    console.warn("[Firebase Firestore] Lấy lens_articles thất bại, thử RTDB/Local:", err);
+  }
+
+  // 2. Second Priority: Try RTDB 'lens_articles'
+  try {
+    const rtdbRef = ref(rtdb);
+    const snap = await get(child(rtdbRef, "lens_articles"));
+    if (snap.exists()) {
+      const data = snap.val();
+      const list = Object.values(data) as Article[];
+      if (list && list.length > 0) {
+        try { localStorage.setItem("saigonone_lens_articles", JSON.stringify(list)); } catch (e) {}
+        return list;
+      }
+    }
+  } catch (e) {}
+
+  // 3. Third Priority: Try LocalStorage cache
   try {
     const local = localStorage.getItem("saigonone_lens_articles");
     if (local) {
@@ -893,42 +1010,53 @@ export async function getLensArticlesFromFirebase(): Promise<Article[]> {
     }
   } catch (e) {}
 
-  // 2. Try Firestore 'lens_articles' collection
-  try {
-    const lensArticlesRef = collection(db, "lens_articles");
-    const snapshot = await getDocs(lensArticlesRef);
-    if (!snapshot.empty) {
-      const list: Article[] = [];
-      snapshot.forEach((d) => {
-        list.push({ id: d.id, ...d.data() } as Article);
-      });
-      if (list.length > 0) {
-        localStorage.setItem("saigonone_lens_articles", JSON.stringify(list));
-        return list;
-      }
-    }
-  } catch (err) {
-    console.warn("[Firebase Firestore] Lấy lens_articles thất bại, thử RTDB:", err);
-  }
-
-  // 3. Try RTDB 'lens_articles'
-  try {
-    const rtdbRef = ref(rtdb);
-    const snap = await get(child(rtdbRef, "lens_articles"));
-    if (snap.exists()) {
-      const data = snap.val();
-      const list = Object.values(data) as Article[];
-      if (list && list.length > 0) {
-        localStorage.setItem("saigonone_lens_articles", JSON.stringify(list));
-        return list;
-      }
-    }
-  } catch (e) {}
-
-  // 4. Default Seed INITIAL_LENS_ARTICLES (3 bài Tròng Kính Chuyên Biệt)
+  // 4. Default Seed INITIAL_LENS_ARTICLES if completely empty
   await seedInitialLensArticlesToFirebase();
-  localStorage.setItem("saigonone_lens_articles", JSON.stringify(INITIAL_LENS_ARTICLES));
+  try { localStorage.setItem("saigonone_lens_articles", JSON.stringify(INITIAL_LENS_ARTICLES)); } catch (e) {}
   return INITIAL_LENS_ARTICLES;
+}
+
+export function subscribeToLensArticlesFromFirebase(onUpdate: (articles: Article[]) => void) {
+  try {
+    const q = collection(db, "lens_articles");
+    return onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const list: Article[] = [];
+        snapshot.forEach((d) => {
+          const raw = d.data();
+          const item: Article = {
+            id: d.id,
+            title: raw.title || raw.name || "Bài Viết Tròng Kính",
+            slug: raw.slug || "",
+            summary: raw.summary || raw.description || raw.excerpt || "",
+            content: raw.content || raw.body || raw.htmlContent || "",
+            thumbnail: raw.thumbnail || raw.image || raw.imageUrl || raw.cover || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80",
+            category: raw.category || "Tròng Kính Chính Hãng",
+            author: raw.author || raw.authorName || "Chuyên Gia Kính Thuốc Saigon One",
+            authorRole: raw.authorRole || raw.role || "Chuyên Viên Khúc Xạ",
+            publishedAt: raw.publishedAt || raw.publishedDate || raw.createdAt || "2026",
+            readTime: raw.readTime || "5 phút đọc",
+            views: typeof raw.views === "number" ? raw.views : 150,
+            tags: Array.isArray(raw.tags) ? raw.tags : [],
+            isFeatured: Boolean(raw.isFeatured || raw.featured || raw.isPinned || raw.pinned),
+            isPinned: Boolean(raw.isPinned || raw.pinned),
+            isPublished: raw.isPublished !== false,
+            lensBrandId: raw.lensBrandId || "",
+            ...raw,
+          };
+          list.push(item);
+        });
+        if (list.length > 0) {
+          try { localStorage.setItem("saigonone_lens_articles", JSON.stringify(list)); } catch (e) {}
+          onUpdate(list);
+        }
+      }
+    }, (err) => {
+      console.warn("[Firebase] Realtime lens_articles listener warning:", err);
+    });
+  } catch (e) {
+    return () => {};
+  }
 }
 
 export async function addLensArticleToFirebase(article: Article): Promise<boolean> {

@@ -172,12 +172,12 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
             </div>
 
             {/* Article Headline - Modern Sans-Serif font */}
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-sans text-slate-950 leading-tight mb-6 tracking-tight">
+            <h1 className="text-xl sm:text-2xl md:text-2xl lg:text-[26px] font-bold font-sans text-slate-950 leading-snug mb-5 tracking-tight">
               {article.title}
             </h1>
 
             {/* Author Meta Strip (No publish date) */}
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs sm:text-sm text-slate-500 pb-6 mb-8 border-b border-gray-100">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs sm:text-sm text-slate-500 pb-5 mb-6 border-b border-gray-100">
               <div className="flex items-center gap-2 text-slate-800 font-semibold">
                 <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
                   SO
@@ -193,18 +193,6 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                 <span>{article.readTime}</span>
               </div>
             </div>
-
-            {/* Featured Image */}
-            {article.thumbnail && (
-              <div className="relative w-full h-72 sm:h-96 md:h-[420px] rounded-2xl overflow-hidden shadow-sm border border-gray-200/80 mb-8 bg-slate-900">
-                <img
-                  src={article.thumbnail}
-                  alt={article.title}
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-            )}
 
             {/* Summary Highlight Quote Callout */}
             {article.summary && (

@@ -83,7 +83,9 @@ import {
   updateProductInFirebase,
   subscribeToProductsFromFirebase,
   getArticlesFromFirebase,
+  subscribeToArticlesFromFirebase,
   getLensArticlesFromFirebase,
+  subscribeToLensArticlesFromFirebase,
   getArticleCategoriesFromFirebase,
   getBannersFromFirebase,
   getLensBrandsFromFirebase
@@ -205,6 +207,9 @@ export default function App() {
 
   // Sync articles, categories, banners and lens brands from Firebase
   useEffect(() => {
+    let unsubscribeLens: (() => void) | undefined;
+    let unsubscribeArts: (() => void) | undefined;
+
     const loadContentData = async () => {
       try {
         const [arts, fetchedLensArts, cats, fetchedBanners, fetchedBrands] = await Promise.all([
@@ -222,8 +227,28 @@ export default function App() {
       } catch (e) {
         console.error("Error loading articles, banners and lens brands:", e);
       }
+
+      // Realtime subscription for lens_articles collection
+      unsubscribeLens = subscribeToLensArticlesFromFirebase((realtimeLensArts) => {
+        if (realtimeLensArts && realtimeLensArts.length > 0) {
+          setLensArticles(realtimeLensArts);
+        }
+      });
+
+      // Realtime subscription for articles collection
+      unsubscribeArts = subscribeToArticlesFromFirebase((realtimeArts) => {
+        if (realtimeArts && realtimeArts.length > 0) {
+          setArticles(realtimeArts);
+        }
+      });
     };
+
     loadContentData();
+
+    return () => {
+      if (unsubscribeLens) unsubscribeLens();
+      if (unsubscribeArts) unsubscribeArts();
+    };
   }, []);
 
   // Sync route on initial load and on popstate (Back/Forward buttons)

@@ -171,9 +171,11 @@ export interface Article {
   content: string;
   thumbnail: string;
   author: string;
+  authorRole?: string;
   readTime: string;
   publishedAt: string;
   viewsCount?: number;
+  views?: number;
   tags?: string[];
   isFeatured?: boolean;
   isPinned?: boolean; // Ghim bài viết lên đầu trang chuyên mục tròng kính
