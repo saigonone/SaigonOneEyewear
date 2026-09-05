@@ -36,6 +36,8 @@ interface HeaderProps {
   isArticlesActive?: boolean;
   onOpenLensArticles?: () => void;
   isLensArticlesActive?: boolean;
+  onOpenProducts?: (category?: ProductCategory) => void;
+  isProductsActive?: boolean;
   lensBrands?: LensBrandCategory[];
   onSelectLensBrand?: (brand: LensBrandCategory) => void;
   selectedLensBrandSlug?: string;
@@ -63,6 +65,8 @@ export const Header: React.FC<HeaderProps> = ({
   isArticlesActive = false,
   onOpenLensArticles,
   isLensArticlesActive = false,
+  onOpenProducts,
+  isProductsActive = false,
   lensBrands = INITIAL_LENS_BRANDS,
   onSelectLensBrand,
   selectedLensBrandSlug,
@@ -110,9 +114,13 @@ export const Header: React.FC<HeaderProps> = ({
     onSelectCategory(cat);
     setIsProductsDropdownOpen(false);
     setMobileMenuOpen(false);
-    const el = document.getElementById("products-catalog-section");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
+    if (onOpenProducts) {
+      onOpenProducts(cat);
+    } else {
+      const el = document.getElementById("products-catalog-section");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
     }
   };
 
@@ -230,7 +238,7 @@ export const Header: React.FC<HeaderProps> = ({
               }
             }}
             className={`transition-colors py-1 cursor-pointer whitespace-nowrap ${
-              selectedCategory === "all" && !isAboutActive && !isArticlesActive && !isLensArticlesActive && !selectedLensBrandSlug
+              !isProductsActive && selectedCategory === "all" && !isAboutActive && !isArticlesActive && !isLensArticlesActive && !selectedLensBrandSlug
                 ? "text-amber-800 font-extrabold"
                 : "text-neutral-700 hover:text-amber-800"
             }`}
@@ -261,11 +269,15 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="nav-link-products-dropdown"
               onClick={() => {
-                setIsProductsDropdownOpen(!isProductsDropdownOpen);
-                onSelectCategory("all");
+                if (onOpenProducts) {
+                  onOpenProducts("all");
+                } else {
+                  setIsProductsDropdownOpen(!isProductsDropdownOpen);
+                  onSelectCategory("all");
+                }
               }}
               className={`flex items-center gap-1 py-1 transition-colors cursor-pointer whitespace-nowrap ${
-                !isAboutActive && !isArticlesActive && !selectedLensBrandSlug && (selectedCategory !== "all" || isProductsDropdownOpen)
+                isProductsActive || isProductsDropdownOpen
                   ? "text-amber-800 font-extrabold"
                   : "text-neutral-700 hover:text-amber-800"
               }`}
@@ -516,7 +528,7 @@ export const Header: React.FC<HeaderProps> = ({
                 setMobileMenuOpen(false);
               }}
               className={`w-full block text-left px-3.5 py-2.5 rounded-xl text-sm font-bold tracking-tight transition-colors ${
-                selectedCategory === "all" && !isAboutActive && !isArticlesActive && !isLensArticlesActive && !selectedLensBrandSlug
+                !isProductsActive && selectedCategory === "all" && !isAboutActive && !isArticlesActive && !isLensArticlesActive && !selectedLensBrandSlug
                   ? "bg-amber-100 text-amber-900 font-extrabold"
                   : "text-neutral-800 hover:bg-neutral-50"
               }`}
@@ -545,7 +557,9 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="mobile-nav-products-toggle"
                 onClick={() => setMobileProductsOpen(!mobileProductsOpen)}
-                className="w-full flex items-center justify-between px-3.5 py-2.5 bg-neutral-50 text-sm font-bold tracking-tight text-neutral-800"
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 text-sm font-bold tracking-tight ${
+                  isProductsActive ? "bg-amber-50 text-amber-900 font-black" : "bg-neutral-50 text-neutral-800"
+                }`}
               >
                 <span>Sản Phẩm</span>
                 <ChevronDown className={`w-4 h-4 transition-transform ${mobileProductsOpen ? "rotate-180" : ""}`} />
@@ -553,12 +567,26 @@ export const Header: React.FC<HeaderProps> = ({
 
               {mobileProductsOpen && (
                 <div className="p-2 space-y-1 bg-white">
+                  <button
+                    onClick={() => {
+                      if (onOpenProducts) {
+                        onOpenProducts("all");
+                      } else {
+                        handleSelectSubCategory("all");
+                      }
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-amber-900 bg-amber-50/80 mb-1 flex items-center justify-between"
+                  >
+                    <span>Xem Tất Cả Sản Phẩm</span>
+                    <span className="text-[10px] bg-amber-200/80 text-amber-900 px-1.5 py-0.5 rounded-full font-bold">2026</span>
+                  </button>
                   {subCategories.map((sub) => (
                     <button
                       key={sub.id}
                       onClick={() => handleSelectSubCategory(sub.id)}
                       className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
-                        selectedCategory === sub.id
+                        isProductsActive && selectedCategory === sub.id
                           ? "bg-amber-50 text-amber-900 font-bold"
                           : "text-neutral-600 hover:bg-neutral-50"
                       }`}

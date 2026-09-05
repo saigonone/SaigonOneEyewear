@@ -42,6 +42,9 @@ import {
   ArticlesPage 
 } from "./components/ArticlesPage";
 import { 
+  ProductsPage 
+} from "./components/ProductsPage";
+import { 
   ArticleDetailPage 
 } from "./components/ArticleDetailPage";
 import { 
@@ -113,7 +116,9 @@ import {
   Check, 
   X, 
   RotateCcw,
-  Glasses
+  Glasses,
+  ChevronRight,
+  ArrowRight
 } from "lucide-react";
 
 export default function App() {
@@ -181,6 +186,7 @@ export default function App() {
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false);
   const [isArticlesPage, setIsArticlesPage] = useState<boolean>(false);
   const [isLensArticlesPage, setIsLensArticlesPage] = useState<boolean>(false);
+  const [isProductsPage, setIsProductsPage] = useState<boolean>(false);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
 
   // Articles & News state loaded from Firebase
@@ -266,6 +272,7 @@ export default function App() {
       setIsOrderLookupOpen(!!route.isOrderLookup);
       setIsArticlesPage(!!route.isArticlesPage);
       setIsLensArticlesPage(!!route.isLensArticlesPage);
+      setIsProductsPage(!!route.isProductsPage);
 
       if (route.isAdmin) {
         if (isAdminAuthenticated) {
@@ -305,6 +312,7 @@ export default function App() {
           setSelectedDetailProduct({ product: found });
           setIsArticlesPage(false);
           setIsLensArticlesPage(false);
+          setIsProductsPage(false);
           setSelectedArticle(null);
           setSelectedLensBrand(null);
           updateSEOMeta(
@@ -337,6 +345,7 @@ export default function App() {
           setSelectedArticle(foundArt);
           setIsArticlesPage(false);
           setIsLensArticlesPage(false);
+          setIsProductsPage(false);
           setSelectedDetailProduct(null);
           setSelectedLensBrand(null);
           updateSEOMeta(
@@ -370,6 +379,7 @@ export default function App() {
           setSelectedArticle(null);
           setIsArticlesPage(false);
           setIsLensArticlesPage(false);
+          setIsProductsPage(false);
           updateSEOMeta(
             `${foundBrand.name} (${foundBrand.origin}) Chính Hãng | Saigon One Eyewear`,
             foundBrand.description
@@ -393,6 +403,7 @@ export default function App() {
   const handleGoHome = () => {
     setIsArticlesPage(false);
     setIsLensArticlesPage(false);
+    setIsProductsPage(false);
     setSelectedLensBrand(null);
     setSelectedCategory("all");
     setShowOnlyFavorites(false);
@@ -413,12 +424,13 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSelectCategory = (cat: ProductCategory) => {
+  const handleOpenProducts = (category: ProductCategory = "all") => {
     setIsArticlesPage(false);
     setIsLensArticlesPage(false);
+    setIsProductsPage(true);
     setSelectedLensBrand(null);
-    setSelectedCategory(cat);
-    const targetPath = cat === "all" ? "/san-pham" : CATEGORY_TO_PATH[cat] || "/san-pham";
+    setSelectedCategory(category);
+    const targetPath = category === "all" ? "/san-pham" : CATEGORY_TO_PATH[category] || "/san-pham";
     navigateTo(targetPath);
     const route = parseCurrentRoute(products, articles, lensBrands);
     updateSEOMeta(route.title, route.description);
@@ -433,11 +445,16 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleSelectCategory = (cat: ProductCategory) => {
+    handleOpenProducts(cat);
+  };
+
   const handleSelectLensBrand = (brand: LensBrandCategory) => {
     navigateTo(`/trong-kinh/${brand.slug}`);
     setSelectedLensBrand(brand);
     setIsArticlesPage(false);
     setIsLensArticlesPage(false);
+    setIsProductsPage(false);
     setIsAboutOpen(false);
     setIsStoresOpen(false);
     setIsTryOnModalOpen(false);
@@ -475,6 +492,7 @@ export default function App() {
     navigateTo("/cam-nang");
     setIsArticlesPage(true);
     setIsLensArticlesPage(false);
+    setIsProductsPage(false);
     setSelectedLensBrand(null);
     setIsAboutOpen(false);
     setIsStoresOpen(false);
@@ -495,6 +513,7 @@ export default function App() {
     navigateTo("/trong-kinh");
     setIsLensArticlesPage(true);
     setIsArticlesPage(false);
+    setIsProductsPage(false);
     setSelectedLensBrand(null);
     setIsAboutOpen(false);
     setIsStoresOpen(false);
@@ -767,6 +786,8 @@ export default function App() {
         isArticlesActive={isArticlesPage}
         onOpenLensArticles={handleOpenLensArticles}
         isLensArticlesActive={isLensArticlesPage}
+        onOpenProducts={handleOpenProducts}
+        isProductsActive={isProductsPage}
         lensBrands={lensBrands}
         onSelectLensBrand={handleSelectLensBrand}
         selectedLensBrandSlug={selectedLensBrand?.slug}
@@ -854,214 +875,175 @@ export default function App() {
           onOpenStores={handleOpenStores}
           onOpenTryOn={() => handleOpenTryOn()}
         />
+      ) : isProductsPage ? (
+        <ProductsPage
+          products={products}
+          selectedCategory={selectedCategory}
+          onSelectCategory={(cat) => {
+            setSelectedCategory(cat);
+            const path = CATEGORY_TO_PATH[cat] || "/san-pham";
+            navigateTo(path);
+          }}
+          onGoHome={handleGoHome}
+          onOpenProductDetail={handleOpenProductDetail}
+          onOpenTryOn={handleOpenTryOn}
+          onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
+          onOpenLensGuide={() => setIsLensGuideOpen(true)}
+          onOpenStores={handleOpenStores}
+          favoriteIds={favoriteIds}
+          onToggleFavorite={handleToggleFavorite}
+          initialSearchQuery={searchQuery}
+        />
       ) : (
         <>
-          {/* Hero Banner (Only if not in search or favorites mode) */}
-          {!searchQuery && !showOnlyFavorites && (
-            <HeroBanner
-              slides={banners}
-              onOpenTryOn={() => handleOpenTryOn()}
-              onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
-              onOpenLensGuide={() => setIsLensGuideOpen(true)}
-              onSelectCategory={handleSelectCategory}
-              onOpenStores={handleOpenStores}
-            />
-          )}
+          {/* Hero Banner on Home */}
+          <HeroBanner
+            slides={banners}
+            onOpenTryOn={() => handleOpenTryOn()}
+            onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
+            onOpenLensGuide={() => setIsLensGuideOpen(true)}
+            onSelectCategory={(cat) => handleOpenProducts(cat)}
+            onOpenStores={handleOpenStores}
+          />
 
-      {/* Main Catalog Content */}
-      <main id="products-catalog-section" className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 w-full">
-        
-        {/* Section Title & Filter Controls Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gray-100">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-                {showOnlyFavorites 
-                  ? `Kính Yêu Thích (${filteredProducts.length})`
-                  : searchQuery 
-                  ? `Kết quả cho: "${searchQuery}"`
-                  : selectedCategory === "gong-kinh-can" 
-                  ? "Bộ Sưu Tập Gọng Kính Cận"
-                  : selectedCategory === "kinh-ram-mat"
-                  ? "Kính Râm Polarized Thời Trang"
-                  : selectedCategory === "trong-kinh"
-                  ? "Tròng Kính Khúc Xạ Chính Hãng"
-                  : selectedCategory === "kinh-doi-mau"
-                  ? "Kính Đổi Màu Đi Nắng"
-                  : selectedCategory === "kinh-tre-em"
-                  ? "Kính Mắt Trẻ Em Dẻo"
-                  : "Bộ Sưu Tập Mắt Kính Saigon One"}
-              </h2>
-            </div>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              Hiển thị {filteredProducts.length} mẫu kính chính hãng • Bảo hành nắn chỉnh & thay ve ốc trọn đời
-            </p>
-          </div>
-
-          {/* Quick Shape Pills & Sort Selector */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Shape Filter Dropdown */}
-            <select
-              value={selectedFrameShape}
-              onChange={(e) => setSelectedFrameShape(e.target.value as any)}
-              className="px-3.5 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-slate-700 shadow-xs focus:ring-2 focus:ring-blue-600 cursor-pointer"
-            >
-              <option value="all">Tất Cả Dáng Gọng</option>
-              <option value="da-giac">Dáng Đa Giác (Polygon)</option>
-              <option value="vuong">Dáng Vuông (Square)</option>
-              <option value="tron">Dáng Tròn (Round)</option>
-              <option value="mat-meo">Dáng Mắt Mèo (Cat Eye)</option>
-              <option value="browline">Dáng Browline (Clubmaster)</option>
-              <option value="aviator">Dáng Phi Công (Aviator)</option>
-            </select>
-
-            {/* Material Filter Dropdown */}
-            <select
-              value={selectedMaterial}
-              onChange={(e) => setSelectedMaterial(e.target.value as any)}
-              className="px-3.5 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-slate-700 shadow-xs focus:ring-2 focus:ring-blue-600 cursor-pointer"
-            >
-              <option value="all">Tất Cả Chất Liệu</option>
-              <option value="titanium">Titanium Siêu Nhẹ</option>
-              <option value="acetate">Acetate Cellulose</option>
-              <option value="kim-loai">Hợp Kim Cao Cấp</option>
-              <option value="nhua-tr90">Nhựa TR90 Siêu Dẻo</option>
-            </select>
-
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-xs text-xs">
-              <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-transparent text-slate-900 font-semibold focus:outline-none cursor-pointer"
+          {/* Quick Categories Navigation Strip on Home */}
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+                  Danh Mục Kính Mắt Saigon One
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Khám phá các dòng sản phẩm chính hãng với bảo hành nắn chỉnh & thay ve ốc trọn đời
+                </p>
+              </div>
+              <button
+                onClick={() => handleOpenProducts("all")}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
               >
-                <option value="featured">Nổi Bật Nhất</option>
-                <option value="newest">Mới Ra Mắt</option>
-                <option value="price_asc">Giá: Thấp đến Cao</option>
-                <option value="price_desc">Giá: Cao đến Thấp</option>
-                <option value="rating">Đánh Giá Cao Nhất</option>
-              </select>
+                <span>Xem tất cả</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-          </div>
-        </div>
 
-        {/* Active Filter Tags Strip */}
-        {hasActiveFilters && (
-          <div className="flex flex-wrap items-center gap-2 py-3">
-            <span className="text-xs text-gray-400 uppercase tracking-widest font-bold">Đang lọc:</span>
-            {selectedCategory !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200">
-                Danh mục: {selectedCategory}
-                <button onClick={() => setSelectedCategory("all")}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {selectedGender !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200">
-                Giới tính: {selectedGender}
-                <button onClick={() => setSelectedGender("all")}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {selectedFrameShape !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200">
-                Dáng: {selectedFrameShape}
-                <button onClick={() => setSelectedFrameShape("all")}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {selectedMaterial !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200">
-                Chất liệu: {selectedMaterial}
-                <button onClick={() => setSelectedMaterial("all")}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {selectedFaceShapeFilter && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#0f172a] text-white text-xs font-bold shadow-xs">
-                Mặt: {selectedFaceShapeFilter}
-                <button onClick={() => setSelectedFaceShapeFilter(null)}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {showOnlyFavorites && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-50 text-red-600 text-xs font-semibold border border-red-200">
-                Đã thích
-                <button onClick={() => setShowOnlyFavorites(false)}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            <button
-              onClick={resetAllFilters}
-              className="text-xs text-gray-500 hover:text-slate-900 underline font-medium ml-2 cursor-pointer flex items-center gap-1"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Xóa bộ lọc</span>
-            </button>
-          </div>
-        )}
-
-        {/* Product Cards Grid */}
-        {filteredProducts.length === 0 ? (
-          <div className="py-20 text-center space-y-4">
-            <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
-              <Glasses className="w-8 h-8" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+              {[
+                { id: "gong-kinh-can", name: "Gọng Kính Cận", count: products.filter(p => p.category === "gong-kinh-can").length, desc: "Titanium, Acetate" },
+                { id: "kinh-ram-mat", name: "Kính Thời Trang", count: products.filter(p => p.category === "kinh-ram-mat").length, desc: "Phân cực Polarized" },
+                { id: "kinh-doi-mau", name: "Kính Áp Tròng", count: products.filter(p => p.category === "kinh-doi-mau").length, desc: "Êm ái & đổi màu" },
+                { id: "trong-kinh", name: "Tròng Kính", count: products.filter(p => p.category === "trong-kinh").length, desc: "Chống ánh sáng xanh" },
+                { id: "kinh-tre-em", name: "Kính Trẻ Em", count: products.filter(p => p.category === "kinh-tre-em").length, desc: "Dẻo dai, chống gãy" },
+                { id: "phu-kien", name: "Phụ Kiện Kính", count: products.filter(p => p.category === "phu-kien").length, desc: "Hộp & khăn nano" },
+              ].map((catItem) => (
+                <button
+                  key={catItem.id}
+                  onClick={() => catItem.id === "trong-kinh" ? handleOpenLensArticles() : handleOpenProducts(catItem.id as ProductCategory)}
+                  className="bg-white p-4 rounded-xl border border-gray-200/80 hover:border-blue-500 hover:shadow-md transition-all text-left group cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-2 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <Glasses className="w-4 h-4" />
+                    </div>
+                    <div className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 transition-colors">
+                      {catItem.name}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">{catItem.desc}</div>
+                  </div>
+                  <div className="text-[10px] text-blue-600 font-semibold mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
+                    <span>{catItem.count} mẫu</span>
+                    <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </button>
+              ))}
             </div>
-            <h3 className="font-bold text-slate-900 text-base">Không tìm thấy mẫu kính phù hợp</h3>
-            <p className="text-xs text-gray-500 max-w-md mx-auto">
-              Thử xóa bớt bộ lọc hoặc gõ từ khóa tìm kiếm chung như "gọng titan", "kính râm", "mắt mèo"...
-            </p>
-            <button
-              onClick={resetAllFilters}
-              className="px-6 py-2.5 bg-[#0f172a] hover:bg-blue-900 text-white font-bold uppercase tracking-widest rounded-lg text-xs transition-colors cursor-pointer"
-            >
-              Xem tất cả kính mắt
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-4">
-            {filteredProducts.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                isFavorite={favoriteIds.includes(p.id)}
-                onToggleFavorite={handleToggleFavorite}
-                onOpenDetail={(product, color) => handleOpenProductDetail(product, color)}
-                onQuickTryOn={handleOpenTryOn}
-              />
-            ))}
-          </div>
-        )}
+          </section>
 
-        {/* Sleek Banner: Virtual Try-On Prompt */}
-        <div className="mt-16 p-8 sm:p-12 rounded-2xl bg-[#0f172a] text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl text-center md:text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 text-[10px] font-bold uppercase tracking-[0.2em] border border-blue-500/30">
-              <Camera className="w-3.5 h-3.5" />
-              <span>Công Nghệ AR 3D Trực Tuyến</span>
+          {/* Featured & Best-Selling Glasses Showcase on Home */}
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold uppercase tracking-wider rounded-full mb-1 border border-blue-100">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  <span>Bộ Sưu Tập Mới 2026</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                  Kính Mắt Nổi Bật & Bán Chạy
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Đo mắt miễn phí & cắt kính lấy ngay trong 15 phút tại 178 Phan Đăng Lưu, Phú Nhuận
+                </p>
+              </div>
+
+              <button
+                onClick={() => handleOpenProducts("all")}
+                className="px-5 py-2.5 bg-slate-900 hover:bg-blue-900 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-2 self-start sm:self-auto"
+              >
+                <span>Xem Tất Cả Sản Phẩm ({products.length})</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              Thử Kính Trực Tiếp Ngay Tại Nhà
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Bật webcam hoặc chọn ảnh khuôn mặt để ngắm nhìn chiếc kính yêu thích của bạn ở mọi góc độ trước khi đặt mua.
-            </p>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <button
-              onClick={() => handleOpenTryOn()}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-widest px-6 py-3.5 rounded-lg text-xs shadow-lg transition-all duration-200 cursor-pointer"
-            >
-              <Camera className="w-4 h-4" />
-              <span>Thử Kính AR Ngay</span>
-            </button>
-            <button
-              onClick={() => setIsFaceAdvisorOpen(true)}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold uppercase tracking-wider px-5 py-3.5 rounded-lg text-xs border border-slate-700 transition-all cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-blue-400" />
-              <span>Tư Vấn Khuôn Mặt</span>
-            </button>
-          </div>
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {(products.filter(p => p.isFeatured).slice(0, 8).length > 0
+                ? products.filter(p => p.isFeatured).slice(0, 8)
+                : products.slice(0, 8)
+              ).map((p) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  isFavorite={favoriteIds.includes(p.id)}
+                  onToggleFavorite={handleToggleFavorite}
+                  onOpenDetail={(product, color) => handleOpenProductDetail(product, color)}
+                  onQuickTryOn={handleOpenTryOn}
+                />
+              ))}
+            </div>
 
-      </main>
+            <div className="mt-8 text-center">
+              <button
+                onClick={() => handleOpenProducts("all")}
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-white hover:bg-slate-50 text-slate-900 font-bold text-xs uppercase tracking-wider rounded-xl border border-gray-200 shadow-xs transition-all cursor-pointer"
+              >
+                <span>Mở Toàn Bộ Danh Mục Sản Phẩm & Bộ Lọc Chi Tiết</span>
+                <ChevronRight className="w-4 h-4 text-blue-600" />
+              </button>
+            </div>
+          </section>
+
+          {/* Virtual Try-On AR Banner */}
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="p-8 sm:p-10 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-850 to-blue-950 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800">
+              <div className="space-y-2 max-w-xl text-center md:text-left">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 text-[10px] font-bold uppercase tracking-[0.2em] border border-blue-500/30">
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>Công Nghệ AR 3D Trực Tuyến</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  Thử Kính Trực Tiếp Ngay Tại Nhà
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Bật camera trực tiếp để ướm thử hàng trăm mẫu gọng kính lên khuôn mặt bạn chuẩn tỉ lệ 1:1 trước khi ghé showroom 178 Phan Đăng Lưu.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
+                <button
+                  onClick={() => handleOpenTryOn()}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-widest px-6 py-3.5 rounded-xl text-xs shadow-lg transition-all duration-200 cursor-pointer"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Thử Kính AR Ngay</span>
+                </button>
+                <button
+                  onClick={() => setIsFaceAdvisorOpen(true)}
+                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold uppercase tracking-wider px-5 py-3.5 rounded-xl text-xs border border-slate-700 transition-all cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-blue-400" />
+                  <span>Tư Vấn Khuôn Mặt</span>
+                </button>
+              </div>
+            </div>
+          </section>
 
           {/* Latest Articles & Vision Guide Section */}
           {!searchQuery && !showOnlyFavorites && (

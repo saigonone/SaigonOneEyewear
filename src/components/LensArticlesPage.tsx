@@ -175,18 +175,18 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
       </div>
 
       {/* 2. Hero Header Banner */}
-      <div className="bg-linear-to-br from-slate-900 via-slate-850 to-blue-950 text-white py-12 sm:py-16 relative overflow-hidden">
+      <div className="bg-linear-to-br from-slate-900 via-slate-850 to-blue-950 text-white py-[20px] relative overflow-hidden">
         <div className="absolute -right-16 -top-16 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute left-1/3 -bottom-20 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 border border-blue-400/30 text-cyan-300 text-xs font-bold rounded-full mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 border border-blue-400/30 text-cyan-300 text-xs font-bold rounded-full mb-3">
               <Layers className="w-3.5 h-3.5 text-cyan-400" />
               <span>Tất Cả Danh Mục Tròng Kính Cao Cấp</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white mb-4">
+            <h1 className="text-[38px] font-extrabold tracking-tight text-white mb-3 leading-tight">
               Bảng Giá & Cẩm Nang <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 via-sky-300 to-amber-300">Tròng Kính Chính Hãng</span>
             </h1>
 

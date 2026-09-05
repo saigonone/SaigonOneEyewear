@@ -29,6 +29,7 @@ export interface RouteState {
   isOrderLookup?: boolean;
   isAdmin?: boolean;
   isArticlesPage?: boolean;
+  isProductsPage?: boolean;
   title: string;
   description?: string;
 }
@@ -305,6 +306,7 @@ export function parseCurrentRoute(
 
     return {
       path: rawPath,
+      isProductsPage: true,
       category: cat,
       title: catTitle,
       description: catDesc

@@ -130,15 +130,15 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
       </div>
 
       {/* 2. Hero Header Banner */}
-      <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white py-12 sm:py-16">
+      <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white py-[20px]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-semibold rounded-full mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-semibold rounded-full mb-3">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span>Chuyên Mục Cẩm Nang Kính Mắt Y Khoa</span>
             </div>
             
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
+            <h1 className="text-[38px] font-black tracking-tight text-white leading-tight">
               Cẩm Nang & Tin Tức <br className="hidden sm:inline" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-amber-300">
                 Thị Lực Saigon One

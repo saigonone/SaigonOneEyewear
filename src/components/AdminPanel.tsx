@@ -208,6 +208,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [artCategoryFilter, setArtCategoryFilter] = useState("all");
   const [artLensBrandFilter, setArtLensBrandFilter] = useState("all");
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+  const [isSavingArticle, setIsSavingArticle] = useState<boolean>(false);
 
   // Category Form State
   const [showAddArtCatModal, setShowAddArtCatModal] = useState(false);
@@ -546,23 +547,112 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleSaveArticle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!artTitle.trim()) return;
 
-    const effectiveSlug = artSlug.trim() || createSlug(artTitle);
+    // 1. Kiểm tra tiêu đề bài viết
+    const trimmedTitle = artTitle.trim();
+    if (!trimmedTitle) {
+      alert("Vui lòng nhập tiêu đề bài viết!");
+      return;
+    }
 
-    if (editingArticle) {
+    // 2. Gom đầy đủ dữ liệu Payload đúng kiểu dữ liệu
+    const effectiveSlug = (artSlug || "").trim() || createSlug(trimmedTitle);
+    const effectiveContent = (artContent || "").trim();
+    const effectiveSummary = (artSummary || "").trim() || trimmedTitle;
+    const effectiveThumbnail = (artThumbnail || "").trim() || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80";
+    const effectiveAuthor = (artAuthor || "").trim() || "Ban Biên Tập Mắt Kính Sài Gòn One";
+    const effectiveCategory = artCategory || "Cẩm Nang Chọn Kính";
+
+    setIsSavingArticle(true);
+
+    try {
+      if (editingArticle) {
+        // Cập nhật bài viết hiện có
+        const updated: Article = {
+          ...editingArticle,
+          title: trimmedTitle,
+          slug: effectiveSlug,
+          category: effectiveCategory,
+          summary: effectiveSummary,
+          content: effectiveContent,
+          thumbnail: effectiveThumbnail,
+          author: effectiveAuthor,
+          isFeatured: Boolean(artIsFeatured),
+          isPinned: Boolean(artIsPinned),
+          isPublished: true,
+          publishedAt: editingArticle.publishedAt || new Date().toLocaleDateString("vi-VN"),
+        };
+
+        if (artLensBrandId && artLensBrandId.trim()) {
+          updated.lensBrandId = artLensBrandId.trim();
+        } else {
+          delete (updated as any).lensBrandId;
+        }
+
+        console.log("[AdminPanel] Gửi yêu cầu cập nhật bài viết lên Firestore collection 'articles':", updated);
+        await updateArticleInFirebase(updated);
+        console.log("[AdminPanel] ✅ Cập nhật bài viết lên Firestore thành công! Document ID:", updated.id);
+
+        setArticles(prev => {
+          const next = prev.map(a => a.id === updated.id ? updated : a);
+          onUpdateArticles?.(next);
+          return next;
+        });
+
+        alert("✅ Đã cập nhật bài viết thành công lên Firestore!");
+      } else {
+        // Thêm bài viết mới (ID tự sinh rõ ràng)
+        const id = `art-${Date.now()}`;
+        const newArt: Article = {
+          id,
+          title: trimmedTitle,
+          slug: effectiveSlug,
+          category: effectiveCategory,
+          summary: effectiveSummary,
+          content: effectiveContent,
+          thumbnail: effectiveThumbnail,
+          author: effectiveAuthor,
+          readTime: "4 phút đọc",
+          publishedAt: new Date().toLocaleDateString("vi-VN"),
+          viewsCount: 1,
+          views: 1,
+          tags: ["CamNang", "KinhMat", "SaigonOne"],
+          isFeatured: Boolean(artIsFeatured),
+          isPinned: Boolean(artIsPinned),
+          isPublished: true,
+        };
+
+        if (artLensBrandId && artLensBrandId.trim()) {
+          newArt.lensBrandId = artLensBrandId.trim();
+        }
+
+        console.log("[AdminPanel] Gửi yêu cầu đăng bài viết mới lên Firestore collection 'articles':", newArt);
+        await addArticleToFirebase(newArt);
+        console.log("[AdminPanel] ✅ Đăng bài viết mới lên Firestore thành công! Document ID:", id);
+
+        setArticles(prev => {
+          const next = [newArt, ...prev];
+          onUpdateArticles?.(next);
+          return next;
+        });
+
+        alert("✅ Đã đăng bài viết mới thành công lên Firestore!");
+      }
+
+      setShowAddArticleModal(false);
+    } catch (error: any) {
+      console.error("[AdminPanel ERROR] ❌ Lỗi khi lưu bài viết lên Firestore collection 'articles':", error);
+      alert(`❌ Đã xảy ra lỗi khi lưu bài viết lên Firestore!\n\nChi tiết lỗi: ${error?.message || error}\n\nVui lòng mở F12 Console để xem chi tiết.`);
+    } finally {
+      setIsSavingArticle(false);
+    }
+  };
+
+  const handleToggleFeaturedArticle = async (art: Article) => {
+    try {
       const updated: Article = {
-        ...editingArticle,
-        title: artTitle,
-        slug: effectiveSlug,
-        category: artCategory,
-        lensBrandId: artLensBrandId || undefined,
-        summary: artSummary,
-        content: artContent,
-        thumbnail: artThumbnail,
-        author: artAuthor,
-        isFeatured: artIsFeatured,
-        isPinned: artIsPinned,
+        ...art,
+        isFeatured: !art.isFeatured,
       };
       await updateArticleInFirebase(updated);
       setArticles(prev => {
@@ -570,70 +660,44 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         onUpdateArticles?.(next);
         return next;
       });
-    } else {
-      const id = `art-${Date.now()}`;
-      const newArt: Article = {
-        id,
-        title: artTitle,
-        slug: effectiveSlug,
-        category: artCategory,
-        lensBrandId: artLensBrandId || undefined,
-        summary: artSummary,
-        content: artContent,
-        thumbnail: artThumbnail,
-        author: artAuthor,
-        readTime: "4 phút đọc",
-        publishedAt: new Date().toLocaleDateString("vi-VN"),
-        viewsCount: 1,
-        tags: ["CamNang", "KinhMat", "SaigonOne"],
-        isFeatured: artIsFeatured,
-        isPinned: artIsPinned,
-        isPublished: true,
-      };
-      await addArticleToFirebase(newArt);
-      setArticles(prev => {
-        const next = [newArt, ...prev];
-        onUpdateArticles?.(next);
-        return next;
-      });
+    } catch (err) {
+      console.error("[AdminPanel ERROR] ❌ Lỗi cập nhật bài viết nổi bật:", err);
     }
-    setShowAddArticleModal(false);
-  };
-
-  const handleToggleFeaturedArticle = async (art: Article) => {
-    const updated: Article = {
-      ...art,
-      isFeatured: !art.isFeatured,
-    };
-    await updateArticleInFirebase(updated);
-    setArticles(prev => {
-      const next = prev.map(a => a.id === updated.id ? updated : a);
-      onUpdateArticles?.(next);
-      return next;
-    });
   };
 
   const handleTogglePinnedArticle = async (art: Article) => {
-    const updated: Article = {
-      ...art,
-      isPinned: !art.isPinned,
-    };
-    await updateArticleInFirebase(updated);
-    setArticles(prev => {
-      const next = prev.map(a => a.id === updated.id ? updated : a);
-      onUpdateArticles?.(next);
-      return next;
-    });
+    try {
+      const updated: Article = {
+        ...art,
+        isPinned: !art.isPinned,
+      };
+      await updateArticleInFirebase(updated);
+      setArticles(prev => {
+        const next = prev.map(a => a.id === updated.id ? updated : a);
+        onUpdateArticles?.(next);
+        return next;
+      });
+    } catch (err) {
+      console.error("[AdminPanel ERROR] ❌ Lỗi ghim bài viết:", err);
+    }
   };
 
   const handleDeleteArticle = async (id: string) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa bài viết này không?")) {
-      await deleteArticleFromFirebase(id);
-      setArticles(prev => {
-        const next = prev.filter(a => a.id !== id);
-        onUpdateArticles?.(next);
-        return next;
-      });
+      try {
+        console.log(`[AdminPanel] Bắt đầu xóa bài viết '${id}' khỏi Firestore collection 'articles'...`);
+        await deleteArticleFromFirebase(id);
+        console.log(`[AdminPanel] ✅ Đã xóa bài viết '${id}' khỏi Firestore thành công!`);
+        setArticles(prev => {
+          const next = prev.filter(a => a.id !== id);
+          onUpdateArticles?.(next);
+          return next;
+        });
+        alert("✅ Đã xóa bài viết khỏi Firestore thành công!");
+      } catch (err: any) {
+        console.error(`[AdminPanel ERROR] ❌ Lỗi khi xóa bài viết '${id}':`, err);
+        alert(`❌ Lỗi khi xóa bài viết: ${err?.message || err}`);
+      }
     }
   };
 
@@ -2709,16 +2773,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
                 <button
                   type="button"
+                  disabled={isSavingArticle}
                   onClick={() => setShowAddArticleModal(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold disabled:opacity-50"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold"
+                  disabled={isSavingArticle}
+                  className={`px-5 py-2 text-white rounded-lg font-semibold flex items-center gap-2 transition-all ${
+                    isSavingArticle ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 cursor-pointer shadow-sm shadow-blue-500/20"
+                  }`}
                 >
-                  Lưu Bài Viết
+                  {isSavingArticle ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Đang lưu lên Firebase...</span>
+                    </>
+                  ) : (
+                    <span>Lưu Bài Viết (Firestore)</span>
+                  )}
                 </button>
               </div>
             </form>

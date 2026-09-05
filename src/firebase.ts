@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { 
   getFirestore, 
+  initializeFirestore,
   collection, 
   doc, 
   getDocs, 
@@ -23,6 +24,7 @@ import {
   onValue 
 } from "firebase/database";
 import { getAuth } from "firebase/auth";
+import { createSlug } from "./utils/slug";
 import { Product, Order, Article, ArticleCategory, ProductCategoryItem, AdminUser, BannerSlide, Appointment, LensBrandCategory } from "./types";
 import { MOCK_PRODUCTS } from "./data/mockProducts";
 import { 
@@ -49,10 +51,36 @@ export const firebaseConfig = {
 // Initialize Firebase App
 export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore, Realtime Database and Auth
-export const db = getFirestore(app);
+// Initialize Firestore with ignoreUndefinedProperties to prevent undefined field crashes
+let firestoreDb;
+try {
+  firestoreDb = initializeFirestore(app, {
+    ignoreUndefinedProperties: true,
+  });
+} catch (e) {
+  firestoreDb = getFirestore(app);
+}
+export const db = firestoreDb;
 export const rtdb = getDatabase(app);
 export const auth = getAuth(app);
+
+/**
+ * Loại bỏ toàn bộ các thuộc tính undefined trước khi đẩy dữ liệu lên Firestore
+ * (Đảm bảo không bao giờ bị lỗi 'Unsupported field value: undefined')
+ */
+export function sanitizeFirestorePayload<T extends Record<string, any>>(data: T): Record<string, any> {
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      if (value !== null && typeof value === "object" && !Array.isArray(value) && !(value instanceof Date)) {
+        cleaned[key] = sanitizeFirestorePayload(value);
+      } else {
+        cleaned[key] = value;
+      }
+    }
+  }
+  return cleaned;
+}
 
 // =========================================================================
 // 1. PRODUCTS CRUD - THAO TÁC TRỰC TIẾP VỚI FIREBASE
@@ -289,49 +317,154 @@ export function subscribeToArticlesFromFirebase(onUpdate: (articles: Article[]) 
   }
 }
 
-export async function addArticleToFirebase(article: Article): Promise<boolean> {
+export async function addArticleToFirebase(article: Article): Promise<{ success: boolean; id: string }> {
+  console.log("[Firebase] 🚀 Chuẩn bị gửi bài viết lên Firestore collection 'articles'...", article);
   const timestamp = new Date().toISOString();
-  const data = {
-    ...article,
+
+  // 1. Gom và chuẩn hóa dữ liệu đầu vào (Payload)
+  const effectiveId = (article.id && article.id.trim()) ? article.id.trim() : `art-${Date.now()}`;
+  const effectiveTitle = (article.title || "").trim();
+  const effectiveSlug = (article.slug || "").trim() || createSlug(effectiveTitle || "bai-viet");
+  const effectiveSummary = (article.summary || "").trim() || effectiveTitle;
+  const effectiveContent = (article.content || "").trim();
+  const effectiveThumbnail = (article.thumbnail || "").trim() || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80";
+  const effectiveCategory = (article.category || "").trim() || "Cẩm Nang Thị Lực";
+  const effectiveAuthor = (article.author || "").trim() || "Ban Biên Tập Mắt Kính Sài Gòn One";
+  const effectivePublishedAt = (article.publishedAt || "").trim() || new Date().toLocaleDateString("vi-VN");
+  const effectiveReadTime = (article.readTime || "").trim() || "4 phút đọc";
+
+  const rawData: Record<string, any> = {
+    id: effectiveId,
+    title: effectiveTitle,
+    slug: effectiveSlug,
+    summary: effectiveSummary,
+    content: effectiveContent,
+    thumbnail: effectiveThumbnail,
+    category: effectiveCategory,
+    author: effectiveAuthor,
+    authorRole: (article.authorRole || "").trim() || "Chuyên Viên Khúc Xạ",
+    publishedAt: effectivePublishedAt,
+    readTime: effectiveReadTime,
+    views: typeof article.views === "number" ? article.views : (typeof article.viewsCount === "number" ? article.viewsCount : 120),
+    viewsCount: typeof article.viewsCount === "number" ? article.viewsCount : (typeof article.views === "number" ? article.views : 120),
+    tags: Array.isArray(article.tags) && article.tags.length > 0 ? article.tags : ["CamNang", "KinhMat", "SaigonOne"],
+    isFeatured: Boolean(article.isFeatured),
+    isPinned: Boolean(article.isPinned),
+    isPublished: article.isPublished !== false,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
 
-  try {
-    await setDoc(doc(db, "articles", article.id), data);
-  } catch (e) {}
+  if (article.lensBrandId && article.lensBrandId.trim()) {
+    rawData.lensBrandId = article.lensBrandId.trim();
+  }
 
-  try {
-    await set(ref(rtdb, `articles/${article.id}`), data);
-  } catch (e) {}
+  // Làm sạch payload loại trừ tất cả các giá trị undefined để Firestore không từ chối ghi
+  const cleanData = sanitizeFirestorePayload(rawData);
 
+  // 2. Ghi trực tiếp vào Firestore: Collection 'articles'
+  try {
+    const articleDocRef = doc(db, "articles", effectiveId);
+    console.log(`[Firebase Firestore] Thực thi setDoc tại collection 'articles', docId: '${effectiveId}':`, cleanData);
+    await setDoc(articleDocRef, cleanData);
+    console.log(`[Firebase Firestore] ✅ THÀNH CÔNG: Đã lưu bài viết vào Firestore collection 'articles' (Doc ID: ${effectiveId})`);
+  } catch (firestoreErr: any) {
+    console.error("[Firebase Firestore ERROR] ❌ Lỗi nghiêm trọng khi đẩy bài viết vào collection 'articles':", firestoreErr);
+    throw firestoreErr;
+  }
+
+  // 3. Đồng bộ dự phòng sang RTDB
+  try {
+    await set(ref(rtdb, `articles/${effectiveId}`), cleanData);
+    console.log(`[Firebase RTDB] ✅ Đã đồng bộ bài viết vào RTDB 'articles/${effectiveId}'`);
+  } catch (rtdbErr) {
+    console.warn("[Firebase RTDB WARNING] Không thể đồng bộ RTDB (không ảnh hưởng Firestore):", rtdbErr);
+  }
+
+  // 4. Cập nhật cache LocalStorage
   try {
     const current = await getArticlesFromFirebase();
-    const updated = [data, ...current.filter(a => a.id !== article.id)];
+    const updated = [cleanData as Article, ...current.filter(a => a.id !== effectiveId)];
     localStorage.setItem("saigonone_articles", JSON.stringify(updated));
-  } catch (e) {}
+  } catch (localErr) {
+    console.warn("[LocalStorage] Lỗi lưu cache articles:", localErr);
+  }
 
-  return true;
+  return { success: true, id: effectiveId };
 }
 
 export async function updateArticleInFirebase(article: Article): Promise<boolean> {
+  console.log("[Firebase] 🚀 Chuẩn bị cập nhật bài viết trong Firestore collection 'articles'...", article);
   const timestamp = new Date().toISOString();
-  const data = {
-    ...article,
+
+  const effectiveId = (article.id || "").trim();
+  if (!effectiveId) {
+    const err = new Error("Không thể cập nhật bài viết không có ID!");
+    console.error("[Firebase] ❌", err);
+    throw err;
+  }
+
+  const effectiveTitle = (article.title || "").trim();
+  const effectiveSlug = (article.slug || "").trim() || createSlug(effectiveTitle || "bai-viet");
+  const effectiveSummary = (article.summary || "").trim() || effectiveTitle;
+  const effectiveContent = (article.content || "").trim();
+  const effectiveThumbnail = (article.thumbnail || "").trim() || "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80";
+  const effectiveCategory = (article.category || "").trim() || "Cẩm Nang Thị Lực";
+  const effectiveAuthor = (article.author || "").trim() || "Ban Biên Tập Mắt Kính Sài Gòn One";
+  const effectivePublishedAt = (article.publishedAt || "").trim() || new Date().toLocaleDateString("vi-VN");
+  const effectiveReadTime = (article.readTime || "").trim() || "4 phút đọc";
+
+  const rawData: Record<string, any> = {
+    id: effectiveId,
+    title: effectiveTitle,
+    slug: effectiveSlug,
+    summary: effectiveSummary,
+    content: effectiveContent,
+    thumbnail: effectiveThumbnail,
+    category: effectiveCategory,
+    author: effectiveAuthor,
+    publishedAt: effectivePublishedAt,
+    readTime: effectiveReadTime,
+    views: typeof article.views === "number" ? article.views : (typeof article.viewsCount === "number" ? article.viewsCount : 120),
+    viewsCount: typeof article.viewsCount === "number" ? article.viewsCount : 120,
+    tags: Array.isArray(article.tags) ? article.tags : ["CamNang", "KinhMat", "SaigonOne"],
+    isFeatured: Boolean(article.isFeatured),
+    isPinned: Boolean(article.isPinned),
+    isPublished: article.isPublished !== false,
     updatedAt: timestamp,
   };
 
-  try {
-    await setDoc(doc(db, "articles", article.id), data);
-  } catch (e) {}
+  if (article.authorRole && article.authorRole.trim()) {
+    rawData.authorRole = article.authorRole.trim();
+  }
+  if (article.lensBrandId && article.lensBrandId.trim()) {
+    rawData.lensBrandId = article.lensBrandId.trim();
+  }
 
-  try {
-    await update(ref(rtdb, `articles/${article.id}`), data);
-  } catch (e) {}
+  const cleanData = sanitizeFirestorePayload(rawData);
 
+  // 1. Cập nhật vào Firestore collection 'articles'
+  try {
+    const articleDocRef = doc(db, "articles", effectiveId);
+    console.log(`[Firebase Firestore] Thực thi setDoc(merge: true) tại collection 'articles', docId: '${effectiveId}':`, cleanData);
+    await setDoc(articleDocRef, cleanData, { merge: true });
+    console.log(`[Firebase Firestore] ✅ THÀNH CÔNG: Đã cập nhật bài viết trong Firestore collection 'articles' (Doc ID: ${effectiveId})`);
+  } catch (firestoreErr: any) {
+    console.error("[Firebase Firestore ERROR] ❌ Lỗi khi cập nhật bài viết trong collection 'articles':", firestoreErr);
+    throw firestoreErr;
+  }
+
+  // 2. Đồng bộ RTDB
+  try {
+    await update(ref(rtdb, `articles/${effectiveId}`), cleanData);
+  } catch (rtdbErr) {
+    console.warn("[Firebase RTDB] Đồng bộ update RTDB thất bại:", rtdbErr);
+  }
+
+  // 3. Cập nhật LocalStorage
   try {
     const current = await getArticlesFromFirebase();
-    const updated = current.map(a => a.id === article.id ? { ...a, ...data } : a);
+    const updated = current.map(a => a.id === effectiveId ? { ...a, ...cleanData } : a);
     localStorage.setItem("saigonone_articles", JSON.stringify(updated));
   } catch (e) {}
 
@@ -339,14 +472,24 @@ export async function updateArticleInFirebase(article: Article): Promise<boolean
 }
 
 export async function deleteArticleFromFirebase(articleId: string): Promise<boolean> {
-  try {
-    await deleteDoc(doc(db, "articles", articleId));
-  } catch (e) {}
+  console.log(`[Firebase] 🚀 Chuẩn bị xóa bài viết khỏi Firestore collection 'articles' (ID: ${articleId})...`);
 
+  // 1. Xóa khỏi Firestore: collection 'articles'
+  try {
+    const articleDocRef = doc(db, "articles", articleId);
+    await deleteDoc(articleDocRef);
+    console.log(`[Firebase Firestore] ✅ THÀNH CÔNG: Đã xóa bài viết khỏi collection 'articles' (Doc ID: ${articleId})`);
+  } catch (firestoreErr: any) {
+    console.error("[Firebase Firestore ERROR] ❌ Lỗi khi xóa bài viết khỏi collection 'articles':", firestoreErr);
+    throw firestoreErr;
+  }
+
+  // 2. Xóa khỏi RTDB
   try {
     await remove(ref(rtdb, `articles/${articleId}`));
   } catch (e) {}
 
+  // 3. Cập nhật LocalStorage
   try {
     const current = await getArticlesFromFirebase();
     const updated = current.filter(a => a.id !== articleId);
@@ -360,19 +503,25 @@ export async function saveAllArticlesToFirebase(articlesList: Article[]): Promis
   localStorage.setItem("saigonone_articles", JSON.stringify(articlesList));
   try {
     for (const art of articlesList) {
-      await setDoc(doc(db, "articles", art.id), art);
-      await set(ref(rtdb, `articles/${art.id}`), art);
+      const clean = sanitizeFirestorePayload(art);
+      await setDoc(doc(db, "articles", art.id), clean);
+      await set(ref(rtdb, `articles/${art.id}`), clean);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error("[Firebase] Lỗi saveAllArticlesToFirebase:", e);
+  }
   return true;
 }
 
 export async function seedInitialArticlesToFirebase() {
   for (const art of INITIAL_ARTICLES) {
     try {
-      await setDoc(doc(db, "articles", art.id), art);
-      await set(ref(rtdb, `articles/${art.id}`), art);
-    } catch (e) {}
+      const clean = sanitizeFirestorePayload(art);
+      await setDoc(doc(db, "articles", art.id), clean);
+      await set(ref(rtdb, `articles/${art.id}`), clean);
+    } catch (e) {
+      console.error("[Firebase] Lỗi seedInitialArticlesToFirebase:", e);
+    }
   }
 }
 
