@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   X, 
   Database, 
@@ -12,37 +12,44 @@ import {
   Edit3, 
   Sparkles, 
   Eye, 
-  RefreshCw,
-  Search,
-  Filter,
-  Check,
-  BookOpen,
-  FolderTree,
-  Shield,
-  LogOut,
-  Layers,
-  FileText,
-  UserPlus,
-  Tag,
-  AlertCircle,
-  Upload,
-  Image as ImageIcon,
-  Palette,
-  Star,
-  PlusCircle,
-  ArrowUp,
-  Ruler,
-  Scale,
-  SlidersHorizontal,
-  Link2,
-  Globe,
-  ExternalLink,
-  Copy,
-  Calendar,
-  Mail,
-  Phone,
-  MessageCircle,
-  Pin
+  RefreshCw, 
+  Search, 
+  Filter, 
+  Check, 
+  BookOpen, 
+  FolderTree, 
+  Shield, 
+  LogOut, 
+  Layers, 
+  FileText, 
+  UserPlus, 
+  Tag, 
+  AlertCircle, 
+  Upload, 
+  Image as ImageIcon, 
+  Palette, 
+  Star, 
+  PlusCircle, 
+  ArrowUp, 
+  Ruler, 
+  Scale, 
+  SlidersHorizontal, 
+  Link2, 
+  Globe, 
+  ExternalLink, 
+  Copy, 
+  Calendar, 
+  Mail, 
+  Phone, 
+  MessageCircle, 
+  Pin,
+  Bold,
+  Italic,
+  Underline,
+  List,
+  ListOrdered,
+  Type,
+  Wand2
 } from "lucide-react";
 import { 
   Product, 
@@ -104,6 +111,25 @@ import { AdminBannerManager } from "./AdminBannerManager";
 import { AdminLensBrandsManager } from "./AdminLensBrandsManager";
 import { AdminLensArticlesManager } from "./AdminLensArticlesManager";
 import { RichTextEditor } from "./RichTextEditor";
+
+const PRODUCT_CATEGORY_OPTIONS: { id: ProductCategory; label: string; sub: string; icon: string }[] = [
+  { id: "gong-kinh-can", label: "Gọng Kính Cận", sub: "Gọng cận siêu nhẹ, titan & acetate", icon: "👓" },
+  { id: "kinh-ram-mat", label: "Kính Râm Thời Trang", sub: "Chống chói Polarized UV400", icon: "🕶️" },
+  { id: "kinh-doi-mau", label: "Kính Đổi Màu", sub: "Đổi màu nắng 2-in-1 tiện lợi", icon: "✨" },
+  { id: "trong-kinh", label: "Tròng Kính", sub: "Lọc ánh sáng xanh, siêu mỏng", icon: "👁️" },
+  { id: "kinh-tre-em", label: "Kính Mắt Trẻ Em", sub: "Nhựa dẻo TR90, an toàn cho bé", icon: "🛡️" },
+  { id: "phu-kien", label: "Phụ Kiện Kính", sub: "Hộp da, khăn nano, nước lau kính", icon: "🧰" },
+];
+
+const CATEGORY_LABEL_MAP: Record<string, string> = {
+  "all": "Tất Cả",
+  "gong-kinh-can": "Gọng Kính Cận",
+  "kinh-ram-mat": "Kính Râm Thời Trang",
+  "kinh-doi-mau": "Kính Đổi Màu",
+  "trong-kinh": "Tròng Kính",
+  "kinh-tre-em": "Kính Trẻ Em",
+  "phu-kien": "Phụ Kiện Kính"
+};
 
 interface AdminPanelProps {
   onClose: () => void;
@@ -173,6 +199,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [isCustomProdSlug, setIsCustomProdSlug] = useState(false);
   const [prodBrand, setProdBrand] = useState("Sài Gòn One");
   const [prodCategory, setProdCategory] = useState<ProductCategory>("gong-kinh-can");
+  const [prodCategories, setProdCategories] = useState<ProductCategory[]>(["gong-kinh-can"]);
+
+  const toggleProdCategory = (catId: ProductCategory) => {
+    setProdCategories((prev) => {
+      let next: ProductCategory[];
+      if (prev.includes(catId)) {
+        if (prev.length <= 1) {
+          // Keep at least one category selected
+          return prev;
+        }
+        next = prev.filter((c) => c !== catId);
+      } else {
+        next = [...prev, catId];
+      }
+      if (!next.includes(prodCategory)) {
+        setProdCategory(next[0] || "gong-kinh-can");
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllCategories = () => {
+    const all = PRODUCT_CATEGORY_OPTIONS.map((c) => c.id);
+    setProdCategories(all);
+    setProdCategory(all[0]);
+  };
+
+  const handleSelectOnlyCategory = (catId: ProductCategory) => {
+    setProdCategories([catId]);
+    setProdCategory(catId);
+  };
   const [prodGender, setProdGender] = useState<GenderTarget>("unisex");
   const [prodShape, setProdShape] = useState<FrameShape>("vuong");
   const [prodMaterial, setProdMaterial] = useState<FrameMaterial>("titanium");
@@ -189,6 +246,57 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [prodColors, setProdColors] = useState<ProductColor[]>([]);
   const [prodDesc, setProdDesc] = useState("Gọng kính chính hãng chất lượng cao, bảo hành nắn chỉnh trọn đời.");
   const [prodHighlights, setProdHighlights] = useState<string>("Gọng kính chính hãng Sài Gòn One\nBảo hành nắn chỉnh trọn đời\nTặng kèm hộp da & khăn lau nano");
+  const descTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const highlightsTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [descPreviewMode, setDescPreviewMode] = useState<"edit" | "preview">("edit");
+  const [highlightsPreviewMode, setHighlightsPreviewMode] = useState<"edit" | "preview">("edit");
+
+  // Helper formatting for textarea
+  const insertFormatToTextarea = (
+    ref: React.RefObject<HTMLTextAreaElement>,
+    prefix: string,
+    suffix: string,
+    setter: React.Dispatch<React.SetStateAction<string>>,
+    currentVal: string
+  ) => {
+    const el = ref.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selectedText = currentVal.substring(start, end);
+    const textToWrap = selectedText || "văn bản";
+    const replacement = prefix + textToWrap + suffix;
+    const nextVal = currentVal.substring(0, start) + replacement + currentVal.substring(end);
+    setter(nextVal);
+    setTimeout(() => {
+      el.focus();
+      const newStart = start + prefix.length;
+      const newEnd = newStart + textToWrap.length;
+      el.setSelectionRange(newStart, newEnd);
+    }, 10);
+  };
+
+  const insertSnippetToTextarea = (
+    ref: React.RefObject<HTMLTextAreaElement>,
+    snippet: string,
+    setter: React.Dispatch<React.SetStateAction<string>>,
+    currentVal: string
+  ) => {
+    const el = ref.current;
+    if (!el) {
+      setter(prev => (prev ? prev + "\n" + snippet : snippet));
+      return;
+    }
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const nextVal = currentVal.substring(0, start) + snippet + currentVal.substring(end);
+    setter(nextVal);
+    setTimeout(() => {
+      el.focus();
+      const newPos = start + snippet.length;
+      el.setSelectionRange(newPos, newPos);
+    }, 10);
+  };
 
   // Article Form State
   const [showAddArticleModal, setShowAddArticleModal] = useState<boolean>(false);
@@ -263,6 +371,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       setLoading(false);
     }
   };
+
+  // Đồng bộ thời gian thực khi App.tsx nhận dữ liệu mới từ Firestore onSnapshot
+  useEffect(() => {
+    if (initialArticles && initialArticles.length >= 0) {
+      setArticles(initialArticles);
+    }
+  }, [initialArticles]);
+
+  useEffect(() => {
+    if (initialLensArticles && initialLensArticles.length >= 0) {
+      setLensArticles(initialLensArticles);
+    }
+  }, [initialLensArticles]);
+
+  useEffect(() => {
+    if (initialBanners && initialBanners.length >= 0) {
+      setBanners(initialBanners);
+    }
+  }, [initialBanners]);
+
+  useEffect(() => {
+    if (initialLensBrands && initialLensBrands.length >= 0) {
+      setLensBrands(initialLensBrands);
+    }
+  }, [initialLensBrands]);
 
   useEffect(() => {
     loadData();
@@ -374,6 +507,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setIsCustomProdSlug(false);
     setProdBrand("Sài Gòn One");
     setProdCategory("gong-kinh-can");
+    setProdCategories(["gong-kinh-can"]);
     setProdGender("unisex");
     setProdShape("vuong");
     setProdMaterial("titanium");
@@ -404,7 +538,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setProdSlug(p.slug || getProductSlug(p));
     setIsCustomProdSlug(!!p.slug);
     setProdBrand(p.brand);
-    setProdCategory(p.category);
+    const initialCats: ProductCategory[] = (p.categories && p.categories.length > 0)
+      ? [...p.categories]
+      : (p.category ? [p.category] : ["gong-kinh-can"]);
+    setProdCategories(initialCats);
+    setProdCategory(p.category || initialCats[0] || "gong-kinh-can");
     setProdGender(p.gender || "unisex");
     setProdShape(p.frameShape);
     setProdMaterial(p.material);
@@ -454,6 +592,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const effectiveSku = prodSku.trim() || `SGO-${Math.floor(1000 + Math.random() * 9000)}`;
     const effectiveSlug = prodSlug.trim() || getProductSlug({ sku: effectiveSku, name: prodName });
 
+    const effectiveCats: ProductCategory[] = prodCategories.length > 0
+      ? prodCategories
+      : [prodCategory || "gong-kinh-can"];
+    const primaryCat = effectiveCats.includes(prodCategory) ? prodCategory : effectiveCats[0];
+
     if (editingProduct) {
       const updated: Product = {
         ...editingProduct,
@@ -461,7 +604,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         name: prodName,
         slug: effectiveSlug,
         brand: prodBrand,
-        category: prodCategory,
+        category: primaryCat,
+        categories: effectiveCats,
         gender: prodGender,
         frameShape: prodShape,
         material: prodMaterial,
@@ -485,7 +629,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         name: prodName,
         slug: effectiveSlug,
         brand: prodBrand,
-        category: prodCategory,
+        category: primaryCat,
+        categories: effectiveCats,
         gender: prodGender,
         price: priceNum,
         originalPrice: origPriceNum,
@@ -504,6 +649,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         reviewsCount: 1,
         tryOnOverlayType: "polygon",
         isNewArrival: true,
+        createdAt: new Date().toISOString(),
       };
       onAddProduct(newProd);
     }
@@ -1237,9 +1383,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               </div>
                             </td>
                             <td className="p-3.5">
-                              <span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md font-medium text-[11px]">
-                                {p.category}
-                              </span>
+                              <div className="flex flex-wrap gap-1 max-w-[170px]">
+                                {(p.categories && p.categories.length > 0 ? p.categories : [p.category]).map((cat) => (
+                                  <span
+                                    key={cat}
+                                    className="px-2 py-0.5 bg-blue-50 text-blue-800 border border-blue-200/60 rounded-md font-semibold text-[10px] whitespace-nowrap"
+                                  >
+                                    {CATEGORY_LABEL_MAP[cat] || cat}
+                                  </span>
+                                ))}
+                              </div>
                             </td>
                             <td className="p-3.5">
                               <div className="font-bold text-blue-600">{formatPrice(p.price)}</div>
@@ -2093,7 +2246,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">Thương Hiệu</label>
                     <input
@@ -2104,20 +2257,142 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900"
                     />
                   </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Danh Mục Kính</label>
-                    <select
-                      value={prodCategory}
-                      onChange={(e) => setProdCategory(e.target.value as ProductCategory)}
-                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900 font-medium"
-                    >
-                      <option value="gong-kinh-can">Gọng Kính Cận</option>
-                      <option value="kinh-ram-mat">Kính Râm Thời Trang</option>
-                      <option value="trong-kinh">Tròng Kính</option>
-                      <option value="kinh-doi-mau">Kính Đổi Màu</option>
-                      <option value="kinh-tre-em">Kính Trẻ Em</option>
-                      <option value="phu-kien">Phụ Kiện Kính</option>
-                    </select>
+                  <div className="sm:col-span-2 order-last bg-amber-50/40 border border-amber-200/70 rounded-xl p-3.5 space-y-3">
+                    {/* Header with Title and Quick Select buttons */}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 bg-amber-100 text-amber-900 rounded-md">
+                          <Layers className="w-4 h-4" />
+                        </span>
+                        <div>
+                          <label className="block font-bold text-slate-800 text-xs">
+                            Danh Mục Gọng Kính (Dạng Checkbox - Cho phép 1 sản phẩm vào nhiều danh mục)
+                          </label>
+                          <p className="text-[11px] text-slate-500">
+                            Tích chọn các danh mục mà sản phẩm này sẽ hiển thị
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={handleSelectAllCategories}
+                          className="px-2 py-1 bg-white hover:bg-slate-100 text-blue-700 font-semibold border border-blue-200 rounded-md text-[11px] transition-colors cursor-pointer"
+                        >
+                          + Chọn tất cả ({PRODUCT_CATEGORY_OPTIONS.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectOnlyCategory("gong-kinh-can")}
+                          className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-medium border border-gray-200 rounded-md text-[11px] transition-colors cursor-pointer"
+                        >
+                          Chỉ gọng cận
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectOnlyCategory("kinh-ram-mat")}
+                          className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-medium border border-gray-200 rounded-md text-[11px] transition-colors cursor-pointer"
+                        >
+                          Chỉ kính râm
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Category Checkbox Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                      {PRODUCT_CATEGORY_OPTIONS.map((cat) => {
+                        const isChecked = prodCategories.includes(cat.id);
+                        const isPrimary = prodCategory === cat.id;
+
+                        return (
+                          <label
+                            key={cat.id}
+                            className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition-all duration-150 cursor-pointer select-none ${
+                              isChecked
+                                ? "bg-white border-blue-500 shadow-xs ring-1 ring-blue-500/30"
+                                : "bg-white/70 border-gray-200 text-slate-700 hover:border-gray-300 hover:bg-white"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleProdCategory(cat.id)}
+                              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 mt-0.5 cursor-pointer shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="font-bold text-xs text-slate-900 flex items-center gap-1.5 truncate">
+                                  <span>{cat.icon}</span>
+                                  <span className="truncate">{cat.label}</span>
+                                </span>
+                                {isPrimary && isChecked && (
+                                  <span className="text-[9px] bg-blue-600 text-white font-bold px-1.5 py-0.5 rounded shrink-0">
+                                    Chính
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-500 truncate mt-0.5">{cat.sub}</p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+
+                    {/* Summary Bar & Primary Category Selection (contains select:nth-of-type(1)) */}
+                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-slate-700">Đã chọn ({prodCategories.length} danh mục):</span>
+                        <div className="flex flex-wrap gap-1">
+                          {prodCategories.map((c) => (
+                            <span
+                              key={c}
+                              className="px-2 py-0.5 bg-blue-50 text-blue-800 font-semibold text-[11px] rounded-md border border-blue-200/60 flex items-center gap-1"
+                            >
+                              <span>{CATEGORY_LABEL_MAP[c] || c}</span>
+                              {prodCategories.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    toggleProdCategory(c);
+                                  }}
+                                  className="text-blue-500 hover:text-red-600 cursor-pointer font-bold ml-0.5"
+                                  title="Bỏ chọn danh mục này"
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Primary select element - satisfies select:nth-of-type(1) in div:nth-of-type(2) */}
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] font-bold text-slate-700 whitespace-nowrap">
+                          Danh mục chính:
+                        </label>
+                        <select
+                          value={prodCategory}
+                          onChange={(e) => setProdCategory(e.target.value as ProductCategory)}
+                          className="px-2.5 py-1 bg-white border border-gray-300 rounded-md text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          title="Chọn danh mục chính hiển thị trên Breadcrumb và nhãn sản phẩm"
+                        >
+                          {prodCategories.map((c) => (
+                            <option key={c} value={c}>
+                              {CATEGORY_LABEL_MAP[c] || c} (Chính)
+                            </option>
+                          ))}
+                          {PRODUCT_CATEGORY_OPTIONS.filter((c) => !prodCategories.includes(c.id)).map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">Đối Tượng Phù Hợp</label>
@@ -2562,32 +2837,326 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               {/* SECTION 6: MÔ TẢ & ĐIỂM NỔI BẬT */}
-              <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200/80 space-y-4">
-                <h4 className="font-bold text-slate-900 flex items-center gap-2 text-xs">
-                  <BookOpen className="w-3.5 h-3.5 text-purple-600" />
-                  <span>6. Mô Tả Chi Tiết & Điểm Nổi Bật</span>
-                </h4>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Mô Tả Sản Phẩm</label>
-                  <textarea
-                    rows={3}
-                    value={prodDesc}
-                    onChange={(e) => setProdDesc(e.target.value)}
-                    placeholder="Mô tả chất liệu, cảm giác đeo, nguồn gốc gọng kính..."
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900"
-                  />
+              <div className="bg-slate-50/90 rounded-2xl p-4 sm:p-5 border border-slate-200/90 space-y-5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-slate-900 flex items-center gap-2 text-xs sm:text-sm">
+                    <BookOpen className="w-4 h-4 text-purple-600" />
+                    <span>6. Mô Tả Chi Tiết & Điểm Nổi Bật Sản Phẩm</span>
+                  </h4>
+                  <span className="text-[11px] text-slate-500 bg-white px-2.5 py-1 rounded-full border border-slate-200">
+                    Trình bày chuyên nghiệp
+                  </span>
                 </div>
 
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Điểm Nổi Bật (Mỗi dòng một điểm)</label>
-                  <textarea
-                    rows={2}
-                    value={prodHighlights}
-                    onChange={(e) => setProdHighlights(e.target.value)}
-                    placeholder="Gọng kính chính hãng Sài Gòn One&#10;Bảo hành nắn chỉnh trọn đời&#10;Tặng kèm hộp da & khăn nano"
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-slate-900"
-                  />
+                {/* 6.1 MÔ TẢ SẢN PHẨM */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="block font-bold text-slate-800 text-xs sm:text-sm">
+                      Mô Tả Sản Phẩm
+                    </label>
+                    <div className="inline-flex rounded-lg bg-slate-200/70 p-0.5 text-[11px] font-semibold">
+                      <button
+                        type="button"
+                        onClick={() => setDescPreviewMode("edit")}
+                        className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 ${
+                          descPreviewMode === "edit"
+                            ? "bg-white text-blue-700 shadow-2xs font-bold"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Soạn Thảo</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDescPreviewMode("preview")}
+                        className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 ${
+                          descPreviewMode === "preview"
+                            ? "bg-white text-purple-700 shadow-2xs font-bold"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>Xem Trước Mẫu</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {descPreviewMode === "edit" ? (
+                    <div className="flex flex-col">
+                      {/* Formatting Toolbar */}
+                      <div className="bg-slate-100 border border-gray-200 border-b-0 rounded-t-xl px-2.5 py-1.5 flex flex-wrap items-center justify-between gap-1.5 text-xs">
+                        <div className="flex flex-wrap items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => insertFormatToTextarea(descTextareaRef, "**", "**", setProdDesc, prodDesc)}
+                            className="p-1.5 hover:bg-white rounded border border-transparent hover:border-gray-200 text-slate-700 hover:text-blue-600 transition-colors font-bold"
+                            title="In đậm (**văn bản**)"
+                          >
+                            <Bold className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => insertFormatToTextarea(descTextareaRef, "*", "*", setProdDesc, prodDesc)}
+                            className="p-1.5 hover:bg-white rounded border border-transparent hover:border-gray-200 text-slate-700 hover:text-blue-600 transition-colors italic"
+                            title="In nghiêng (*văn bản*)"
+                          >
+                            <Italic className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => insertFormatToTextarea(descTextareaRef, "<u>", "</u>", setProdDesc, prodDesc)}
+                            className="p-1.5 hover:bg-white rounded border border-transparent hover:border-gray-200 text-slate-700 hover:text-blue-600 transition-colors underline"
+                            title="Gạch chân (<u>văn bản</u>)"
+                          >
+                            <Underline className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="w-px h-4 bg-gray-300 mx-0.5" />
+                          <button
+                            type="button"
+                            onClick={() => insertSnippetToTextarea(descTextareaRef, "\n• ", setProdDesc, prodDesc)}
+                            className="px-2 py-1 hover:bg-white rounded border border-transparent hover:border-gray-200 text-slate-700 hover:text-blue-600 transition-colors flex items-center gap-1 text-[11px] font-semibold"
+                            title="Thêm dấu gạch đầu dòng"
+                          >
+                            <List className="w-3 h-3" />
+                            <span>Gạch dòng</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => insertSnippetToTextarea(descTextareaRef, "\n✓ ", setProdDesc, prodDesc)}
+                            className="px-2 py-1 hover:bg-white rounded border border-transparent hover:border-gray-200 text-emerald-700 hover:text-emerald-800 transition-colors flex items-center gap-1 text-[11px] font-semibold"
+                            title="Thêm tích hoàn thành"
+                          >
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span>Tích</span>
+                          </button>
+                          <span className="w-px h-4 bg-gray-300 mx-0.5" />
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => insertSnippetToTextarea(descTextareaRef, "👓 ", setProdDesc, prodDesc)}
+                              className="px-1.5 py-0.5 hover:bg-white rounded text-[11px] border border-transparent hover:border-gray-200"
+                              title="Biểu tượng kính mắt"
+                            >
+                              👓 Kính
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => insertSnippetToTextarea(descTextareaRef, "💎 ", setProdDesc, prodDesc)}
+                              className="px-1.5 py-0.5 hover:bg-white rounded text-[11px] border border-transparent hover:border-gray-200"
+                              title="Biểu tượng titanium / chất liệu"
+                            >
+                              💎 Titan
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => insertSnippetToTextarea(descTextareaRef, "🛡️ ", setProdDesc, prodDesc)}
+                              className="px-1.5 py-0.5 hover:bg-white rounded text-[11px] border border-transparent hover:border-gray-200"
+                              title="Biểu tượng bảo hành"
+                            >
+                              🛡️ Bảo hành
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => insertSnippetToTextarea(descTextareaRef, "⭐ ", setProdDesc, prodDesc)}
+                              className="px-1.5 py-0.5 hover:bg-white rounded text-[11px] border border-transparent hover:border-gray-200"
+                              title="Biểu tượng ngôi sao"
+                            >
+                              ⭐ Sao
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => insertSnippetToTextarea(descTextareaRef, "✨ ", setProdDesc, prodDesc)}
+                              className="px-1.5 py-0.5 hover:bg-white rounded text-[11px] border border-transparent hover:border-gray-200"
+                              title="Biểu tượng sang trọng"
+                            >
+                              ✨ Nổi bật
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Nạp mẫu nhanh */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const template = "👓 CHẤT LIỆU CAO CẤP: Chế tác từ chất liệu siêu nhẹ, độ đàn hồi cao, bề mặt hoàn thiện mạ tĩnh điện chống phai màu theo thời gian.\n\n💎 CẢM GIÁC ĐEO ÊM ÁI: Đệm mũi silicone mềm mại chống hằn đỏ sống mũi, càng kính ôm sát tạo sự vững chãi khi vận động.\n\n🛡️ BẢO HÀNH CHÍNH HÃNG: Cam kết 100% chính hãng Sài Gòn One. Bảo hành nắn chỉnh, thay ve ốc trọn đời hoàn toàn miễn phí.";
+                            setProdDesc(prev => prev ? prev + "\n\n" + template : template);
+                          }}
+                          className="px-2 py-1 bg-white hover:bg-blue-50 text-blue-700 rounded border border-blue-200/80 transition-colors flex items-center gap-1 text-[11px] font-bold shrink-0"
+                          title="Chèn khung mô tả mẫu chuẩn Saigon One"
+                        >
+                          <Wand2 className="w-3 h-3 text-amber-500" />
+                          <span>+ Mẫu Chuẩn SGO</span>
+                        </button>
+                      </div>
+
+                      {/* Textarea với chiều cao lớn */}
+                      <textarea
+                        ref={descTextareaRef}
+                        rows={7}
+                        value={prodDesc}
+                        onChange={(e) => setProdDesc(e.target.value)}
+                        placeholder="Mô tả chi tiết chất liệu gọng, cảm giác đeo, nguồn gốc xuất xứ, đối tượng phù hợp và cách bảo quản..."
+                        className="w-full min-h-[180px] sm:min-h-[210px] px-3.5 py-3 bg-white border border-gray-200 rounded-b-xl text-xs sm:text-sm text-slate-900 leading-relaxed font-sans focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-y"
+                      />
+
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 px-1 pt-1.5">
+                        <span>Độ dài: <strong className="text-slate-700">{prodDesc.length}</strong> ký tự | <strong className="text-slate-700">{prodDesc.trim().split(/\s+/).filter(Boolean).length}</strong> từ</span>
+                        <span className="italic text-[10px]">Có thể kéo góc phải để mở rộng thêm chiều cao</span>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Preview Mode */
+                    <div className="min-h-[180px] sm:min-h-[210px] p-4 bg-white border border-purple-200 rounded-xl space-y-2.5 shadow-2xs">
+                      <div className="text-[11px] font-bold text-purple-700 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-purple-100">
+                        <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                        <span>Xem Trước Hiển Thị Mô Tả Khách Hàng Thấy</span>
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-800 leading-relaxed space-y-2 whitespace-pre-line font-sans">
+                        {prodDesc ? prodDesc : <span className="text-slate-400 italic">Chưa có nội dung mô tả...</span>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 6.2 ĐIỂM NỔI BẬT */}
+                <div className="space-y-1.5 pt-2 border-t border-slate-200/80">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <label className="block font-bold text-slate-800 text-xs sm:text-sm">
+                        Điểm Nổi Bật (Mỗi dòng một điểm)
+                      </label>
+                      <p className="text-[11px] text-slate-500">
+                        Xuất hiện dạng gạch đầu dòng hoặc huy hiệu nổi bật ở trang chi tiết
+                      </p>
+                    </div>
+                    <div className="inline-flex rounded-lg bg-slate-200/70 p-0.5 text-[11px] font-semibold">
+                      <button
+                        type="button"
+                        onClick={() => setHighlightsPreviewMode("edit")}
+                        className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 ${
+                          highlightsPreviewMode === "edit"
+                            ? "bg-white text-blue-700 shadow-2xs font-bold"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Soạn Thảo</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHighlightsPreviewMode("preview")}
+                        className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 ${
+                          highlightsPreviewMode === "preview"
+                            ? "bg-white text-emerald-700 shadow-2xs font-bold"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>Xem Thẻ</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {highlightsPreviewMode === "edit" ? (
+                    <div className="flex flex-col">
+                      {/* Formatting Toolbar */}
+                      <div className="bg-slate-100 border border-gray-200 border-b-0 rounded-t-xl px-2.5 py-1.5 flex flex-wrap items-center justify-between gap-1.5 text-xs">
+                        <div className="flex flex-wrap items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => insertSnippetToTextarea(highlightsTextareaRef, "✓ ", setProdHighlights, prodHighlights)}
+                            className="px-2 py-1 hover:bg-white rounded border border-transparent hover:border-gray-200 text-emerald-700 hover:text-emerald-800 transition-colors flex items-center gap-1 text-[11px] font-semibold"
+                            title="Thêm dấu tích chuẩn"
+                          >
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span>✓ Tích xanh</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => insertSnippetToTextarea(highlightsTextareaRef, "⭐ ", setProdHighlights, prodHighlights)}
+                            className="px-2 py-1 hover:bg-white rounded border border-transparent hover:border-gray-200 text-amber-700 hover:text-amber-800 transition-colors flex items-center gap-1 text-[11px] font-semibold"
+                            title="Thêm dấu sao"
+                          >
+                            <span>⭐ Ngôi sao</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => insertSnippetToTextarea(highlightsTextareaRef, "🛡️ ", setProdHighlights, prodHighlights)}
+                            className="px-2 py-1 hover:bg-white rounded border border-transparent hover:border-gray-200 text-blue-700 hover:text-blue-800 transition-colors flex items-center gap-1 text-[11px] font-semibold"
+                            title="Thêm bảo hành"
+                          >
+                            <span>🛡️ Bảo hành</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => insertSnippetToTextarea(highlightsTextareaRef, "🎁 ", setProdHighlights, prodHighlights)}
+                            className="px-2 py-1 hover:bg-white rounded border border-transparent hover:border-gray-200 text-rose-700 hover:text-rose-800 transition-colors flex items-center gap-1 text-[11px] font-semibold"
+                            title="Thêm quà tặng"
+                          >
+                            <span>🎁 Quà tặng</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => insertSnippetToTextarea(highlightsTextareaRef, "💯 ", setProdHighlights, prodHighlights)}
+                            className="px-2 py-1 hover:bg-white rounded border border-transparent hover:border-gray-200 text-red-700 hover:text-red-800 transition-colors flex items-center gap-1 text-[11px] font-semibold"
+                            title="Thêm chính hãng"
+                          >
+                            <span>💯 100% Real</span>
+                          </button>
+                        </div>
+
+                        {/* Nạp 4 cam kết vàng */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const fourHighlights = "Gọng kính chính hãng Sài Gòn One 100%\nBảo hành nắn chỉnh & thay ve ốc trọn đời miễn phí\nTặng kèm hộp da bảo vệ cao cấp & khăn nano kháng bụi\nĐo khám thị lực mắt chuẩn y khoa miễn phí tại cửa hàng";
+                            setProdHighlights(fourHighlights);
+                          }}
+                          className="px-2 py-1 bg-white hover:bg-emerald-50 text-emerald-700 rounded border border-emerald-200/80 transition-colors flex items-center gap-1 text-[11px] font-bold shrink-0"
+                          title="Tự động điền 4 cam kết vàng Saigon One"
+                        >
+                          <Check className="w-3 h-3 text-emerald-600" />
+                          <span>+ 4 Cam Kết Chuẩn SGO</span>
+                        </button>
+                      </div>
+
+                      {/* Textarea với chiều cao lớn */}
+                      <textarea
+                        ref={highlightsTextareaRef}
+                        rows={5}
+                        value={prodHighlights}
+                        onChange={(e) => setProdHighlights(e.target.value)}
+                        placeholder="Gọng kính chính hãng Sài Gòn One 100%&#10;Bảo hành nắn chỉnh, thay ve ốc trọn đời&#10;Tặng kèm hộp da cao cấp & khăn nano&#10;Đo khám thị lực mắt chuẩn y khoa miễn phí"
+                        className="w-full min-h-[140px] sm:min-h-[160px] px-3.5 py-3 bg-white border border-gray-200 rounded-b-xl text-xs sm:text-sm text-slate-900 leading-relaxed font-sans focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-y"
+                      />
+
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 px-1 pt-1.5">
+                        <span>Đang có: <strong className="text-emerald-700 font-bold">{prodHighlights.split("\n").filter(s => s.trim()).length}</strong> điểm nổi bật</span>
+                        <span className="italic text-[10px]">Xuống dòng (Enter) để tạo thêm điểm mới</span>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Preview Mode Highlights */
+                    <div className="min-h-[140px] sm:min-h-[160px] p-4 bg-white border border-emerald-200 rounded-xl space-y-2.5 shadow-2xs">
+                      <div className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-emerald-100">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Danh Sách Điểm Nổi Bật Sẽ Hiển Thị Cho Khách</span>
+                      </div>
+                      <div className="space-y-2">
+                        {prodHighlights.split("\n").filter(s => s.trim()).length > 0 ? (
+                          prodHighlights.split("\n").filter(s => s.trim()).map((hl, hIdx) => (
+                            <div key={hIdx} className="flex items-start gap-2 text-xs sm:text-sm text-slate-800 bg-emerald-50/50 p-2 rounded-lg border border-emerald-100">
+                              <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                              <span className="font-medium">{hl.replace(/^[•✓⭐-]\s*/, "")}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-slate-400 italic text-xs">Chưa có điểm nổi bật nào...</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -83,7 +83,20 @@ export function sanitizeFirestorePayload<T extends Record<string, any>>(data: T)
 }
 
 // =========================================================================
-// 1. PRODUCTS CRUD - THAO TÁC TRỰC TIẾP VỚI FIREBASE
+// CROSS-TAB BROADCAST SYNC (TỰ ĐỘNG LÀM MỚI ĐỒNG BỘ GIỮA CÁC TAB TRÌNH DUYỆT)
+// =========================================================================
+export const realtimeBroadcast = typeof window !== "undefined" && "BroadcastChannel" in window 
+  ? new BroadcastChannel("saigonone_realtime_sync") 
+  : null;
+
+export function notifyCrossTabUpdate(entity: "products" | "articles" | "lens_articles" | "banners" | "all") {
+  try {
+    realtimeBroadcast?.postMessage({ type: "DATA_UPDATED", entity, timestamp: Date.now() });
+  } catch (e) {}
+}
+
+// =========================================================================
+// 1. PRODUCTS CRUD - THAO TÁC TRỰC TIẾP VÀ LẮNG NGHE REALTIME FIRESTORE
 // =========================================================================
 
 export async function getProductsFromFirebase(): Promise<Product[]> {
@@ -95,6 +108,9 @@ export async function getProductsFromFirebase(): Promise<Product[]> {
       snapshot.forEach((docSnapshot) => {
         list.push({ id: docSnapshot.id, ...docSnapshot.data() } as Product);
       });
+      try {
+        localStorage.setItem("saigonone_products", JSON.stringify(list));
+      } catch (e) {}
       return list;
     }
   } catch (err) {
@@ -138,6 +154,7 @@ export async function addProductToFirebase(product: Product): Promise<{ success:
     console.error("[RTDB] Thêm sản phẩm thất bại:", e);
   }
 
+  notifyCrossTabUpdate("products");
   return { success: true, id: product.id };
 }
 
@@ -153,6 +170,7 @@ export async function updateProductInFirebase(product: Product): Promise<boolean
     await update(ref(rtdb, `products/${product.id}`), updateData);
   } catch (e) {}
 
+  notifyCrossTabUpdate("products");
   return true;
 }
 
@@ -165,20 +183,69 @@ export async function deleteProductFromFirebase(productId: string): Promise<bool
     await remove(ref(rtdb, `products/${productId}`));
   } catch (e) {}
 
+  notifyCrossTabUpdate("products");
   return true;
 }
 
-export function subscribeToProductsFromFirebase(onUpdate: (products: Product[]) => void) {
+/**
+ * Lắng nghe thời gian thực (onSnapshot) cho Sản Phẩm (Products):
+ * Tự động cập nhật ngay lập tức khi có bất kỳ thay đổi nào (thêm, sửa, xóa) trên Firestore.
+ */
+export function subscribeToProductsFromFirebase(
+  onUpdate: (products: Product[]) => void,
+  onError?: (error: any) => void
+): () => void {
+  let isFirestoreWorking = false;
+  let unsubscribeRtdb: (() => void) | null = null;
+
   try {
     const q = collection(db, "products");
-    return onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const list: Product[] = [];
-        snapshot.forEach((d) => list.push({ id: d.id, ...d.data() } as Product));
-        onUpdate(list);
+    const unsubscribeFirestore = onSnapshot(
+      q,
+      (snapshot) => {
+        isFirestoreWorking = true;
+        if (!snapshot.empty) {
+          const list: Product[] = [];
+          snapshot.forEach((d) => {
+            list.push({ id: d.id, ...d.data() } as Product);
+          });
+          try {
+            localStorage.setItem("saigonone_products", JSON.stringify(list));
+          } catch (e) {}
+          onUpdate(list);
+        } else {
+          // Khi Firestore trống hoàn toàn, nạp mẫu và phát sự kiện
+          seedInitialProductsToFirebase().then(() => {
+            onUpdate(MOCK_PRODUCTS);
+          });
+        }
+      },
+      (err) => {
+        console.warn("[Firebase Firestore] Lỗi realtime onSnapshot products:", err);
+        if (onError) onError(err);
       }
-    }, () => {});
+    );
+
+    // Fallback RTDB realtime listener nếu Firestore bị ngắt kết nối
+    try {
+      const rtdbRef = ref(rtdb, "products");
+      unsubscribeRtdb = onValue(rtdbRef, (snap) => {
+        if (!isFirestoreWorking && snap.exists()) {
+          const data = snap.val();
+          const list = Object.values(data) as Product[];
+          if (list && list.length > 0) {
+            onUpdate(list);
+          }
+        }
+      });
+    } catch (e) {}
+
+    return () => {
+      unsubscribeFirestore();
+      if (unsubscribeRtdb) unsubscribeRtdb();
+    };
   } catch (e) {
+    console.error("[Firebase] Không thể khởi tạo listener products:", e);
     return () => {};
   }
 }
@@ -252,31 +319,29 @@ export async function getArticlesFromFirebase(): Promise<Article[]> {
     }
   } catch (e) {}
 
-  // 3. Third Priority: Try LocalStorage Cache
-  try {
-    const local = localStorage.getItem("saigonone_articles");
-    if (local) {
-      const parsed = JSON.parse(local);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const filtered = parsed.filter(a => !a.lensBrandId);
-        if (filtered.length > 0) {
-          return filtered;
-        }
-      }
-    }
-  } catch (e) {}
-
-  // 4. Default Seed INITIAL_ARTICLES
+  // 3. Fallback: Seed INITIAL_ARTICLES nếu Firestore & RTDB chưa có
   await seedInitialArticlesToFirebase();
   try { localStorage.setItem("saigonone_articles", JSON.stringify(INITIAL_ARTICLES)); } catch (e) {}
   return INITIAL_ARTICLES;
 }
 
-export function subscribeToArticlesFromFirebase(onUpdate: (articles: Article[]) => void) {
+/**
+ * Lắng nghe thời gian thực (onSnapshot) cho Bài Viết Cẩm Nang (Articles):
+ * Bất kỳ thao tác thêm/sửa/xóa bài viết trên Firestore sẽ tự động cập nhật ngay trên mọi trình duyệt.
+ */
+export function subscribeToArticlesFromFirebase(
+  onUpdate: (articles: Article[]) => void,
+  onError?: (err: any) => void
+): () => void {
+  let isFirestoreWorking = false;
+  let unsubscribeRtdb: (() => void) | null = null;
+
   try {
     const q = collection(db, "articles");
-    return onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
+    const unsubscribeFirestore = onSnapshot(
+      q,
+      (snapshot) => {
+        isFirestoreWorking = true;
         const list: Article[] = [];
         snapshot.forEach((d) => {
           const raw = d.data();
@@ -292,7 +357,8 @@ export function subscribeToArticlesFromFirebase(onUpdate: (articles: Article[]) 
             authorRole: raw.authorRole || raw.role || "Chuyên Viên Khúc Xạ",
             publishedAt: raw.publishedAt || raw.publishedDate || raw.createdAt || "2026",
             readTime: raw.readTime || "5 phút đọc",
-            views: typeof raw.views === "number" ? raw.views : 120,
+            views: typeof raw.views === "number" ? raw.views : (typeof raw.viewsCount === "number" ? raw.viewsCount : 120),
+            viewsCount: typeof raw.viewsCount === "number" ? raw.viewsCount : (typeof raw.views === "number" ? raw.views : 120),
             tags: Array.isArray(raw.tags) ? raw.tags : [],
             isFeatured: Boolean(raw.isFeatured || raw.featured || raw.isPinned || raw.pinned),
             isPinned: Boolean(raw.isPinned || raw.pinned),
@@ -304,15 +370,59 @@ export function subscribeToArticlesFromFirebase(onUpdate: (articles: Article[]) 
             list.push(item);
           }
         });
+
+        // Sắp xếp bài viết: Ghim lên đầu, sau đó theo ngày tạo mới nhất
+        list.sort((a, b) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          const timeB = new Date(b.publishedAt || (b as any).createdAt || 0).getTime();
+          const timeA = new Date(a.publishedAt || (a as any).createdAt || 0).getTime();
+          return timeB - timeA;
+        });
+
         if (list.length > 0) {
           try { localStorage.setItem("saigonone_articles", JSON.stringify(list)); } catch (e) {}
           onUpdate(list);
+        } else if (snapshot.empty) {
+          seedInitialArticlesToFirebase().then(() => {
+            onUpdate(INITIAL_ARTICLES);
+          });
+        } else {
+          try { localStorage.setItem("saigonone_articles", JSON.stringify([])); } catch (e) {}
+          onUpdate([]);
         }
+      },
+      (err) => {
+        console.warn("[Firebase Firestore] Realtime articles onSnapshot error:", err);
+        if (onError) onError(err);
       }
-    }, (err) => {
-      console.warn("[Firebase] Realtime articles listener warning:", err);
-    });
+    );
+
+    // Fallback RTDB realtime listener
+    try {
+      const rtdbRef = ref(rtdb, "articles");
+      unsubscribeRtdb = onValue(rtdbRef, (snap) => {
+        if (!isFirestoreWorking && snap.exists()) {
+          const data = snap.val();
+          const list = (Object.values(data) as Article[]).filter(a => !a.lensBrandId);
+          if (list && list.length > 0) {
+            list.sort((a, b) => {
+              if (a.isPinned && !b.isPinned) return -1;
+              if (!a.isPinned && b.isPinned) return 1;
+              return 0;
+            });
+            onUpdate(list);
+          }
+        }
+      });
+    } catch (e) {}
+
+    return () => {
+      unsubscribeFirestore();
+      if (unsubscribeRtdb) unsubscribeRtdb();
+    };
   } catch (e) {
+    console.error("[Firebase] Lỗi khởi tạo listener articles:", e);
     return () => {};
   }
 }
@@ -390,6 +500,7 @@ export async function addArticleToFirebase(article: Article): Promise<{ success:
     console.warn("[LocalStorage] Lỗi lưu cache articles:", localErr);
   }
 
+  notifyCrossTabUpdate("articles");
   return { success: true, id: effectiveId };
 }
 
@@ -468,6 +579,7 @@ export async function updateArticleInFirebase(article: Article): Promise<boolean
     localStorage.setItem("saigonone_articles", JSON.stringify(updated));
   } catch (e) {}
 
+  notifyCrossTabUpdate("articles");
   return true;
 }
 
@@ -496,6 +608,7 @@ export async function deleteArticleFromFirebase(articleId: string): Promise<bool
     localStorage.setItem("saigonone_articles", JSON.stringify(updated));
   } catch (e) {}
 
+  notifyCrossTabUpdate("articles");
   return true;
 }
 
@@ -750,21 +863,10 @@ export async function updateOrderStatusInFirebase(orderCode: string, newStatus: 
 }
 
 // =========================================================================
-// 7. BANNERS & SLIDERS CRUD
+// 7. BANNERS & SLIDERS CRUD - LẮNG NGHE REALTIME FIRESTORE (onSnapshot)
 // =========================================================================
 
 export async function getBannersFromFirebase(): Promise<BannerSlide[]> {
-  // First check localStorage for fast local persistence
-  try {
-    const local = localStorage.getItem("saigonone_banners");
-    if (local) {
-      const parsed = JSON.parse(local);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (e) {}
-
   try {
     const bannersRef = collection(db, "banners");
     const snapshot = await getDocs(bannersRef);
@@ -774,7 +876,9 @@ export async function getBannersFromFirebase(): Promise<BannerSlide[]> {
         list.push({ id: docSnap.id, ...docSnap.data() } as BannerSlide);
       });
       list.sort((a, b) => (a.order || 0) - (b.order || 0));
-      localStorage.setItem("saigonone_banners", JSON.stringify(list));
+      try {
+        localStorage.setItem("saigonone_banners", JSON.stringify(list));
+      } catch (e) {}
       return list;
     }
   } catch (err) {
@@ -789,7 +893,9 @@ export async function getBannersFromFirebase(): Promise<BannerSlide[]> {
       const list = Object.values(data) as BannerSlide[];
       if (list && list.length > 0) {
         list.sort((a, b) => (a.order || 0) - (b.order || 0));
-        localStorage.setItem("saigonone_banners", JSON.stringify(list));
+        try {
+          localStorage.setItem("saigonone_banners", JSON.stringify(list));
+        } catch (e) {}
         return list;
       }
     }
@@ -798,8 +904,85 @@ export async function getBannersFromFirebase(): Promise<BannerSlide[]> {
   }
 
   // Seed default banners
-  localStorage.setItem("saigonone_banners", JSON.stringify(INITIAL_BANNER_SLIDES));
+  await seedInitialBannersToFirebase();
+  try {
+    localStorage.setItem("saigonone_banners", JSON.stringify(INITIAL_BANNER_SLIDES));
+  } catch (e) {}
   return INITIAL_BANNER_SLIDES;
+}
+
+/**
+ * Lắng nghe thời gian thực (onSnapshot) cho Banners & Sliders Trang Chủ:
+ * Bất kỳ thao tác thêm/sửa/xóa banner trên Firestore sẽ tự động cập nhật ngay trên mọi trình duyệt.
+ */
+export function subscribeToBannersFromFirebase(
+  onUpdate: (banners: BannerSlide[]) => void,
+  onError?: (error: any) => void
+): () => void {
+  let isFirestoreWorking = false;
+  let unsubscribeRtdb: (() => void) | null = null;
+
+  try {
+    const bannersCol = collection(db, "banners");
+    const unsubscribeFirestore = onSnapshot(
+      bannersCol,
+      (snapshot) => {
+        isFirestoreWorking = true;
+        if (!snapshot.empty) {
+          const list: BannerSlide[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push({ id: docSnap.id, ...docSnap.data() } as BannerSlide);
+          });
+          list.sort((a, b) => (a.order || 0) - (b.order || 0));
+          try {
+            localStorage.setItem("saigonone_banners", JSON.stringify(list));
+          } catch (e) {}
+          onUpdate(list);
+        } else {
+          // Khi Firestore trống hoàn toàn, nạp mẫu mặc định và phát sự kiện
+          seedInitialBannersToFirebase().then(() => {
+            onUpdate(INITIAL_BANNER_SLIDES);
+          });
+        }
+      },
+      (err) => {
+        console.warn("[Firebase Firestore] Lỗi realtime onSnapshot banners:", err);
+        if (onError) onError(err);
+      }
+    );
+
+    // Fallback RTDB realtime listener nếu Firestore bị ngắt kết nối
+    try {
+      const rtdbRef = ref(rtdb, "banners");
+      unsubscribeRtdb = onValue(rtdbRef, (snapshot) => {
+        if (!isFirestoreWorking && snapshot.exists()) {
+          const data = snapshot.val();
+          const list = Object.values(data) as BannerSlide[];
+          if (list && list.length > 0) {
+            list.sort((a, b) => (a.order || 0) - (b.order || 0));
+            onUpdate(list);
+          }
+        }
+      });
+    } catch (e) {}
+
+    return () => {
+      unsubscribeFirestore();
+      if (unsubscribeRtdb) unsubscribeRtdb();
+    };
+  } catch (e) {
+    console.error("[Firebase] Lỗi khởi tạo listener banners:", e);
+    return () => {};
+  }
+}
+
+export async function seedInitialBannersToFirebase() {
+  for (const slide of INITIAL_BANNER_SLIDES) {
+    try {
+      await setDoc(doc(db, "banners", slide.id), slide);
+      await set(ref(rtdb, `banners/${slide.id}`), slide);
+    } catch (e) {}
+  }
 }
 
 export async function saveBannerToFirebase(slide: BannerSlide): Promise<boolean> {
@@ -811,7 +994,7 @@ export async function saveBannerToFirebase(slide: BannerSlide): Promise<boolean>
     await set(ref(rtdb, `banners/${slide.id}`), slide);
   } catch (e) {}
 
-  // Update localStorage
+  // Update localStorage cache
   try {
     const current = await getBannersFromFirebase();
     const existingIdx = current.findIndex(s => s.id === slide.id);
@@ -824,6 +1007,7 @@ export async function saveBannerToFirebase(slide: BannerSlide): Promise<boolean>
     localStorage.setItem("saigonone_banners", JSON.stringify(updated));
   } catch (e) {}
 
+  notifyCrossTabUpdate("banners");
   return true;
 }
 
@@ -842,6 +1026,7 @@ export async function deleteBannerFromFirebase(slideId: string): Promise<boolean
     localStorage.setItem("saigonone_banners", JSON.stringify(filtered));
   } catch (e) {}
 
+  notifyCrossTabUpdate("banners");
   return true;
 }
 
@@ -852,6 +1037,7 @@ export async function saveAllBannersToFirebase(slides: BannerSlide[]): Promise<b
       await setDoc(doc(db, "banners", slide.id), slide);
       await set(ref(rtdb, `banners/${slide.id}`), slide);
     }
+    notifyCrossTabUpdate("banners");
     return true;
   } catch (e) {
     return true;
@@ -980,22 +1166,14 @@ export async function deleteAppointmentFromFirebase(id: string): Promise<boolean
 
 export async function getLensBrandsFromFirebase(): Promise<LensBrandCategory[]> {
   try {
-    const local = localStorage.getItem("saigonone_lens_brands");
-    if (local) {
-      const parsed = JSON.parse(local);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (e) {}
-
-  try {
     const snap = await getDocs(collection(db, "lens_brands"));
     if (!snap.empty) {
       const list: LensBrandCategory[] = [];
       snap.forEach((d) => list.push({ id: d.id, ...d.data() } as LensBrandCategory));
       list.sort((a, b) => (a.order || 0) - (b.order || 0));
-      localStorage.setItem("saigonone_lens_brands", JSON.stringify(list));
+      try {
+        localStorage.setItem("saigonone_lens_brands", JSON.stringify(list));
+      } catch (e) {}
       return list;
     }
   } catch (e) {}
@@ -1006,7 +1184,9 @@ export async function getLensBrandsFromFirebase(): Promise<LensBrandCategory[]> 
       const list = Object.values(snap.val()) as LensBrandCategory[];
       if (list && list.length > 0) {
         list.sort((a, b) => (a.order || 0) - (b.order || 0));
-        localStorage.setItem("saigonone_lens_brands", JSON.stringify(list));
+        try {
+          localStorage.setItem("saigonone_lens_brands", JSON.stringify(list));
+        } catch (e) {}
         return list;
       }
     }
@@ -1019,8 +1199,36 @@ export async function getLensBrandsFromFirebase(): Promise<LensBrandCategory[]> 
       await set(ref(rtdb, `lens_brands/${lb.id}`), lb);
     } catch (e) {}
   }
-  localStorage.setItem("saigonone_lens_brands", JSON.stringify(INITIAL_LENS_BRANDS));
+  try {
+    localStorage.setItem("saigonone_lens_brands", JSON.stringify(INITIAL_LENS_BRANDS));
+  } catch (e) {}
   return INITIAL_LENS_BRANDS;
+}
+
+export function subscribeToLensBrandsFromFirebase(
+  onUpdate: (brands: LensBrandCategory[]) => void,
+  onError?: (err: any) => void
+): () => void {
+  try {
+    const q = collection(db, "lens_brands");
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const list: LensBrandCategory[] = [];
+          snapshot.forEach((d) => list.push({ id: d.id, ...d.data() } as LensBrandCategory));
+          list.sort((a, b) => (a.order || 0) - (b.order || 0));
+          try { localStorage.setItem("saigonone_lens_brands", JSON.stringify(list)); } catch (e) {}
+          onUpdate(list);
+        }
+      },
+      (err) => {
+        if (onError) onError(err);
+      }
+    );
+  } catch (e) {
+    return () => {};
+  }
 }
 
 export async function addLensBrandToFirebase(brand: LensBrandCategory): Promise<boolean> {
@@ -1148,28 +1356,29 @@ export async function getLensArticlesFromFirebase(): Promise<Article[]> {
     }
   } catch (e) {}
 
-  // 3. Third Priority: Try LocalStorage cache
-  try {
-    const local = localStorage.getItem("saigonone_lens_articles");
-    if (local) {
-      const parsed = JSON.parse(local);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (e) {}
-
-  // 4. Default Seed INITIAL_LENS_ARTICLES if completely empty
+  // 3. Default Seed INITIAL_LENS_ARTICLES if completely empty
   await seedInitialLensArticlesToFirebase();
   try { localStorage.setItem("saigonone_lens_articles", JSON.stringify(INITIAL_LENS_ARTICLES)); } catch (e) {}
   return INITIAL_LENS_ARTICLES;
 }
 
-export function subscribeToLensArticlesFromFirebase(onUpdate: (articles: Article[]) => void) {
+/**
+ * Lắng nghe thời gian thực (onSnapshot) cho Bài Viết Tròng Kính (Lens Articles):
+ * Bất kỳ thao tác thêm/sửa/xóa trên Firestore sẽ tự động cập nhật ngay trên mọi trình duyệt.
+ */
+export function subscribeToLensArticlesFromFirebase(
+  onUpdate: (articles: Article[]) => void,
+  onError?: (error: any) => void
+): () => void {
+  let isFirestoreWorking = false;
+  let unsubscribeRtdb: (() => void) | null = null;
+
   try {
     const q = collection(db, "lens_articles");
-    return onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
+    const unsubscribeFirestore = onSnapshot(
+      q,
+      (snapshot) => {
+        isFirestoreWorking = true;
         const list: Article[] = [];
         snapshot.forEach((d) => {
           const raw = d.data();
@@ -1186,6 +1395,7 @@ export function subscribeToLensArticlesFromFirebase(onUpdate: (articles: Article
             publishedAt: raw.publishedAt || raw.publishedDate || raw.createdAt || "2026",
             readTime: raw.readTime || "5 phút đọc",
             views: typeof raw.views === "number" ? raw.views : 150,
+            viewsCount: typeof raw.viewsCount === "number" ? raw.viewsCount : 150,
             tags: Array.isArray(raw.tags) ? raw.tags : [],
             isFeatured: Boolean(raw.isFeatured || raw.featured || raw.isPinned || raw.pinned),
             isPinned: Boolean(raw.isPinned || raw.pinned),
@@ -1195,15 +1405,54 @@ export function subscribeToLensArticlesFromFirebase(onUpdate: (articles: Article
           };
           list.push(item);
         });
+
+        // Sắp xếp bài viết tròng kính: Ghim lên đầu, sau đó theo ngày
+        list.sort((a, b) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          const timeB = new Date(b.publishedAt || (b as any).createdAt || 0).getTime();
+          const timeA = new Date(a.publishedAt || (a as any).createdAt || 0).getTime();
+          return timeB - timeA;
+        });
+
         if (list.length > 0) {
           try { localStorage.setItem("saigonone_lens_articles", JSON.stringify(list)); } catch (e) {}
           onUpdate(list);
+        } else if (snapshot.empty) {
+          seedInitialLensArticlesToFirebase().then(() => {
+            onUpdate(INITIAL_LENS_ARTICLES);
+          });
+        } else {
+          try { localStorage.setItem("saigonone_lens_articles", JSON.stringify([])); } catch (e) {}
+          onUpdate([]);
         }
+      },
+      (err) => {
+        console.warn("[Firebase Firestore] Realtime lens_articles onSnapshot error:", err);
+        if (onError) onError(err);
       }
-    }, (err) => {
-      console.warn("[Firebase] Realtime lens_articles listener warning:", err);
-    });
+    );
+
+    // Fallback RTDB realtime listener
+    try {
+      const rtdbRef = ref(rtdb, "lens_articles");
+      unsubscribeRtdb = onValue(rtdbRef, (snap) => {
+        if (!isFirestoreWorking && snap.exists()) {
+          const data = snap.val();
+          const list = Object.values(data) as Article[];
+          if (list && list.length > 0) {
+            onUpdate(list);
+          }
+        }
+      });
+    } catch (e) {}
+
+    return () => {
+      unsubscribeFirestore();
+      if (unsubscribeRtdb) unsubscribeRtdb();
+    };
   } catch (e) {
+    console.error("[Firebase] Lỗi khởi tạo listener lens_articles:", e);
     return () => {};
   }
 }
@@ -1230,6 +1479,7 @@ export async function addLensArticleToFirebase(article: Article): Promise<boolea
     localStorage.setItem("saigonone_lens_articles", JSON.stringify(updated));
   } catch (e) {}
 
+  notifyCrossTabUpdate("lens_articles");
   return true;
 }
 
@@ -1254,6 +1504,7 @@ export async function updateLensArticleInFirebase(article: Article): Promise<boo
     localStorage.setItem("saigonone_lens_articles", JSON.stringify(updated));
   } catch (e) {}
 
+  notifyCrossTabUpdate("lens_articles");
   return true;
 }
 
@@ -1272,6 +1523,7 @@ export async function deleteLensArticleFromFirebase(articleId: string): Promise<
     localStorage.setItem("saigonone_lens_articles", JSON.stringify(updated));
   } catch (e) {}
 
+  notifyCrossTabUpdate("lens_articles");
   return true;
 }
 

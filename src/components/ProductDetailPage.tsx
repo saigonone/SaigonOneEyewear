@@ -148,7 +148,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   // Related products from same category or brand
   const relatedProducts = allProducts
-    .filter((p) => p.id !== product.id && (p.category === product.category || p.brand === product.brand))
+    .filter((p) => {
+      if (p.id === product.id) return false;
+      const isBrandMatch = p.brand === product.brand;
+      const productCategories = product.categories && product.categories.length > 0 ? product.categories : [product.category];
+      const pCategories = p.categories && p.categories.length > 0 ? p.categories : [p.category];
+      const isCategoryMatch = productCategories.some((c) => pCategories.includes(c));
+      return isBrandMatch || isCategoryMatch;
+    })
     .slice(0, 4);
 
   const fallbackRelated = relatedProducts.length > 0 
@@ -172,12 +179,28 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               Trang Chủ
             </button>
             <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-            <button
-              onClick={() => onSelectCategory(product.category)}
-              className="hover:text-amber-800 transition-colors font-medium cursor-pointer"
-            >
-              {getCategoryLabel(product.category)}
-            </button>
+            {product.categories && product.categories.length > 1 ? (
+              <span className="flex items-center gap-1">
+                {product.categories.map((c, idx) => (
+                  <React.Fragment key={c}>
+                    <button
+                      onClick={() => onSelectCategory(c)}
+                      className="hover:text-amber-800 transition-colors font-medium cursor-pointer"
+                    >
+                      {getCategoryLabel(c)}
+                    </button>
+                    {idx < product.categories!.length - 1 && <span className="text-stone-300">/</span>}
+                  </React.Fragment>
+                ))}
+              </span>
+            ) : (
+              <button
+                onClick={() => onSelectCategory(product.category)}
+                className="hover:text-amber-800 transition-colors font-medium cursor-pointer"
+              >
+                {getCategoryLabel(product.category)}
+              </button>
+            )}
             <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
             <span className="font-semibold text-stone-900 truncate max-w-[200px] sm:max-w-md">
               {product.name}

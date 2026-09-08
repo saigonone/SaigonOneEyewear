@@ -103,9 +103,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         {/* Modal Top Header Bar */}
         <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between bg-white sticky top-0 z-20">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="bg-amber-100 text-amber-900 text-xs font-extrabold px-3 py-1 rounded uppercase tracking-wider">
-              {getCategoryLabel(product.category)}
-            </span>
+            {(product.categories && product.categories.length > 0 ? product.categories : [product.category]).map((cat) => (
+              <span key={cat} className="bg-amber-100 text-amber-900 text-xs font-extrabold px-3 py-1 rounded uppercase tracking-wider">
+                {getCategoryLabel(cat)}
+              </span>
+            ))}
             <span className="bg-neutral-100 text-neutral-600 text-xs font-mono px-2.5 py-1 rounded">
               SKU: {product.sku}
             </span>

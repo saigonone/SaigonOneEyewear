@@ -80,18 +80,16 @@ import { INITIAL_ARTICLES, INITIAL_ARTICLE_CATEGORIES } from "./data/mockArticle
 import { INITIAL_BANNER_SLIDES } from "./data/mockBanners";
 import { INITIAL_LENS_BRANDS, INITIAL_LENS_ARTICLES } from "./data/mockLensBrands";
 import { 
-  getProductsFromFirebase, 
   addProductToFirebase, 
   deleteProductFromFirebase, 
   updateProductInFirebase,
   subscribeToProductsFromFirebase,
-  getArticlesFromFirebase,
   subscribeToArticlesFromFirebase,
-  getLensArticlesFromFirebase,
   subscribeToLensArticlesFromFirebase,
+  subscribeToBannersFromFirebase,
+  subscribeToLensBrandsFromFirebase,
   getArticleCategoriesFromFirebase,
-  getBannersFromFirebase,
-  getLensBrandsFromFirebase
+  realtimeBroadcast
 } from "./firebase";
 import { 
   parseCurrentRoute, 
@@ -118,40 +116,44 @@ import {
   RotateCcw,
   Glasses,
   ChevronRight,
-  ArrowRight
+  ArrowRight,
+  Sun,
+  ShieldCheck,
+  Layers,
+  Eye
 } from "lucide-react";
 
 export default function App() {
-  // Products state loaded directly from Firebase
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  // Products state loaded directly from Firebase with realtime onSnapshot
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const cached = localStorage.getItem("saigonone_products");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return MOCK_PRODUCTS;
+  });
   const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(true);
 
-  // Sync products directly from Firebase (Firestore / Realtime Database)
+  // Sync products in real-time from Firestore onSnapshot (with smooth auto-refresh)
   useEffect(() => {
-    let unsubscribe = () => {};
-    const loadFirebaseProducts = async () => {
-      setIsLoadingProducts(true);
-      try {
-        const data = await getProductsFromFirebase();
-        if (data && data.length > 0) {
-          setProducts(data);
-        }
-      } catch (err) {
-        console.error("Error loading products from Firebase:", err);
-      } finally {
+    // 1. Lắng nghe trực tiếp Firestore qua onSnapshot
+    const unsubscribeProducts = subscribeToProductsFromFirebase(
+      (liveProducts) => {
+        setProducts(liveProducts);
+        setIsLoadingProducts(false);
+      },
+      (err) => {
+        console.warn("[App] Lỗi lắng nghe realtime sản phẩm:", err);
         setIsLoadingProducts(false);
       }
+    );
 
-      // Realtime listener for live updates
-      unsubscribe = subscribeToProductsFromFirebase((updatedList) => {
-        if (updatedList && updatedList.length > 0) {
-          setProducts(updatedList);
-        }
-      });
+    return () => {
+      unsubscribeProducts();
     };
-
-    loadFirebaseProducts();
-    return () => unsubscribe();
   }, []);
 
   // Filter & Search states
@@ -189,18 +191,56 @@ export default function App() {
   const [isProductsPage, setIsProductsPage] = useState<boolean>(false);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
 
-  // Articles & News state loaded from Firebase
-  const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
-  const [lensArticles, setLensArticles] = useState<Article[]>(INITIAL_LENS_ARTICLES);
+  // Articles & News state loaded from Firebase with realtime onSnapshot
+  const [articles, setArticles] = useState<Article[]>(() => {
+    try {
+      const cached = localStorage.getItem("saigonone_articles");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_ARTICLES;
+  });
+
+  const [lensArticles, setLensArticles] = useState<Article[]>(() => {
+    try {
+      const cached = localStorage.getItem("saigonone_lens_articles");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_LENS_ARTICLES;
+  });
+
   const [articleCategories, setArticleCategories] = useState<ArticleCategory[]>(INITIAL_ARTICLE_CATEGORIES);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
-  // Lens Brands state loaded from Firebase
-  const [lensBrands, setLensBrands] = useState<LensBrandCategory[]>(INITIAL_LENS_BRANDS);
+  // Lens Brands state loaded from Firebase with realtime onSnapshot
+  const [lensBrands, setLensBrands] = useState<LensBrandCategory[]>(() => {
+    try {
+      const cached = localStorage.getItem("saigonone_lens_brands");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_LENS_BRANDS;
+  });
   const [selectedLensBrand, setSelectedLensBrand] = useState<LensBrandCategory | null>(null);
 
-  // Hero Banners state loaded from Firebase
-  const [banners, setBanners] = useState<BannerSlide[]>(INITIAL_BANNER_SLIDES);
+  // Hero Banners state loaded from Firebase with realtime onSnapshot
+  const [banners, setBanners] = useState<BannerSlide[]>(() => {
+    try {
+      const cached = localStorage.getItem("saigonone_banners");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_BANNER_SLIDES;
+  });
 
   // Admin Authentication State
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
@@ -211,49 +251,110 @@ export default function App() {
     }
   });
 
-  // Sync articles, categories, banners and lens brands from Firebase
+  // Lắng nghe realtime toàn bộ: Banners, Bài Viết Cẩm Nang, Bài Viết Tròng Kính & Thương Hiệu Tròng
   useEffect(() => {
-    let unsubscribeLens: (() => void) | undefined;
-    let unsubscribeArts: (() => void) | undefined;
+    // 1. Realtime listener cho Banners (onSnapshot)
+    const unsubBanners = subscribeToBannersFromFirebase((liveBanners) => {
+      setBanners(liveBanners);
+    });
 
-    const loadContentData = async () => {
-      try {
-        const [arts, fetchedLensArts, cats, fetchedBanners, fetchedBrands] = await Promise.all([
-          getArticlesFromFirebase(),
-          getLensArticlesFromFirebase(),
-          getArticleCategoriesFromFirebase(),
-          getBannersFromFirebase(),
-          getLensBrandsFromFirebase()
-        ]);
-        if (arts && arts.length > 0) setArticles(arts);
-        if (fetchedLensArts && fetchedLensArts.length > 0) setLensArticles(fetchedLensArts);
-        if (cats && cats.length > 0) setArticleCategories(cats);
-        if (fetchedBanners && fetchedBanners.length > 0) setBanners(fetchedBanners);
-        if (fetchedBrands && fetchedBrands.length > 0) setLensBrands(fetchedBrands);
-      } catch (e) {
-        console.error("Error loading articles, banners and lens brands:", e);
+    // 2. Realtime listener cho Bài viết Cẩm Nang (onSnapshot)
+    const unsubArticles = subscribeToArticlesFromFirebase((liveArticles) => {
+      setArticles(liveArticles);
+      setSelectedArticle((curr) => {
+        if (!curr) return null;
+        const fresh = liveArticles.find(a => a.id === curr.id);
+        return fresh || curr;
+      });
+    });
+
+    // 3. Realtime listener cho Bài viết Tròng Kính (onSnapshot)
+    const unsubLensArticles = subscribeToLensArticlesFromFirebase((liveLensArts) => {
+      setLensArticles(liveLensArts);
+      setSelectedArticle((curr) => {
+        if (!curr) return null;
+        const fresh = liveLensArts.find(a => a.id === curr.id);
+        return fresh || curr;
+      });
+    });
+
+    // 4. Realtime listener cho Thương hiệu tròng kính (onSnapshot)
+    const unsubLensBrands = subscribeToLensBrandsFromFirebase((liveBrands) => {
+      setLensBrands(liveBrands);
+      setSelectedLensBrand((curr) => {
+        if (!curr) return null;
+        const fresh = liveBrands.find(b => b.id === curr.id);
+        return fresh || curr;
+      });
+    });
+
+    // 5. Tải danh mục bài viết
+    getArticleCategoriesFromFirebase().then((cats) => {
+      if (cats && cats.length > 0) setArticleCategories(cats);
+    }).catch(() => {});
+
+    // 6. Cơ chế tự động làm mới / chống dữ liệu cũ (Anti-Stale Cache & Cross-Tab Broadcast)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Trình duyệt vừa quay lại tab, kiểm tra cập nhật mới nhất từ local cache hoặc trigger làm mới mượt mà
+        try {
+          const freshBanners = localStorage.getItem("saigonone_banners");
+          if (freshBanners) {
+            const parsed = JSON.parse(freshBanners);
+            if (Array.isArray(parsed) && parsed.length > 0) setBanners(parsed);
+          }
+          const freshArticles = localStorage.getItem("saigonone_articles");
+          if (freshArticles) {
+            const parsed = JSON.parse(freshArticles);
+            if (Array.isArray(parsed) && parsed.length > 0) setArticles(parsed);
+          }
+          const freshProducts = localStorage.getItem("saigonone_products");
+          if (freshProducts) {
+            const parsed = JSON.parse(freshProducts);
+            if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
+          }
+        } catch (e) {}
       }
-
-      // Realtime subscription for lens_articles collection
-      unsubscribeLens = subscribeToLensArticlesFromFirebase((realtimeLensArts) => {
-        if (realtimeLensArts && realtimeLensArts.length > 0) {
-          setLensArticles(realtimeLensArts);
-        }
-      });
-
-      // Realtime subscription for articles collection
-      unsubscribeArts = subscribeToArticlesFromFirebase((realtimeArts) => {
-        if (realtimeArts && realtimeArts.length > 0) {
-          setArticles(realtimeArts);
-        }
-      });
     };
 
-    loadContentData();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Lắng nghe BroadcastChannel thông báo từ các tab khác (ví dụ: tab Quản Trị vừa sửa)
+    let handleBroadcast: ((ev: MessageEvent) => void) | null = null;
+    if (realtimeBroadcast) {
+      handleBroadcast = (ev: MessageEvent) => {
+        const type = ev.data?.type;
+        try {
+          if (type === "banners" || type === "all") {
+            const raw = localStorage.getItem("saigonone_banners");
+            if (raw) setBanners(JSON.parse(raw));
+          }
+          if (type === "articles" || type === "all") {
+            const raw = localStorage.getItem("saigonone_articles");
+            if (raw) setArticles(JSON.parse(raw));
+          }
+          if (type === "lens_articles" || type === "all") {
+            const raw = localStorage.getItem("saigonone_lens_articles");
+            if (raw) setLensArticles(JSON.parse(raw));
+          }
+          if (type === "products" || type === "all") {
+            const raw = localStorage.getItem("saigonone_products");
+            if (raw) setProducts(JSON.parse(raw));
+          }
+        } catch (e) {}
+      };
+      realtimeBroadcast.addEventListener("message", handleBroadcast);
+    }
 
     return () => {
-      if (unsubscribeLens) unsubscribeLens();
-      if (unsubscribeArts) unsubscribeArts();
+      unsubBanners();
+      unsubArticles();
+      unsubLensArticles();
+      unsubLensBrands();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (realtimeBroadcast && handleBroadcast) {
+        realtimeBroadcast.removeEventListener("message", handleBroadcast);
+      }
     };
   }, []);
 
@@ -687,8 +788,11 @@ export default function App() {
       if (selectedCategory !== "all") {
         if (selectedCategory === "trong-kinh") {
           // All products support lenses or are categorized
-        } else if (p.category !== selectedCategory) {
-          return false;
+        } else {
+          const inCategory = p.category === selectedCategory || (Array.isArray(p.categories) && p.categories.includes(selectedCategory as ProductCategory));
+          if (!inCategory) {
+            return false;
+          }
         }
       }
 
@@ -743,6 +847,36 @@ export default function App() {
     searchQuery, 
     sortBy
   ]);
+
+  // 8 sản phẩm mới nhất hiển thị trên trang chủ
+  const newestHomeProducts = useMemo(() => {
+    return [...products]
+      .sort((a, b) => {
+        // 1. So sánh ngày tạo (createdAt) nếu có
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (timeA && timeB && timeA !== timeB) return timeB - timeA;
+
+        // 2. Kiểm tra nếu id có timestamp (vd: sgo-prod-174...)
+        const matchA = a.id.match(/\d{10,}/);
+        const matchB = b.id.match(/\d{10,}/);
+        if (matchA && matchB) {
+          const diff = Number(matchB[0]) - Number(matchA[0]);
+          if (diff !== 0) return diff;
+        } else if (matchB && !matchA) {
+          return 1;
+        } else if (matchA && !matchB) {
+          return -1;
+        }
+
+        // 3. Ưu tiên hàng mới về (isNewArrival)
+        if (a.isNewArrival && !b.isNewArrival) return -1;
+        if (!a.isNewArrival && b.isNewArrival) return 1;
+
+        return 0;
+      })
+      .slice(0, 8);
+  }, [products]);
 
   const resetAllFilters = () => {
     setSelectedCategory("all");
@@ -906,77 +1040,150 @@ export default function App() {
             onOpenStores={handleOpenStores}
           />
 
-          {/* Quick Categories Navigation Strip on Home */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
-                  Danh Mục Kính Mắt Saigon One
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Khám phá các dòng sản phẩm chính hãng với bảo hành nắn chỉnh & thay ve ốc trọn đời
-                </p>
-              </div>
-              <button
-                onClick={() => handleOpenProducts("all")}
-                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
-              >
-                <span>Xem tất cả</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-              {[
-                { id: "gong-kinh-can", name: "Gọng Kính Cận", count: products.filter(p => p.category === "gong-kinh-can").length, desc: "Titanium, Acetate" },
-                { id: "kinh-ram-mat", name: "Kính Thời Trang", count: products.filter(p => p.category === "kinh-ram-mat").length, desc: "Phân cực Polarized" },
-                { id: "kinh-doi-mau", name: "Kính Áp Tròng", count: products.filter(p => p.category === "kinh-doi-mau").length, desc: "Êm ái & đổi màu" },
-                { id: "trong-kinh", name: "Tròng Kính", count: products.filter(p => p.category === "trong-kinh").length, desc: "Chống ánh sáng xanh" },
-                { id: "kinh-tre-em", name: "Kính Trẻ Em", count: products.filter(p => p.category === "kinh-tre-em").length, desc: "Dẻo dai, chống gãy" },
-                { id: "phu-kien", name: "Phụ Kiện Kính", count: products.filter(p => p.category === "phu-kien").length, desc: "Hộp & khăn nano" },
-              ].map((catItem) => (
+          {/* Danh Mục Kính Mắt Saigon One - To, Nổi Bật & Rộng Hết Chiều Ngang */}
+          <section className="w-full bg-gradient-to-b from-stone-50/80 via-white to-stone-50/60 border-y border-stone-200/80 py-10 sm:py-14">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider rounded-full mb-2.5 border border-blue-100">
+                    <Layers className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Hệ Thống Phân Loại Sản Phẩm</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
+                    Danh Mục Kính Mắt Saigon One
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+                    Khám phá trọn bộ sưu tập kính mắt và tròng kính khúc xạ chính hãng với chính sách bảo hành nắn chỉnh & thay ve ốc trọn đời miễn phí.
+                  </p>
+                </div>
                 <button
-                  key={catItem.id}
-                  onClick={() => catItem.id === "trong-kinh" ? handleOpenLensArticles() : handleOpenProducts(catItem.id as ProductCategory)}
-                  className="bg-white p-4 rounded-xl border border-gray-200/80 hover:border-blue-500 hover:shadow-md transition-all text-left group cursor-pointer flex flex-col justify-between"
+                  onClick={() => handleOpenProducts("all")}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-blue-700 hover:text-blue-800 font-bold text-xs uppercase tracking-wider rounded-xl border border-blue-200 shadow-2xs hover:shadow-xs transition-all cursor-pointer self-start sm:self-auto shrink-0"
                 >
-                  <div>
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-2 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                      <Glasses className="w-4 h-4" />
-                    </div>
-                    <div className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 transition-colors">
-                      {catItem.name}
-                    </div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">{catItem.desc}</div>
-                  </div>
-                  <div className="text-[10px] text-blue-600 font-semibold mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
-                    <span>{catItem.count} mẫu</span>
-                    <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
+                  <span>Xem Tất Cả Sản Phẩm ({products.length})</span>
+                  <ChevronRight className="w-4 h-4" />
                 </button>
-              ))}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5 lg:gap-6">
+                {[
+                  { 
+                    id: "gong-kinh-can", 
+                    name: "Gọng Kính Cận", 
+                    count: products.filter(p => p.category === "gong-kinh-can" || (p.categories && p.categories.includes("gong-kinh-can"))).length, 
+                    desc: "Gọng cận siêu nhẹ, êm ái chống hằn sống mũi, độ bền cao",
+                    tag: "Titanium & Acetate",
+                    icon: <Glasses className="w-7 h-7 text-blue-600 group-hover:text-white transition-colors" />,
+                    iconBg: "bg-blue-50 group-hover:bg-blue-600 border border-blue-100/80",
+                    badgeBg: "bg-blue-50/90 text-blue-700 border border-blue-200/60"
+                  },
+                  { 
+                    id: "kinh-ram-mat", 
+                    name: "Kính Thời Trang", 
+                    count: products.filter(p => p.category === "kinh-ram-mat" || (p.categories && p.categories.includes("kinh-ram-mat"))).length, 
+                    desc: "Tròng phân cực chống chói lóa, cản 100% tia cực tím",
+                    tag: "Polarized UV400",
+                    icon: <Sun className="w-7 h-7 text-amber-500 group-hover:text-white transition-colors" />,
+                    iconBg: "bg-amber-50 group-hover:bg-amber-500 border border-amber-100/80",
+                    badgeBg: "bg-amber-50/90 text-amber-800 border border-amber-200/60"
+                  },
+                  { 
+                    id: "kinh-doi-mau", 
+                    name: "Kính Áp Tròng", 
+                    count: products.filter(p => p.category === "kinh-doi-mau" || (p.categories && p.categories.includes("kinh-doi-mau"))).length, 
+                    desc: "Đổi màu thông minh khi ra nắng và kính áp tròng tiện lợi",
+                    tag: "Đổi Màu Nắng 2-in-1",
+                    icon: <Sparkles className="w-7 h-7 text-indigo-600 group-hover:text-white transition-colors" />,
+                    iconBg: "bg-indigo-50 group-hover:bg-indigo-600 border border-indigo-100/80",
+                    badgeBg: "bg-indigo-50/90 text-indigo-700 border border-indigo-200/60"
+                  },
+                  { 
+                    id: "trong-kinh", 
+                    name: "Bảng Giá Tròng", 
+                    count: lensBrands.length > 0 ? `${lensBrands.length} thương hiệu` : "Chính hãng", 
+                    desc: "Essilor, Chemi, Hoya lọc ánh sáng xanh & siêu mỏng",
+                    tag: "Chuẩn Y Khoa",
+                    icon: <Eye className="w-7 h-7 text-emerald-600 group-hover:text-white transition-colors" />,
+                    iconBg: "bg-emerald-50 group-hover:bg-emerald-600 border border-emerald-100/80",
+                    badgeBg: "bg-emerald-50/90 text-emerald-700 border border-emerald-200/60"
+                  },
+                  { 
+                    id: "kinh-tre-em", 
+                    name: "Kính Mắt Trẻ Em", 
+                    count: products.filter(p => p.category === "kinh-tre-em" || (p.categories && p.categories.includes("kinh-tre-em"))).length, 
+                    desc: "Chất liệu an toàn, chống gãy vỡ, bảo vệ thị lực học đường",
+                    tag: "Nhựa Dẻo TR90",
+                    icon: <ShieldCheck className="w-7 h-7 text-rose-600 group-hover:text-white transition-colors" />,
+                    iconBg: "bg-rose-50 group-hover:bg-rose-600 border border-rose-100/80",
+                    badgeBg: "bg-rose-50/90 text-rose-700 border border-rose-200/60"
+                  },
+                  { 
+                    id: "phu-kien", 
+                    name: "Phụ Kiện Kính", 
+                    count: products.filter(p => p.category === "phu-kien" || (p.categories && p.categories.includes("phu-kien"))).length, 
+                    desc: "Hộp da, khăn lau nano chống sương & dung dịch vệ sinh",
+                    tag: "Chăm Sóc Kính",
+                    icon: <Layers className="w-7 h-7 text-slate-700 group-hover:text-white transition-colors" />,
+                    iconBg: "bg-slate-100 group-hover:bg-slate-800 border border-slate-200/80",
+                    badgeBg: "bg-slate-100 text-slate-700 border border-slate-200/60"
+                  },
+                ].map((catItem) => (
+                  <button
+                    key={catItem.id}
+                    onClick={() => catItem.id === "trong-kinh" ? handleOpenLensArticles() : handleOpenProducts(catItem.id as ProductCategory)}
+                    className="bg-white rounded-2xl border border-stone-200/90 hover:border-blue-500 hover:shadow-xl transition-all duration-300 p-4 sm:p-5 flex flex-col justify-between text-left group cursor-pointer transform hover:-translate-y-1.5"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
+                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl ${catItem.iconBg} flex items-center justify-center transition-all duration-300 shadow-2xs group-hover:scale-105`}>
+                          {catItem.icon}
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${catItem.badgeBg} text-right shrink-0`}>
+                          {catItem.tag}
+                        </span>
+                      </div>
+                      <div className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">
+                        {catItem.name}
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-slate-500 mt-1.5 leading-relaxed line-clamp-2">
+                        {catItem.desc}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 mt-3.5 border-t border-gray-100 flex items-center justify-between text-xs">
+                      <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                        {typeof catItem.count === "number" ? `${catItem.count} mẫu` : catItem.count}
+                      </span>
+                      <span className="text-[11px] font-semibold text-slate-500 group-hover:text-blue-600 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-all">
+                        Khám phá
+                        <ChevronRight className="w-3 h-3" />
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
 
-          {/* Featured & Best-Selling Glasses Showcase on Home */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+          {/* 8 Sản Phẩm Kính Mắt Mới Nhất Trên Trang Chủ */}
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold uppercase tracking-wider rounded-full mb-1 border border-blue-100">
-                  <Sparkles className="w-3 h-3 text-amber-500" />
-                  <span>Bộ Sưu Tập Mới 2026</span>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider rounded-full mb-2 border border-blue-100">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Bộ Sưu Tập Mới Nhất 2026</span>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  Kính Mắt Nổi Bật & Bán Chạy
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Đo mắt miễn phí & cắt kính lấy ngay trong 15 phút tại 178 Phan Đăng Lưu, Phú Nhuận
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
+                  8 Sản Phẩm Kính Mắt Mới Nhất
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
+                  Khám phá các mẫu kính mắt vừa cập nhật tại Saigon One - Đo mắt khúc xạ chuẩn y khoa miễn phí & cắt kính lấy ngay trong 15 phút tại 178 Phan Đăng Lưu, Phú Nhuận.
                 </p>
               </div>
 
               <button
                 onClick={() => handleOpenProducts("all")}
-                className="px-5 py-2.5 bg-slate-900 hover:bg-blue-900 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-2 self-start sm:self-auto"
+                className="px-5 py-2.5 bg-slate-900 hover:bg-blue-900 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-2 self-start sm:self-auto shrink-0"
               >
                 <span>Xem Tất Cả Sản Phẩm ({products.length})</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -984,10 +1191,7 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {(products.filter(p => p.isFeatured).slice(0, 8).length > 0
-                ? products.filter(p => p.isFeatured).slice(0, 8)
-                : products.slice(0, 8)
-              ).map((p) => (
+              {newestHomeProducts.map((p) => (
                 <ProductCard
                   key={p.id}
                   product={p}
@@ -999,10 +1203,10 @@ export default function App() {
               ))}
             </div>
 
-            <div className="mt-8 text-center">
+            <div className="mt-10 text-center">
               <button
                 onClick={() => handleOpenProducts("all")}
-                className="inline-flex items-center gap-2 px-8 py-3.5 bg-white hover:bg-slate-50 text-slate-900 font-bold text-xs uppercase tracking-wider rounded-xl border border-gray-200 shadow-xs transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-white hover:bg-slate-50 text-slate-900 font-bold text-xs uppercase tracking-wider rounded-xl border border-gray-200 shadow-xs hover:shadow-md transition-all cursor-pointer"
               >
                 <span>Mở Toàn Bộ Danh Mục Sản Phẩm & Bộ Lọc Chi Tiết</span>
                 <ChevronRight className="w-4 h-4 text-blue-600" />

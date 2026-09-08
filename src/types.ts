@@ -59,6 +59,7 @@ export interface Product {
   slug?: string;
   brand: string;
   category: ProductCategory;
+  categories?: ProductCategory[];
   gender: GenderTarget;
   price: number;
   originalPrice: number;
@@ -80,6 +81,7 @@ export interface Product {
   isNewArrival?: boolean;
   isBestSeller?: boolean;
   isFeatured?: boolean;
+  createdAt?: string;
   stock: number;
   rating: number;
   reviewsCount: number;

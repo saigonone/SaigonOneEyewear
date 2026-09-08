@@ -82,7 +82,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
     const counts: Record<string, number> = { all: products.length };
     categoriesList.forEach((c) => {
       if (c.id !== "all") {
-        counts[c.id] = products.filter((p) => p.category === c.id).length;
+        counts[c.id] = products.filter((p) => p.category === c.id || (Array.isArray(p.categories) && p.categories.includes(c.id as ProductCategory))).length;
       }
     });
     return counts;
@@ -92,8 +92,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       // 1. Lọc theo Danh mục
-      if (selectedCategory !== "all" && p.category !== selectedCategory) {
-        return false;
+      if (selectedCategory !== "all") {
+        const inCat = p.category === selectedCategory || (Array.isArray(p.categories) && p.categories.includes(selectedCategory as ProductCategory));
+        if (!inCat) {
+          return false;
+        }
       }
 
       // 2. Lọc theo Giới tính
