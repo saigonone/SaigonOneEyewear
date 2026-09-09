@@ -65,6 +65,10 @@ export interface Product {
   originalPrice: number;
   discountPercent?: number;
   images: string[];
+  thumbnail?: string;
+  image?: string;
+  imageUrl?: string;
+  image_url?: string;
   colors: ProductColor[];
   frameShape: FrameShape;
   faceShapes: FaceShape[];

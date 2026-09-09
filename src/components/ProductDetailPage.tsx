@@ -29,6 +29,7 @@ import {
 } from "../utils/routes";
 import { LENS_OPTIONS } from "../data/mockProducts";
 import { ProductCard } from "./ProductCard";
+import { getProductRepresentativeImage, DEFAULT_PRODUCT_FALLBACK_IMAGE } from "../utils/productUtils";
 
 interface ProductDetailPageProps {
   product: Product;
@@ -53,20 +54,22 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   onOpenTryOn,
   onOpenStores,
 }) => {
+  const representativeImg = getProductRepresentativeImage(product);
   const [selectedColor, setSelectedColor] = useState<ProductColor>(
-    initialColor || product.colors[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: product.images[0] }
+    initialColor || product.colors?.[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: representativeImg }
   );
   const [selectedImage, setSelectedImage] = useState<string>(
-    initialColor?.image || product.images?.[0] || ""
+    initialColor?.image || representativeImg
   );
   const [copiedLink, setCopiedLink] = useState(false);
   const [selectedLens, setSelectedLens] = useState<LensOption | null>(null);
 
   // Sync color/image when product prop changes
   useEffect(() => {
-    const firstCol = initialColor || product.colors[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: product.images?.[0] || "" };
+    const freshThumb = getProductRepresentativeImage(product);
+    const firstCol = initialColor || product.colors?.[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: freshThumb };
     setSelectedColor(firstCol);
-    setSelectedImage(firstCol?.image || product.images?.[0] || "");
+    setSelectedImage(initialColor?.image || firstCol?.image || freshThumb);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [product, initialColor]);
 
@@ -143,7 +146,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const handleContactZalo = () => {
     const msg = `Xin chào Sài Gòn One Eyewear, tôi đang quan tâm mẫu kính ${product.name} (Mã SKU: ${product.sku}, Màu: ${selectedColor.name}). Nhờ shop tư vấn và báo giá chi tiết giúp tôi.`;
     const encoded = encodeURIComponent(msg);
-    window.open(`https://zalo.me/0973819928?text=${encoded}`, "_blank");
+    window.open(`https://zalo.me/0973819928?text=${encoded}`, "_blank", "noopener,noreferrer");
+  };
+
+  const handleContactMessenger = () => {
+    window.open("https://www.facebook.com/SaigonOneEyewear/", "_blank", "noopener,noreferrer");
   };
 
   // Related products from same category or brand
@@ -250,9 +257,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 </div>
 
                 <img
-                  src={selectedImage || product.images?.[0] || "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=800&q=80"}
+                  src={selectedImage || representativeImg}
                   alt={product.name}
                   className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-106"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (target.src !== DEFAULT_PRODUCT_FALLBACK_IMAGE) {
+                      target.src = DEFAULT_PRODUCT_FALLBACK_IMAGE;
+                    }
+                  }}
                 />
 
                 {/* Quick AR Try-On Overlay Button */}
@@ -470,15 +483,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               {/* Action Buttons */}
               <div className="space-y-3 pt-2">
                 
-                {/* Main Zalo Order CTA */}
-                <button
-                  id="btn-pdp-zalo-order"
-                  onClick={handleContactZalo}
-                  className="w-full py-4 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-950 font-extrabold text-sm sm:text-base rounded-2xl flex items-center justify-center gap-2.5 shadow-lg uppercase tracking-wider transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5"
-                >
-                  <MessageSquare className="w-5 h-5 fill-stone-950 text-amber-500 shrink-0" />
-                  <span>LIÊN HỆ ĐẶT HÀNG & TƯ VẤN ZALO NGAY</span>
-                </button>
+                {/* Main Action CTAs: Zalo & Messenger Fanpage */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    id="btn-pdp-zalo-order"
+                    onClick={handleContactZalo}
+                    className="w-full py-3.5 sm:py-4 bg-[#0068ff] hover:bg-[#0054d1] active:bg-[#0047b3] text-white font-extrabold text-sm sm:text-base rounded-2xl flex items-center justify-center gap-2 shadow-md uppercase tracking-wider transition-all duration-200 cursor-pointer"
+                  >
+                    <Phone className="w-5 h-5 text-white shrink-0" />
+                    <span>Zalo: 0973.819.928</span>
+                  </button>
+
+                  <button
+                    id="btn-pdp-messenger-order"
+                    onClick={handleContactMessenger}
+                    className="w-full py-3.5 sm:py-4 bg-[#0084ff] hover:bg-[#0070db] active:bg-[#005cb8] text-white font-extrabold text-sm sm:text-base rounded-2xl flex items-center justify-center gap-2 shadow-md uppercase tracking-wider transition-all duration-200 cursor-pointer"
+                  >
+                    <MessageSquare className="w-5 h-5 text-white shrink-0" />
+                    <span>Messenger Fanpage</span>
+                  </button>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {/* Hotline CTA */}

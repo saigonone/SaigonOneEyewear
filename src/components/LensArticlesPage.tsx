@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { LensBrandCategory, Article } from "../types";
 import { getArticleUrl } from "../utils/routes";
+import { sortArticlesByNewest } from "../utils/articleUtils";
 
 interface LensArticlesPageProps {
   articles: Article[];
@@ -51,9 +52,10 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
   const [selectedFeatureFilter, setSelectedFeatureFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Use lens articles data source directly from Firestore 'lens_articles' collection
+  // Use lens articles data source directly from Firestore 'lens_articles' collection, sorted newest first
   const allLensArticles = useMemo(() => {
-    return (articles || []).filter((art) => Boolean(art && (art.title || (art as any).name || art.id)));
+    const raw = (articles || []).filter((art) => Boolean(art && (art.title || (art as any).name || art.id)));
+    return sortArticlesByNewest(raw);
   }, [articles]);
 
   // Filtering based on active brand tab, feature tag, and search query

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   BookOpen, 
   Clock, 
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Article, ArticleCategory } from "../types";
 import { getArticleUrl } from "../utils/routes";
+import { sortArticlesByNewest } from "../utils/articleUtils";
 
 interface LatestArticlesSectionProps {
   articles: Article[];
@@ -40,45 +41,56 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
     return false;
   };
 
-  const generalCategories = categories.filter(c => {
-    const name = (c.name || "").toLowerCase();
-    const slug = (c.slug || "").toLowerCase();
-    return !name.includes("tròng") && !slug.includes("trong-kinh");
-  });
+  const generalCategories = useMemo(() => {
+    return categories.filter(c => {
+      const name = (c.name || "").toLowerCase();
+      const slug = (c.slug || "").toLowerCase();
+      return !name.includes("tròng") && !slug.includes("trong-kinh");
+    });
+  }, [categories]);
 
-  const publishedArticles = articles.filter(a => a && a.isPublished !== false && !isLensArticle(a));
+  // Sắp xếp toàn bộ bài viết xuất bản theo thứ tự MỚI NHẤT lên đầu tiên
+  const publishedArticles = useMemo(() => {
+    const raw = (articles || []).filter(a => a && a.isPublished !== false && !isLensArticle(a));
+    return sortArticlesByNewest(raw);
+  }, [articles]);
 
-  const filteredArticles = selectedCategory === "all" 
-    ? publishedArticles 
-    : publishedArticles.filter(a => a.category === selectedCategory);
+  const filteredArticles = useMemo(() => {
+    if (selectedCategory === "all") return publishedArticles;
+    return publishedArticles.filter(a => a.category === selectedCategory);
+  }, [publishedArticles, selectedCategory]);
 
-  // Pick the featured article (either explicitly marked featured or the first one in list)
-  const featuredArticle = filteredArticles.find(a => a.isFeatured) || filteredArticles[0] || publishedArticles[0];
+  // Chọn bài viết tiêu điểm: ưu tiên bài mới nhất có cờ isFeatured, nếu không thì lấy bài mới nhất (phần tử đầu tiên sau khi đã sắp xếp)
+  const featuredArticle = useMemo(() => {
+    return filteredArticles.find(a => a.isFeatured) || filteredArticles[0] || publishedArticles[0] || null;
+  }, [filteredArticles, publishedArticles]);
   
-  // Secondary 3 articles (excluding the active featured one)
-  const secondaryArticles = filteredArticles
-    .filter(a => a.id !== featuredArticle?.id)
-    .slice(0, 3);
+  // 3 bài viết tiếp theo (theo thứ tự mới nhất, loại trừ bài tiêu điểm)
+  const secondaryArticles = useMemo(() => {
+    return filteredArticles
+      .filter(a => a.id !== featuredArticle?.id)
+      .slice(0, 3);
+  }, [filteredArticles, featuredArticle]);
 
-  // If there are less than 3 secondary articles in the filtered category, fallback to other published articles
-  const filledSecondaryArticles = secondaryArticles.length >= 3
-    ? secondaryArticles
-    : [
-        ...secondaryArticles,
-        ...publishedArticles
-          .filter(a => a.id !== featuredArticle?.id && !secondaryArticles.some(s => s.id === a.id))
-          .slice(0, 3 - secondaryArticles.length)
-      ];
+  // Bổ sung các bài viết mới tiếp theo nếu danh mục hiện tại có ít hơn 3 bài
+  const filledSecondaryArticles = useMemo(() => {
+    if (secondaryArticles.length >= 3) return secondaryArticles;
+    const fallback = publishedArticles
+      .filter(a => a.id !== featuredArticle?.id && !secondaryArticles.some(s => s.id === a.id))
+      .slice(0, 3 - secondaryArticles.length);
+    return [...secondaryArticles, ...fallback];
+  }, [secondaryArticles, publishedArticles, featuredArticle]);
 
-  // Exclude featured and secondary 3 articles to get next 6 bottom articles
-  const topIds = new Set([featuredArticle?.id, ...filledSecondaryArticles.map(a => a.id)]);
-  const bottomCategoryArticles = filteredArticles.filter(a => !topIds.has(a.id));
-  const bottomArticles = bottomCategoryArticles.length >= 6
-    ? bottomCategoryArticles.slice(0, 6)
-    : [
-        ...bottomCategoryArticles,
-        ...publishedArticles.filter(a => !topIds.has(a.id) && !bottomCategoryArticles.some(b => b.id === a.id))
-      ].slice(0, 6);
+  // 6 bài viết tiếp theo ở khung dưới (div:nth-of-type(3)), đảm bảo luôn xếp từ MỚI NHẤT xuống
+  const bottomArticles = useMemo(() => {
+    const topIds = new Set([featuredArticle?.id, ...filledSecondaryArticles.map(a => a.id)]);
+    const bottomCategoryArticles = filteredArticles.filter(a => !topIds.has(a.id));
+    if (bottomCategoryArticles.length >= 6) {
+      return bottomCategoryArticles.slice(0, 6);
+    }
+    const fallback = publishedArticles.filter(a => !topIds.has(a.id) && !bottomCategoryArticles.some(b => b.id === a.id));
+    return [...bottomCategoryArticles, ...fallback].slice(0, 6);
+  }, [filteredArticles, publishedArticles, featuredArticle, filledSecondaryArticles]);
 
   const handleArticleClick = (e: React.MouseEvent<HTMLAnchorElement>, art: Article) => {
     if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
@@ -175,11 +187,20 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                 {/* Bottom Content Excerpt Box */}
                 <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between bg-white">
                   <div>
-                    {/* Meta Row: Reading time (No published date or views) */}
+                    {/* Meta Row: Reading time and publication date */}
                     <div className="flex items-center gap-2.5 text-xs text-stone-500 font-medium mb-3">
                       <span className="px-2.5 py-0.5 bg-amber-50 text-amber-900 border border-amber-200/80 font-bold rounded text-[11px]">
                         {featuredArticle.category}
                       </span>
+                      {featuredArticle.publishedAt && (
+                        <>
+                          <span>•</span>
+                          <span className="flex items-center gap-1 text-stone-600 font-semibold">
+                            <Calendar className="w-3.5 h-3.5 text-amber-700" />
+                            <span>{featuredArticle.publishedAt}</span>
+                          </span>
+                        </>
+                      )}
                       <span>•</span>
                       <span className="flex items-center gap-1 text-stone-500">
                         <Clock className="w-3.5 h-3.5 text-stone-400" />
@@ -247,11 +268,18 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                 {/* Right Details in Item (Title + Excerpt + Meta) */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
                   <div>
-                    {/* Category */}
+                    {/* Category & Published Date */}
                     <div className="flex items-center gap-1.5 text-[11px] text-stone-500 font-semibold mb-1.5">
                       <span className="text-amber-800 font-bold truncate max-w-[140px]">{art.category}</span>
-                      <span>•</span>
-                      <span className="text-stone-400">Cẩm nang</span>
+                      {art.publishedAt && (
+                        <>
+                          <span>•</span>
+                          <span className="flex items-center gap-1 text-stone-500 font-medium">
+                            <Calendar className="w-3 h-3 text-stone-400" />
+                            <span>{art.publishedAt}</span>
+                          </span>
+                        </>
+                      )}
                     </div>
 
                     {/* Article Title - Znews Style: Bold Sans-Serif, Larger size */}
@@ -289,14 +317,15 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
             <div className="flex items-center justify-between mb-6">
               <div>
                 <span className="text-[11px] font-extrabold text-amber-800 uppercase tracking-widest block mb-0.5">
-                  CHUYÊN MỤC CHỌN LỌC
+                  BÀI VIẾT MỚI NHẤT
                 </span>
                 <h3 className="text-xl sm:text-2xl font-bold font-sans text-stone-950">
-                  Bài Viết Khác Cùng Chủ Đề
+                  {selectedCategory === "all" ? "Cẩm Nang Thị Lực & Tin Tức Mới Nhất" : `Bài Viết Mới: ${selectedCategory}`}
                 </h3>
               </div>
-              <span className="text-xs text-stone-500 font-medium hidden sm:inline">
-                Cập nhật liên tục những kiến thức thị lực hữu ích
+              <span className="text-xs text-stone-500 font-medium hidden sm:flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                <span>Mới nhất lên trên cùng</span>
               </span>
             </div>
 
@@ -332,8 +361,15 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                     <div className="p-4 sm:p-5">
                       <div className="flex items-center gap-2 text-[11px] text-stone-500 mb-2">
                         <span className="text-amber-800 font-semibold">{art.category}</span>
-                        <span>•</span>
-                        <span className="text-stone-400">Cẩm nang thị lực</span>
+                        {art.publishedAt && (
+                          <>
+                            <span>•</span>
+                            <span className="flex items-center gap-1 text-stone-500 font-medium">
+                              <Calendar className="w-3 h-3 text-stone-400" />
+                              <span>{art.publishedAt}</span>
+                            </span>
+                          </>
+                        )}
                       </div>
 
                       {/* Znews Style: Bold Sans-Serif Title, Larger size */}
@@ -351,9 +387,10 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                   {/* Card Bottom */}
                   <div className="p-4 sm:p-5 pt-0 mt-auto">
                     <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
-                      <span className="text-stone-600 text-[11px] font-medium truncate max-w-[150px]">
-                        {art.author}
-                      </span>
+                      <div className="flex items-center gap-1.5 text-stone-600 text-[11px] font-medium truncate max-w-[150px]">
+                        <Calendar className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                        <span>{art.publishedAt || "Mới cập nhật"}</span>
+                      </div>
                       <span className="text-amber-800 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-0.5 text-xs">
                         <span>Đọc tiếp</span>
                         <ChevronRight className="w-3.5 h-3.5" />

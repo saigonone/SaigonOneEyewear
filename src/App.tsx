@@ -79,6 +79,8 @@ import { MOCK_PRODUCTS } from "./data/mockProducts";
 import { INITIAL_ARTICLES, INITIAL_ARTICLE_CATEGORIES } from "./data/mockArticles";
 import { INITIAL_BANNER_SLIDES } from "./data/mockBanners";
 import { INITIAL_LENS_BRANDS, INITIAL_LENS_ARTICLES } from "./data/mockLensBrands";
+import { normalizeProduct } from "./utils/productUtils";
+import { sortArticlesByNewest } from "./utils/articleUtils";
 import { 
   addProductToFirebase, 
   deleteProductFromFirebase, 
@@ -130,10 +132,12 @@ export default function App() {
       const cached = localStorage.getItem("saigonone_products");
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((p, idx) => normalizeProduct(p, p.id || `sgo-cached-${idx}`));
+        }
       }
     } catch (e) {}
-    return MOCK_PRODUCTS;
+    return MOCK_PRODUCTS.map((p) => normalizeProduct(p, p.id));
   });
   const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(true);
 
@@ -197,10 +201,10 @@ export default function App() {
       const cached = localStorage.getItem("saigonone_articles");
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return sortArticlesByNewest(parsed);
       }
     } catch (e) {}
-    return INITIAL_ARTICLES;
+    return sortArticlesByNewest(INITIAL_ARTICLES);
   });
 
   const [lensArticles, setLensArticles] = useState<Article[]>(() => {
@@ -260,10 +264,11 @@ export default function App() {
 
     // 2. Realtime listener cho Bài viết Cẩm Nang (onSnapshot)
     const unsubArticles = subscribeToArticlesFromFirebase((liveArticles) => {
-      setArticles(liveArticles);
+      const sorted = sortArticlesByNewest(liveArticles);
+      setArticles(sorted);
       setSelectedArticle((curr) => {
         if (!curr) return null;
-        const fresh = liveArticles.find(a => a.id === curr.id);
+        const fresh = sorted.find(a => a.id === curr.id);
         return fresh || curr;
       });
     });
@@ -306,12 +311,14 @@ export default function App() {
           const freshArticles = localStorage.getItem("saigonone_articles");
           if (freshArticles) {
             const parsed = JSON.parse(freshArticles);
-            if (Array.isArray(parsed) && parsed.length > 0) setArticles(parsed);
+            if (Array.isArray(parsed) && parsed.length > 0) setArticles(sortArticlesByNewest(parsed));
           }
           const freshProducts = localStorage.getItem("saigonone_products");
           if (freshProducts) {
             const parsed = JSON.parse(freshProducts);
-            if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setProducts(parsed.map((p, idx) => normalizeProduct(p, p.id || `sgo-vis-${idx}`)));
+            }
           }
         } catch (e) {}
       }
@@ -323,23 +330,28 @@ export default function App() {
     let handleBroadcast: ((ev: MessageEvent) => void) | null = null;
     if (realtimeBroadcast) {
       handleBroadcast = (ev: MessageEvent) => {
-        const type = ev.data?.type;
+        const entity = ev.data?.entity || ev.data?.type;
         try {
-          if (type === "banners" || type === "all") {
+          if (entity === "banners" || entity === "all") {
             const raw = localStorage.getItem("saigonone_banners");
             if (raw) setBanners(JSON.parse(raw));
           }
-          if (type === "articles" || type === "all") {
+          if (entity === "articles" || entity === "all") {
             const raw = localStorage.getItem("saigonone_articles");
-            if (raw) setArticles(JSON.parse(raw));
+            if (raw) setArticles(sortArticlesByNewest(JSON.parse(raw)));
           }
-          if (type === "lens_articles" || type === "all") {
+          if (entity === "lens_articles" || entity === "all") {
             const raw = localStorage.getItem("saigonone_lens_articles");
             if (raw) setLensArticles(JSON.parse(raw));
           }
-          if (type === "products" || type === "all") {
+          if (entity === "products" || entity === "all") {
             const raw = localStorage.getItem("saigonone_products");
-            if (raw) setProducts(JSON.parse(raw));
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) {
+                setProducts(parsed.map((p, idx) => normalizeProduct(p, p.id || `sgo-bcast-${idx}`)));
+              }
+            }
           }
         } catch (e) {}
       };

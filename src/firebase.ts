@@ -25,6 +25,8 @@ import {
 } from "firebase/database";
 import { getAuth } from "firebase/auth";
 import { createSlug } from "./utils/slug";
+import { normalizeProduct } from "./utils/productUtils";
+import { sortArticlesByNewest } from "./utils/articleUtils";
 import { Product, Order, Article, ArticleCategory, ProductCategoryItem, AdminUser, BannerSlide, Appointment, LensBrandCategory } from "./types";
 import { MOCK_PRODUCTS } from "./data/mockProducts";
 import { 
@@ -106,7 +108,7 @@ export async function getProductsFromFirebase(): Promise<Product[]> {
     if (!snapshot.empty) {
       const list: Product[] = [];
       snapshot.forEach((docSnapshot) => {
-        list.push({ id: docSnapshot.id, ...docSnapshot.data() } as Product);
+        list.push(normalizeProduct(docSnapshot.data(), docSnapshot.id));
       });
       try {
         localStorage.setItem("saigonone_products", JSON.stringify(list));
@@ -122,7 +124,7 @@ export async function getProductsFromFirebase(): Promise<Product[]> {
     const rtdbSnapshot = await get(child(rtdbRef, "products"));
     if (rtdbSnapshot.exists()) {
       const data = rtdbSnapshot.val();
-      const list = Object.values(data) as Product[];
+      const list = Object.entries(data).map(([id, val]) => normalizeProduct(val, id));
       if (list && list.length > 0) return list;
     }
   } catch (err) {
@@ -131,13 +133,14 @@ export async function getProductsFromFirebase(): Promise<Product[]> {
 
   // Tự động nạp mẫu lên Firebase nếu chưa có
   await seedInitialProductsToFirebase();
-  return MOCK_PRODUCTS;
+  return MOCK_PRODUCTS.map((p) => normalizeProduct(p, p.id));
 }
 
 export async function addProductToFirebase(product: Product): Promise<{ success: boolean; id: string }> {
   const timestamp = new Date().toISOString();
+  const normalized = normalizeProduct(product, product.id);
   const productWithMeta = {
-    ...product,
+    ...normalized,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -160,7 +163,8 @@ export async function addProductToFirebase(product: Product): Promise<{ success:
 
 export async function updateProductInFirebase(product: Product): Promise<boolean> {
   const timestamp = new Date().toISOString();
-  const updateData = { ...product, updatedAt: timestamp };
+  const normalized = normalizeProduct(product, product.id);
+  const updateData = { ...normalized, updatedAt: timestamp };
 
   try {
     await setDoc(doc(db, "products", product.id), updateData);
@@ -207,7 +211,7 @@ export function subscribeToProductsFromFirebase(
         if (!snapshot.empty) {
           const list: Product[] = [];
           snapshot.forEach((d) => {
-            list.push({ id: d.id, ...d.data() } as Product);
+            list.push(normalizeProduct(d.data(), d.id));
           });
           try {
             localStorage.setItem("saigonone_products", JSON.stringify(list));
@@ -216,7 +220,7 @@ export function subscribeToProductsFromFirebase(
         } else {
           // Khi Firestore trống hoàn toàn, nạp mẫu và phát sự kiện
           seedInitialProductsToFirebase().then(() => {
-            onUpdate(MOCK_PRODUCTS);
+            onUpdate(MOCK_PRODUCTS.map((p) => normalizeProduct(p, p.id)));
           });
         }
       },
@@ -232,7 +236,7 @@ export function subscribeToProductsFromFirebase(
       unsubscribeRtdb = onValue(rtdbRef, (snap) => {
         if (!isFirestoreWorking && snap.exists()) {
           const data = snap.val();
-          const list = Object.values(data) as Product[];
+          const list = Object.entries(data).map(([id, val]) => normalizeProduct(val, id));
           if (list && list.length > 0) {
             onUpdate(list);
           }
@@ -252,9 +256,10 @@ export function subscribeToProductsFromFirebase(
 
 export async function seedInitialProductsToFirebase() {
   for (const item of MOCK_PRODUCTS) {
+    const normalized = normalizeProduct(item, item.id);
     try {
-      await setDoc(doc(db, "products", item.id), item);
-      await set(ref(rtdb, `products/${item.id}`), item);
+      await setDoc(doc(db, "products", item.id), normalized);
+      await set(ref(rtdb, `products/${item.id}`), normalized);
     } catch (e) {}
   }
 }
@@ -297,8 +302,9 @@ export async function getArticlesFromFirebase(): Promise<Article[]> {
         }
       });
       if (list.length > 0) {
-        try { localStorage.setItem("saigonone_articles", JSON.stringify(list)); } catch (e) {}
-        return list;
+        const sorted = sortArticlesByNewest(list);
+        try { localStorage.setItem("saigonone_articles", JSON.stringify(sorted)); } catch (e) {}
+        return sorted;
       }
     }
   } catch (err) {
@@ -313,16 +319,18 @@ export async function getArticlesFromFirebase(): Promise<Article[]> {
       const data = snap.val();
       const list = (Object.values(data) as Article[]).filter(a => !a.lensBrandId);
       if (list.length > 0) {
-        try { localStorage.setItem("saigonone_articles", JSON.stringify(list)); } catch (e) {}
-        return list;
+        const sorted = sortArticlesByNewest(list);
+        try { localStorage.setItem("saigonone_articles", JSON.stringify(sorted)); } catch (e) {}
+        return sorted;
       }
     }
   } catch (e) {}
 
   // 3. Fallback: Seed INITIAL_ARTICLES nếu Firestore & RTDB chưa có
   await seedInitialArticlesToFirebase();
-  try { localStorage.setItem("saigonone_articles", JSON.stringify(INITIAL_ARTICLES)); } catch (e) {}
-  return INITIAL_ARTICLES;
+  const sortedInitial = sortArticlesByNewest(INITIAL_ARTICLES);
+  try { localStorage.setItem("saigonone_articles", JSON.stringify(sortedInitial)); } catch (e) {}
+  return sortedInitial;
 }
 
 /**
@@ -371,21 +379,16 @@ export function subscribeToArticlesFromFirebase(
           }
         });
 
-        // Sắp xếp bài viết: Ghim lên đầu, sau đó theo ngày tạo mới nhất
-        list.sort((a, b) => {
-          if (a.isPinned && !b.isPinned) return -1;
-          if (!a.isPinned && b.isPinned) return 1;
-          const timeB = new Date(b.publishedAt || (b as any).createdAt || 0).getTime();
-          const timeA = new Date(a.publishedAt || (a as any).createdAt || 0).getTime();
-          return timeB - timeA;
-        });
+        // Sắp xếp bài viết mới nhất lên trên cùng
+        const sorted = sortArticlesByNewest(list);
 
-        if (list.length > 0) {
-          try { localStorage.setItem("saigonone_articles", JSON.stringify(list)); } catch (e) {}
-          onUpdate(list);
+        if (sorted.length > 0) {
+          try { localStorage.setItem("saigonone_articles", JSON.stringify(sorted)); } catch (e) {}
+          onUpdate(sorted);
         } else if (snapshot.empty) {
+          const initialSorted = sortArticlesByNewest(INITIAL_ARTICLES);
           seedInitialArticlesToFirebase().then(() => {
-            onUpdate(INITIAL_ARTICLES);
+            onUpdate(initialSorted);
           });
         } else {
           try { localStorage.setItem("saigonone_articles", JSON.stringify([])); } catch (e) {}
@@ -406,12 +409,8 @@ export function subscribeToArticlesFromFirebase(
           const data = snap.val();
           const list = (Object.values(data) as Article[]).filter(a => !a.lensBrandId);
           if (list && list.length > 0) {
-            list.sort((a, b) => {
-              if (a.isPinned && !b.isPinned) return -1;
-              if (!a.isPinned && b.isPinned) return 1;
-              return 0;
-            });
-            onUpdate(list);
+            const sorted = sortArticlesByNewest(list);
+            onUpdate(sorted);
           }
         }
       });

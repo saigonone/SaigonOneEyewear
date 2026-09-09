@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Article, ArticleCategory } from "../types";
 import { getArticleUrl } from "../utils/routes";
+import { sortArticlesByNewest } from "../utils/articleUtils";
 
 interface ArticlesPageProps {
   articles: Article[];
@@ -62,7 +63,8 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
   }, [categories]);
 
   const publishedArticles = useMemo(() => {
-    return (articles || []).filter(a => a && a.isPublished !== false && !isLensArticle(a));
+    const raw = (articles || []).filter(a => a && a.isPublished !== false && !isLensArticle(a));
+    return sortArticlesByNewest(raw);
   }, [articles]);
 
   const filteredArticles = useMemo(() => {

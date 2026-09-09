@@ -1,14 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   X, 
   Camera, 
   MessageSquare, 
+  Phone,
   Sparkles, 
   Ruler, 
   Check, 
   Tag
 } from "lucide-react";
 import { Product, ProductColor } from "../types";
+import { getProductRepresentativeImage, DEFAULT_PRODUCT_FALLBACK_IMAGE } from "../utils/productUtils";
 
 interface ProductDetailModalProps {
   product: Product;
@@ -25,12 +27,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   onOpenTryOn,
 }) => {
-  const [selectedColor, setSelectedColor] = useState<ProductColor>(
-    initialColor || product.colors[0]
-  );
-  const [selectedImage, setSelectedImage] = useState<string>(
-    initialColor?.image || product.images[0]
-  );
+  const representativeImg = getProductRepresentativeImage(product);
+  const [selectedColor, setSelectedColor] = useState<ProductColor>(() => {
+    return initialColor || product.colors?.[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: representativeImg };
+  });
+  const [selectedImage, setSelectedImage] = useState<string>(() => {
+    return initialColor?.image || representativeImg;
+  });
+
+  // Đồng bộ ảnh và màu sắc đại diện khi product hoặc initialColor thay đổi
+  useEffect(() => {
+    const freshThumb = getProductRepresentativeImage(product);
+    const activeCol = initialColor || product.colors?.[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: freshThumb };
+    setSelectedColor(activeCol);
+    setSelectedImage(initialColor?.image || activeCol?.image || freshThumb);
+  }, [product, initialColor]);
 
   const getCategoryLabel = (cat: string) => {
     switch (cat) {
@@ -93,7 +104,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   const handleContactZalo = () => {
-    window.open("https://zalo.me/0973819928", "_blank");
+    window.open("https://zalo.me/0973819928", "_blank", "noopener,noreferrer");
+  };
+
+  const handleContactMessenger = () => {
+    window.open("https://www.facebook.com/SaigonOneEyewear/", "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -130,9 +145,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           <div className="flex flex-col">
             <div className="relative aspect-square w-full bg-[#f8f8f8] rounded-2xl border border-neutral-200/80 flex items-center justify-center overflow-hidden">
               <img
-                src={selectedImage || product?.images?.[0] || "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=600&q=80"}
+                src={selectedImage || representativeImg}
                 alt={product.name}
                 className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-105"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (target.src !== DEFAULT_PRODUCT_FALLBACK_IMAGE) {
+                    target.src = DEFAULT_PRODUCT_FALLBACK_IMAGE;
+                  }
+                }}
               />
 
               {/* Quick Try-On AR Button */}
@@ -253,18 +274,29 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
             </div>
 
-            {/* Bottom CTA Button: LIÊN HỆ ĐẶT HÀNG & TƯ VẤN NGAY */}
-            <div className="pt-2">
-              <button
-                id="btn-modal-zalo-cta"
-                onClick={handleContactZalo}
-                className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-neutral-950 font-extrabold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md uppercase tracking-wider transition-colors cursor-pointer"
-              >
-                <MessageSquare className="w-4 h-4 fill-neutral-950 text-amber-500 shrink-0" />
-                <span>LIÊN HỆ ĐẶT HÀNG & TƯ VẤN NGAY</span>
-              </button>
-              <p className="text-center text-[11px] text-neutral-500 mt-2">
-                Tư vấn trực tiếp qua Zalo / Hotline có hỗ trợ gửi ảnh video sắc nét
+            {/* Bottom CTA Buttons: Zalo (0973819928) & Messenger Fanpage */}
+            <div className="pt-2 space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  id="btn-modal-zalo-cta"
+                  onClick={handleContactZalo}
+                  className="py-3.5 px-4 bg-[#0068ff] hover:bg-[#0054d1] active:bg-[#0047b3] text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                >
+                  <Phone className="w-4 h-4 text-white shrink-0" />
+                  <span>Zalo: 0973.819.928</span>
+                </button>
+
+                <button
+                  id="btn-modal-messenger-cta"
+                  onClick={handleContactMessenger}
+                  className="py-3.5 px-4 bg-[#0084ff] hover:bg-[#0070db] active:bg-[#005cb8] text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4 text-white shrink-0" />
+                  <span>Messenger Fanpage</span>
+                </button>
+              </div>
+              <p className="text-center text-[11px] text-neutral-500">
+                Tư vấn trực tiếp qua Zalo / Messenger có hỗ trợ gửi ảnh và video cận cảnh
               </p>
             </div>
 

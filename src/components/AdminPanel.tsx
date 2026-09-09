@@ -111,6 +111,7 @@ import { AdminBannerManager } from "./AdminBannerManager";
 import { AdminLensBrandsManager } from "./AdminLensBrandsManager";
 import { AdminLensArticlesManager } from "./AdminLensArticlesManager";
 import { RichTextEditor } from "./RichTextEditor";
+import { sortArticlesByNewest } from "../utils/articleUtils";
 
 const PRODUCT_CATEGORY_OPTIONS: { id: ProductCategory; label: string; sub: string; icon: string }[] = [
   { id: "gong-kinh-can", label: "Gọng Kính Cận", sub: "Gọng cận siêu nhẹ, titan & acetate", icon: "👓" },
@@ -554,10 +555,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setProdTempleLength(p.dimensions?.templeLength || 145);
     setProdFrameHeight(p.dimensions?.frameHeight || 44);
     setProdWeight(p.weight || 14);
-    setProdImages(p.images && p.images.length > 0 ? [...p.images] : ["https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80"]);
+    const existingImgs = (Array.isArray(p.images) && p.images.length > 0)
+      ? p.images.filter(Boolean)
+      : [p.thumbnail, p.image, p.imageUrl, p.image_url].filter(Boolean) as string[];
+    const initialImgs = existingImgs.length > 0
+      ? existingImgs
+      : ["https://images.unsplash.com/photo-1591076482161-42ce6da69f67?auto=format&fit=crop&w=900&q=80"];
+
+    setProdImages([...initialImgs]);
     setNewImageUrl("");
     setProdColors(p.colors && p.colors.length > 0 ? [...p.colors] : [
-      { name: "Đen Cơ Bản", hex: "#1e2022", image: p.images?.[0] || "" }
+      { name: "Đen Cơ Bản", hex: "#1e2022", image: initialImgs[0] }
     ]);
     setProdDesc(p.description || "");
     setProdHighlights(p.highlights?.join("\n") || "Gọng kính chính hãng Sài Gòn One\nBảo hành nắn chỉnh trọn đời");
@@ -612,6 +620,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         price: priceNum,
         originalPrice: origPriceNum,
         discountPercent: origPriceNum > priceNum ? Math.round(((origPriceNum - priceNum) / origPriceNum) * 100) : 0,
+        thumbnail: finalImages[0],
+        image: finalImages[0],
+        imageUrl: finalImages[0],
+        image_url: finalImages[0],
         images: finalImages,
         colors: finalColors,
         stock: prodStock,
@@ -635,6 +647,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         price: priceNum,
         originalPrice: origPriceNum,
         discountPercent: origPriceNum > priceNum ? Math.round(((origPriceNum - priceNum) / origPriceNum) * 100) : 0,
+        thumbnail: finalImages[0],
+        image: finalImages[0],
+        imageUrl: finalImages[0],
+        image_url: finalImages[0],
         images: finalImages,
         colors: finalColors,
         frameShape: prodShape,
@@ -740,7 +756,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         console.log("[AdminPanel] ✅ Cập nhật bài viết lên Firestore thành công! Document ID:", updated.id);
 
         setArticles(prev => {
-          const next = prev.map(a => a.id === updated.id ? updated : a);
+          const next = sortArticlesByNewest(prev.map(a => a.id === updated.id ? updated : a));
           onUpdateArticles?.(next);
           return next;
         });
@@ -777,7 +793,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         console.log("[AdminPanel] ✅ Đăng bài viết mới lên Firestore thành công! Document ID:", id);
 
         setArticles(prev => {
-          const next = [newArt, ...prev];
+          const next = sortArticlesByNewest([newArt, ...prev]);
           onUpdateArticles?.(next);
           return next;
         });

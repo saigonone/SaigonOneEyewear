@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Eye, MessageSquare, Tag } from "lucide-react";
+import { Eye, Phone, MessageCircle, Tag } from "lucide-react";
 import { Product, ProductColor } from "../types";
 import { getProductUrl } from "../utils/routes";
+import { getProductRepresentativeImage, DEFAULT_PRODUCT_FALLBACK_IMAGE } from "../utils/productUtils";
 
 interface ProductCardProps {
   product: Product;
@@ -16,9 +17,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onOpenDetail,
   onQuickTryOn: _onQuickTryOn,
 }) => {
-  const [selectedColor] = useState<ProductColor>(product.colors[0]);
   const [isHovered, setIsHovered] = useState(false);
   const productUrl = getProductUrl(product);
+
+  // Lấy trực tiếp ảnh đại diện mới nhất từ trường thumbnail/image của Firestore
+  const displayImage = getProductRepresentativeImage(product);
 
   const getCategoryBadgeLabel = (cat: string) => {
     switch (cat) {
@@ -69,7 +72,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       return;
     }
     e.preventDefault();
-    onOpenDetail(product, selectedColor);
+    const activeColor = (product.colors && product.colors.length > 0)
+      ? product.colors[0]
+      : { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: displayImage };
+    onOpenDetail(product, activeColor);
+  };
+
+  const handleOpenZalo = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.open("https://zalo.me/0973819928", "_blank", "noopener,noreferrer");
+  };
+
+  const handleOpenMessenger = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.open("https://www.facebook.com/SaigonOneEyewear/", "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -107,10 +125,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Product Image - Full Frame */}
         <img
-          src={selectedColor?.image || product.images?.[0] || "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=600&q=80"}
+          key={displayImage}
+          src={displayImage}
           alt={product.name}
           className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-106"
           loading="lazy"
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (target.src !== DEFAULT_PRODUCT_FALLBACK_IMAGE) {
+              target.src = DEFAULT_PRODUCT_FALLBACK_IMAGE;
+            }
+          }}
         />
 
         {/* Center "Xem Chi Tiết" Button on Hover */}
@@ -146,10 +171,31 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </p>
         </div>
 
-        {/* Full-width Action Button: LIÊN HỆ ĐẶT HÀNG */}
-        <div className="w-full flex items-center justify-center gap-2 bg-[#18181b] group-hover:bg-black active:bg-neutral-900 text-white font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-xs transition-all duration-200">
-          <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
-          <span>LIÊN HỆ ĐẶT HÀNG</span>
+        {/* 2 Nút liên hệ tư vấn: Zalo & Messenger */}
+        <div className="grid grid-cols-2 gap-2 pt-1 mt-auto">
+          <button
+            type="button"
+            id={`btn-card-zalo-${product.id}`}
+            onClick={handleOpenZalo}
+            title="Chat Zalo: 0973819928"
+            aria-label="Chat Zalo 0973819928"
+            className="w-full flex items-center justify-center gap-1.5 bg-[#0068ff] hover:bg-[#0054d1] active:bg-[#0047b3] text-white font-bold text-xs py-2.5 px-2 rounded-xl shadow-xs transition-all duration-200 cursor-pointer"
+          >
+            <Phone className="w-3.5 h-3.5 text-white shrink-0" />
+            <span className="whitespace-nowrap">Zalo</span>
+          </button>
+
+          <button
+            type="button"
+            id={`btn-card-messenger-${product.id}`}
+            onClick={handleOpenMessenger}
+            title="Chat Messenger Fanpage Saigon One"
+            aria-label="Chat Messenger Fanpage"
+            className="w-full flex items-center justify-center gap-1.5 bg-[#0084ff] hover:bg-[#0070db] active:bg-[#005cb8] text-white font-bold text-xs py-2.5 px-2 rounded-xl shadow-xs transition-all duration-200 cursor-pointer"
+          >
+            <MessageCircle className="w-3.5 h-3.5 text-white shrink-0" />
+            <span className="whitespace-nowrap">Messenger</span>
+          </button>
         </div>
       </div>
     </a>
