@@ -224,7 +224,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         </div>
       </div>
 
-      {/* 2. Hero Header Banner (Đồng bộ font 38px, padding 20px) */}
+      {/* 2. Hero Header Banner (Đồng bộ font 30px, padding 20px) */}
       <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white py-[20px] relative overflow-hidden">
         <div className="absolute -right-16 -top-16 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute left-1/3 -bottom-20 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -236,7 +236,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
               <span>{currentCategoryObj.label} - Saigon One Eyewear 2026</span>
             </div>
             
-            <h1 className="text-[38px] font-black tracking-tight text-white leading-tight">
+            <h1 id="heading-products-page-title" className="text-[30px] font-black tracking-tight text-white leading-tight">
               Danh Mục <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-amber-300">Sản Phẩm</span>
             </h1>
             
@@ -513,7 +513,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 pt-4">
             {filteredProducts.map((p) => (
               <ProductCard
                 key={p.id}

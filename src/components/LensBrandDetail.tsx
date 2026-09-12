@@ -4,7 +4,7 @@ import {
   Sparkles, 
   Pin, 
   BookOpen, 
-  Calendar, 
+  Clock, 
   ArrowRight, 
   ShieldCheck, 
   CheckCircle2, 
@@ -322,13 +322,11 @@ export const LensBrandDetail: React.FC<LensBrandDetailProps> = ({
                     <div className="space-y-2.5">
                       <div className="flex items-center gap-3 text-xs text-neutral-500 font-medium">
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {article.publishedAt || (article as any).publishedDate || "2026"}
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{article.readTime || "4 phút đọc"}</span>
                         </span>
                         <span>•</span>
-                        <span>{article.readTime}</span>
-                        <span>•</span>
-                        <span className="text-amber-800 font-semibold">{article.author}</span>
+                        <span className="text-amber-800 font-semibold">{article.author || "Saigon One"}</span>
                       </div>
 
                       <h3 className="text-lg sm:text-xl font-bold text-neutral-900 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2">
@@ -403,10 +401,8 @@ export const LensBrandDetail: React.FC<LensBrandDetailProps> = ({
                   <div className="p-5 flex flex-col justify-between flex-1 space-y-3">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-[11px] text-neutral-400">
-                        <Calendar className="w-3 h-3" />
-                        <span>{article.publishedAt || (article as any).publishedDate || "2026"}</span>
-                        <span>•</span>
-                        <span>{article.readTime}</span>
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span>{article.readTime || "4 phút đọc"}</span>
                       </div>
 
                       <h4 className="text-sm sm:text-base font-bold text-neutral-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">

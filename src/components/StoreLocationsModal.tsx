@@ -19,9 +19,14 @@ import { addAppointmentToFirebase } from "../firebase";
 
 interface StoreLocationsModalProps {
   onClose: () => void;
+  initialTab?: "all" | "map" | "appointment";
 }
 
-export const StoreLocationsModal: React.FC<StoreLocationsModalProps> = ({ onClose }) => {
+export const StoreLocationsModal: React.FC<StoreLocationsModalProps> = ({ 
+  onClose,
+  initialTab = "all"
+}) => {
+  const [activeTab, setActiveTab] = useState<"all" | "map" | "appointment">(initialTab);
   const store = STORE_LOCATIONS[0] || {
     id: "store-phandangluu",
     name: "Showroom Saigon One Eyewear - 178 Phan Đăng Lưu",
@@ -117,6 +122,45 @@ export const StoreLocationsModal: React.FC<StoreLocationsModalProps> = ({ onClos
             aria-label="Đóng"
           >
             <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Modal Tabs */}
+        <div className="px-4 sm:px-6 py-2.5 bg-slate-100/90 border-b border-slate-200 flex items-center gap-2 overflow-x-auto shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab("all")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === "all"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-white text-slate-600 hover:bg-slate-200 border border-slate-200"
+            }`}
+          >
+            Tất Cả Thông Tin
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("map")}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === "map"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "bg-white text-slate-600 hover:bg-slate-200 border border-slate-200"
+            }`}
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            <span>Vị Trí Google Maps</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("appointment")}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === "appointment"
+                ? "bg-amber-600 text-white shadow-xs"
+                : "bg-white text-slate-600 hover:bg-slate-200 border border-slate-200"
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Đặt Lịch Đo Mắt</span>
           </button>
         </div>
 

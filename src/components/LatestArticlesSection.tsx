@@ -3,7 +3,6 @@ import {
   BookOpen, 
   Clock, 
   Eye, 
-  Calendar, 
   ArrowRight, 
   ChevronRight, 
   Sparkles, 
@@ -187,20 +186,11 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                 {/* Bottom Content Excerpt Box */}
                 <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between bg-white">
                   <div>
-                    {/* Meta Row: Reading time and publication date */}
+                    {/* Meta Row: Category and reading time */}
                     <div className="flex items-center gap-2.5 text-xs text-stone-500 font-medium mb-3">
                       <span className="px-2.5 py-0.5 bg-amber-50 text-amber-900 border border-amber-200/80 font-bold rounded text-[11px]">
                         {featuredArticle.category}
                       </span>
-                      {featuredArticle.publishedAt && (
-                        <>
-                          <span>•</span>
-                          <span className="flex items-center gap-1 text-stone-600 font-semibold">
-                            <Calendar className="w-3.5 h-3.5 text-amber-700" />
-                            <span>{featuredArticle.publishedAt}</span>
-                          </span>
-                        </>
-                      )}
                       <span>•</span>
                       <span className="flex items-center gap-1 text-stone-500">
                         <Clock className="w-3.5 h-3.5 text-stone-400" />
@@ -268,18 +258,9 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                 {/* Right Details in Item (Title + Excerpt + Meta) */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
                   <div>
-                    {/* Category & Published Date */}
+                    {/* Category */}
                     <div className="flex items-center gap-1.5 text-[11px] text-stone-500 font-semibold mb-1.5">
-                      <span className="text-amber-800 font-bold truncate max-w-[140px]">{art.category}</span>
-                      {art.publishedAt && (
-                        <>
-                          <span>•</span>
-                          <span className="flex items-center gap-1 text-stone-500 font-medium">
-                            <Calendar className="w-3 h-3 text-stone-400" />
-                            <span>{art.publishedAt}</span>
-                          </span>
-                        </>
-                      )}
+                      <span className="text-amber-800 font-bold truncate max-w-[200px]">{art.category}</span>
                     </div>
 
                     {/* Article Title - Znews Style: Bold Sans-Serif, Larger size */}
@@ -361,15 +342,6 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                     <div className="p-4 sm:p-5">
                       <div className="flex items-center gap-2 text-[11px] text-stone-500 mb-2">
                         <span className="text-amber-800 font-semibold">{art.category}</span>
-                        {art.publishedAt && (
-                          <>
-                            <span>•</span>
-                            <span className="flex items-center gap-1 text-stone-500 font-medium">
-                              <Calendar className="w-3 h-3 text-stone-400" />
-                              <span>{art.publishedAt}</span>
-                            </span>
-                          </>
-                        )}
                       </div>
 
                       {/* Znews Style: Bold Sans-Serif Title, Larger size */}
@@ -387,10 +359,9 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
                   {/* Card Bottom */}
                   <div className="p-4 sm:p-5 pt-0 mt-auto">
                     <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1.5 text-stone-600 text-[11px] font-medium truncate max-w-[150px]">
-                        <Calendar className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                        <span>{art.publishedAt || "Mới cập nhật"}</span>
-                      </div>
+                      <span className="text-stone-500 text-[11px] font-medium truncate max-w-[150px]">
+                        {art.author || "Saigon One"}
+                      </span>
                       <span className="text-amber-800 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-0.5 text-xs">
                         <span>Đọc tiếp</span>
                         <ChevronRight className="w-3.5 h-3.5" />

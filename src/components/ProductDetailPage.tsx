@@ -20,6 +20,7 @@ import {
   ExternalLink,
   Layers
 } from "lucide-react";
+import { ZaloAppIcon, MessengerAppIcon } from "./BrandIcons";
 import { Product, ProductColor, ProductCategory, LensOption } from "../types";
 import { 
   getProductUrl, 
@@ -483,51 +484,63 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               {/* Action Buttons */}
               <div className="space-y-3 pt-2">
                 
-                {/* Main Action CTAs: Zalo & Messenger Fanpage */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Main Action CTAs: Zalo & Messenger Fanpage - Always 1 row on mobile & desktop */}
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   <button
                     id="btn-pdp-zalo-order"
                     onClick={handleContactZalo}
-                    className="w-full py-3.5 sm:py-4 bg-[#0068ff] hover:bg-[#0054d1] active:bg-[#0047b3] text-white font-extrabold text-sm sm:text-base rounded-2xl flex items-center justify-center gap-2 shadow-md uppercase tracking-wider transition-all duration-200 cursor-pointer"
+                    className="w-full py-3 sm:py-4 px-2 sm:px-4 bg-[#0068ff] hover:bg-[#0054d1] active:bg-[#0047b3] text-white font-extrabold text-xs sm:text-base rounded-xl sm:rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 shadow-md uppercase tracking-wide transition-all duration-200 cursor-pointer"
                   >
-                    <Phone className="w-5 h-5 text-white shrink-0" />
-                    <span>Zalo: 0973.819.928</span>
+                    <ZaloAppIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 rounded-xs overflow-hidden" />
+                    <span className="truncate">
+                      <span className="hidden sm:inline">Zalo: 0973.819.928</span>
+                      <span className="sm:hidden">Chat Zalo</span>
+                    </span>
                   </button>
 
                   <button
                     id="btn-pdp-messenger-order"
                     onClick={handleContactMessenger}
-                    className="w-full py-3.5 sm:py-4 bg-[#0084ff] hover:bg-[#0070db] active:bg-[#005cb8] text-white font-extrabold text-sm sm:text-base rounded-2xl flex items-center justify-center gap-2 shadow-md uppercase tracking-wider transition-all duration-200 cursor-pointer"
+                    className="w-full py-3 sm:py-4 px-2 sm:px-4 bg-[#0084ff] hover:bg-[#0070db] active:bg-[#005cb8] text-white font-extrabold text-xs sm:text-base rounded-xl sm:rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 shadow-md uppercase tracking-wide transition-all duration-200 cursor-pointer"
                   >
-                    <MessageSquare className="w-5 h-5 text-white shrink-0" />
-                    <span>Messenger Fanpage</span>
+                    <MessengerAppIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                    <span className="truncate">
+                      <span className="hidden sm:inline">Messenger Fanpage</span>
+                      <span className="sm:hidden">Messenger</span>
+                    </span>
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
                   {/* Hotline CTA */}
                   <a
                     href="tel:0973819928"
-                    className="py-3 px-4 bg-stone-900 hover:bg-black text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer text-center no-underline"
+                    className="py-2.5 sm:py-3 px-2 sm:px-4 bg-stone-900 hover:bg-black text-white font-bold text-[11px] sm:text-xs rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 transition-colors cursor-pointer text-center no-underline"
                   >
-                    <Phone className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>Hotline: 0973.819.928</span>
+                    <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
+                    <span className="truncate">
+                      <span className="hidden sm:inline">Hotline: 0973.819.928</span>
+                      <span className="sm:hidden">Hotline</span>
+                    </span>
                   </a>
 
                   {/* Copy Link / Share */}
                   <button
                     onClick={handleCopyLink}
-                    className="py-3 px-4 bg-white hover:bg-stone-100 text-stone-800 font-bold text-xs rounded-xl border border-stone-200 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    className="py-2.5 sm:py-3 px-2 sm:px-4 bg-white hover:bg-stone-100 text-stone-800 font-bold text-[11px] sm:text-xs rounded-xl border border-stone-200 flex items-center justify-center gap-1.5 sm:gap-2 transition-colors cursor-pointer"
                   >
                     {copiedLink ? (
                       <>
-                        <Check className="w-4 h-4 text-emerald-600" />
-                        <span className="text-emerald-700">Đã sao chép link!</span>
+                        <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
+                        <span className="text-emerald-700 truncate">Đã sao chép!</span>
                       </>
                     ) : (
                       <>
-                        <Copy className="w-4 h-4 text-stone-500" />
-                        <span>Sao chép Link Sản Phẩm</span>
+                        <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-500 shrink-0" />
+                        <span className="truncate">
+                          <span className="hidden sm:inline">Sao chép Link</span>
+                          <span className="sm:hidden">Chia sẻ link</span>
+                        </span>
                       </>
                     )}
                   </button>
@@ -642,7 +655,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {fallbackRelated.map((relProd) => (
                 <ProductCard
                   key={relProd.id}

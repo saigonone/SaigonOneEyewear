@@ -4,7 +4,6 @@ import {
   Sparkles, 
   Pin, 
   BookOpen, 
-  Calendar, 
   ArrowRight, 
   ShieldCheck, 
   CheckCircle2, 
@@ -394,9 +393,9 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
                       </div>
 
                       <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>{art.publishedAt || (art as any).publishedDate || "Mới nhất 2026"}</span>
+                        <span className="flex items-center gap-1 text-slate-500">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{art.readTime || "4 phút đọc"}</span>
                         </span>
                         <span className="text-blue-600 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1 text-xs">
                           <span>Xem Chi Tiết</span>
@@ -488,9 +487,9 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
                       </div>
 
                       <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>{art.publishedAt || (art as any).publishedDate || "2026"}</span>
+                        <span className="flex items-center gap-1 text-slate-500">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{art.readTime || "4 phút đọc"}</span>
                         </span>
                         <span className="text-blue-600 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1 text-xs">
                           <span>Xem bài viết</span>

@@ -9,6 +9,7 @@ import {
   Check, 
   Tag
 } from "lucide-react";
+import { ZaloAppIcon, MessengerAppIcon } from "./BrandIcons";
 import { Product, ProductColor } from "../types";
 import { getProductRepresentativeImage, DEFAULT_PRODUCT_FALLBACK_IMAGE } from "../utils/productUtils";
 
@@ -274,28 +275,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
             </div>
 
-            {/* Bottom CTA Buttons: Zalo (0973819928) & Messenger Fanpage */}
+            {/* Bottom CTA Buttons: Zalo & Messenger Fanpage - Always 1 row on mobile & desktop */}
             <div className="pt-2 space-y-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
                 <button
                   id="btn-modal-zalo-cta"
                   onClick={handleContactZalo}
-                  className="py-3.5 px-4 bg-[#0068ff] hover:bg-[#0054d1] active:bg-[#0047b3] text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                  className="py-3 sm:py-3.5 px-2 sm:px-4 bg-[#0068ff] hover:bg-[#0054d1] active:bg-[#0047b3] text-white font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 shadow-md transition-all cursor-pointer"
                 >
-                  <Phone className="w-4 h-4 text-white shrink-0" />
-                  <span>Zalo: 0973.819.928</span>
+                  <ZaloAppIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 rounded-xs overflow-hidden" />
+                  <span className="truncate">
+                    <span className="hidden sm:inline">Zalo: 0973.819.928</span>
+                    <span className="sm:hidden">Chat Zalo</span>
+                  </span>
                 </button>
 
                 <button
                   id="btn-modal-messenger-cta"
                   onClick={handleContactMessenger}
-                  className="py-3.5 px-4 bg-[#0084ff] hover:bg-[#0070db] active:bg-[#005cb8] text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                  className="py-3 sm:py-3.5 px-2 sm:px-4 bg-[#0084ff] hover:bg-[#0070db] active:bg-[#005cb8] text-white font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 shadow-md transition-all cursor-pointer"
                 >
-                  <MessageSquare className="w-4 h-4 text-white shrink-0" />
-                  <span>Messenger Fanpage</span>
+                  <MessengerAppIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
+                  <span className="truncate">
+                    <span className="hidden sm:inline">Messenger Fanpage</span>
+                    <span className="sm:hidden">Messenger</span>
+                  </span>
                 </button>
               </div>
-              <p className="text-center text-[11px] text-neutral-500">
+              <p className="text-center text-[10.5px] sm:text-[11px] text-neutral-500">
                 Tư vấn trực tiếp qua Zalo / Messenger có hỗ trợ gửi ảnh và video cận cảnh
               </p>
             </div>

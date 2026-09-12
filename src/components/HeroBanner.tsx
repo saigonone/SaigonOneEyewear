@@ -69,15 +69,15 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   const getSecondaryIcon = () => {
     const text = (slide.secondaryButtonText || "").toLowerCase();
     if (text.includes("đặt lịch") || text.includes("lịch")) {
-      return <Calendar className="w-4 h-4 text-blue-600" />;
+      return <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />;
     }
     if (text.includes("liên hệ") || text.includes("cửa hàng")) {
-      return <MapPin className="w-4 h-4 text-blue-600" />;
+      return <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />;
     }
     if (text.includes("hướng dẫn") || text.includes("chọn tròng")) {
-      return <Eye className="w-4 h-4 text-blue-600" />;
+      return <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />;
     }
-    return <Camera className="w-4 h-4 text-blue-600" />;
+    return <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />;
   };
 
   return (
@@ -108,29 +108,29 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             {slide.desc}
           </p>
 
-          {/* Sleek Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3.5">
+          {/* Sleek Action Buttons - Luôn nằm 1 hàng trên Mobile & Desktop */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-row items-center gap-2 sm:gap-3.5 w-full max-w-md sm:max-w-none">
             <button
               id="btn-hero-explore-collection"
               onClick={() => onSelectCategory(slide.category)}
-              className="px-7 py-3.5 bg-[#0f172a] text-white text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-blue-900 transition-all duration-200 cursor-pointer shadow-md flex items-center gap-2"
+              className="w-full sm:w-auto px-2.5 sm:px-7 py-3 sm:py-3.5 bg-[#0f172a] text-white text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-tight sm:tracking-wider rounded-xl hover:bg-blue-900 active:scale-95 transition-all duration-200 cursor-pointer shadow-md flex items-center justify-center gap-1.5 sm:gap-2"
             >
-              <span>{slide.buttonText}</span>
-              <ArrowRight className="w-4 h-4" />
+              <span className="truncate">{slide.buttonText}</span>
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
             </button>
 
             <button
               id="btn-hero-tryon-ar"
               onClick={handleSecondaryButtonClick}
-              className="px-7 py-3.5 border border-gray-200 text-slate-800 text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-gray-50 hover:border-slate-400 transition-all duration-200 cursor-pointer flex items-center gap-2 bg-white"
+              className="w-full sm:w-auto px-2.5 sm:px-7 py-3 sm:py-3.5 border border-gray-200 text-slate-800 text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-tight sm:tracking-wider rounded-xl hover:bg-gray-50 hover:border-slate-400 active:scale-95 transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 bg-white shadow-2xs"
             >
               {getSecondaryIcon()}
-              <span>{slide.secondaryButtonText}</span>
+              <span className="truncate">{slide.secondaryButtonText}</span>
             </button>
           </div>
 
           {/* Metric Stats Strip */}
-          <div className="mt-8 pt-5 border-t border-gray-100 flex items-center gap-6 sm:gap-10">
+          <div className="mt-2 pt-0 border-t border-gray-100 flex items-center gap-6 sm:gap-10 h-[67.23px]">
             <div>
               <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">15k+</div>
               <div className="text-[10px] text-gray-400 uppercase tracking-widest mt-0.5">Khách Hàng</div>

@@ -57,6 +57,9 @@ import {
   EyewearAiChat 
 } from "./components/EyewearAiChat";
 import { 
+  MobileBottomNav 
+} from "./components/MobileBottomNav";
+import { 
   Footer 
 } from "./components/Footer";
 
@@ -186,6 +189,7 @@ export default function App() {
   const [isFaceAdvisorOpen, setIsFaceAdvisorOpen] = useState<boolean>(false);
   const [isLensGuideOpen, setIsLensGuideOpen] = useState<boolean>(false);
   const [isStoresOpen, setIsStoresOpen] = useState<boolean>(false);
+  const [storesInitialTab, setStoresInitialTab] = useState<"all" | "map" | "appointment">("all");
   const [isOrderLookupOpen, setIsOrderLookupOpen] = useState<boolean>(false);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState<boolean>(false);
@@ -592,13 +596,22 @@ export default function App() {
     );
   };
 
-  const handleOpenStores = () => {
+  const handleOpenStores = (initialTab: "all" | "map" | "appointment" = "all") => {
+    setStoresInitialTab(initialTab);
     navigateTo("/lien-he");
     setIsStoresOpen(true);
     updateSEOMeta(
       "Liên Hệ & Hệ Thống Cửa Hàng - Saigon One Eyewear",
-      "Địa chỉ trụ sở Flagship Saigon One Eyewear: 178 Phan Đăng Lưu, Phường 3, Phú Nhuận, TP.HCM. Hotline/Zalo: 0973.819.928."
+      "Địa chỉ trụ sở Flagship Saigon One Eyewear: 178 Phan Đăng Lưu, Phường Đức Nhuận, TP.HCM. Hotline/Zalo: 0973.819.928."
     );
+  };
+
+  const handleOpenMap = () => {
+    handleOpenStores("map");
+  };
+
+  const handleOpenAppointment = () => {
+    handleOpenStores("appointment");
   };
 
   const handleOpenArticles = () => {
@@ -910,7 +923,7 @@ export default function App() {
     showOnlyFavorites;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fdfdfd] text-[#1a1a1a] selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#fdfdfd] text-[#1a1a1a] selection:bg-blue-600 selection:text-white pb-16 sm:pb-0">
       
       {/* Header */}
       <Header
@@ -1061,8 +1074,8 @@ export default function App() {
                     <Layers className="w-3.5 h-3.5 text-blue-600" />
                     <span>Hệ Thống Phân Loại Sản Phẩm</span>
                   </div>
-                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
-                    Danh Mục Kính Mắt Saigon One
+                  <h2 id="heading-category-collection" className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
+                    Danh Mục Mắt Kính
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
                     Khám phá trọn bộ sưu tập kính mắt và tròng kính khúc xạ chính hãng với chính sách bảo hành nắn chỉnh & thay ve ốc trọn đời miễn phí.
@@ -1185,9 +1198,6 @@ export default function App() {
                   <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   <span>Bộ Sưu Tập Mới Nhất 2026</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
-                  8 Sản Phẩm Kính Mắt Mới Nhất
-                </h2>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
                   Khám phá các mẫu kính mắt vừa cập nhật tại Saigon One - Đo mắt khúc xạ chuẩn y khoa miễn phí & cắt kính lấy ngay trong 15 phút tại 178 Phan Đăng Lưu, Phú Nhuận.
                 </p>
@@ -1202,7 +1212,7 @@ export default function App() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
               {newestHomeProducts.map((p) => (
                 <ProductCard
                   key={p.id}
@@ -1303,7 +1313,10 @@ export default function App() {
       )}
 
       {isStoresOpen && (
-        <StoreLocationsModal onClose={handleCloseModals} />
+        <StoreLocationsModal 
+          onClose={handleCloseModals} 
+          initialTab={storesInitialTab}
+        />
       )}
 
       {isAboutOpen && (
@@ -1341,12 +1354,18 @@ export default function App() {
         />
       )}
 
-      {/* Floating AI Consultant */}
+      {/* Floating AI Consultant (Desktop Actions & Back to Top) */}
       <EyewearAiChat
         onOpenTryOn={() => handleOpenTryOn()}
         onOpenFaceAdvisor={() => setIsFaceAdvisorOpen(true)}
         onOpenLensGuide={() => setIsLensGuideOpen(true)}
         onOpenStores={handleOpenStores}
+      />
+
+      {/* Mobile Horizontal Bottom Navigation Bar */}
+      <MobileBottomNav
+        onOpenAppointment={handleOpenAppointment}
+        onOpenMap={handleOpenMap}
       />
 
       {/* Footer */}

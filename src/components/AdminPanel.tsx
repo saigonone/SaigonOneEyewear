@@ -1643,7 +1643,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                       {art.summary}
                                     </div>
                                     <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-2">
-                                      <span>{art.publishedAt}</span>
+                                      <span>{art.category || "Bài viết"}</span>
                                       <span>•</span>
                                       <span>{art.readTime || "4 phút đọc"}</span>
                                     </div>

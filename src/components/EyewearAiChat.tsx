@@ -8,6 +8,7 @@ import {
   MessageSquare,
   ArrowUp
 } from "lucide-react";
+import { ZaloAppIcon } from "./BrandIcons";
 
 interface EyewearAiChatProps {
   onOpenTryOn: () => void;
@@ -122,22 +123,22 @@ export const EyewearAiChat: React.FC<EyewearAiChatProps> = ({
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3">
+    <div className="fixed bottom-20 right-4 sm:bottom-5 sm:right-5 z-40 flex flex-col items-end gap-3 pointer-events-none">
       
       {/* Scroll to Top Button */}
       {showBackToTop && (
         <button
           id="btn-scroll-top"
           onClick={scrollToTop}
-          className="w-10 h-10 bg-[#18181b] hover:bg-black text-white rounded-full flex items-center justify-center shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer"
+          className="pointer-events-auto w-10 h-10 bg-[#18181b] hover:bg-black text-white rounded-full flex items-center justify-center shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer"
           aria-label="Lên đầu trang"
         >
           <ArrowUp className="w-4 h-4" />
         </button>
       )}
 
-      {/* Floating Action Strip */}
-      <div className="flex items-center gap-2.5">
+      {/* Floating Action Strip (Desktop Only - Mobile uses the dedicated horizontal bottom bar) */}
+      <div className="hidden sm:flex pointer-events-auto items-center gap-2.5">
         
         {/* Hotline Call Button */}
         <a
@@ -159,16 +160,15 @@ export const EyewearAiChat: React.FC<EyewearAiChatProps> = ({
           className="flex items-center gap-2 bg-[#0068FF] hover:bg-[#0052cc] text-white font-bold text-xs uppercase tracking-wider py-3 px-4 rounded-full shadow-xl transition-all transform hover:scale-105 cursor-pointer"
           title="Tư vấn Zalo 24/7"
         >
-          <MessageSquare className="w-4 h-4 fill-white" />
-          <span className="hidden sm:inline">TƯ VẤN ZALO 24/7</span>
-          <span className="sm:hidden">ZALO</span>
+          <ZaloAppIcon className="w-4 h-4 shrink-0 rounded-xs overflow-hidden" />
+          <span>TƯ VẤN ZALO 24/7</span>
         </a>
 
       </div>
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="w-[92vw] sm:w-96 bg-white rounded-2xl border border-neutral-200 shadow-2xl flex flex-col h-[480px] overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+        <div className="pointer-events-auto w-[92vw] sm:w-96 bg-white rounded-2xl border border-neutral-200 shadow-2xl flex flex-col h-[480px] overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
           {/* Chat Header */}
           <div className="p-4 bg-[#18181b] text-white flex items-center justify-between">
             <div className="flex items-center gap-2.5">

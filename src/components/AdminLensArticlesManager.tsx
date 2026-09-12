@@ -324,7 +324,7 @@ export const AdminLensArticlesManager: React.FC<AdminLensArticlesManagerProps> =
                           <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-2">
                             <span>Tác giả: {art.author || "Saigon One"}</span>
                             <span>•</span>
-                            <span>{art.publishedAt || "Mới"}</span>
+                            <span>{art.readTime || "4 phút đọc"}</span>
                           </div>
                         </div>
                       </div>
