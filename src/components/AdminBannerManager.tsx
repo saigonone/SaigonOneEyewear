@@ -22,8 +22,8 @@ import {
   Camera
 } from "lucide-react";
 import { BannerSlide, ProductCategory } from "../types";
-import { INITIAL_BANNER_SLIDES } from "../data/mockBanners";
 import { saveBannerToFirebase, deleteBannerFromFirebase, saveAllBannersToFirebase } from "../firebase";
+import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 
 interface AdminBannerManagerProps {
   banners: BannerSlide[];
@@ -36,6 +36,7 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
 }) => {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingBanner, setEditingBanner] = useState<BannerSlide | null>(null);
+  const [bannerToDelete, setBannerToDelete] = useState<BannerSlide | null>(null);
 
   // Form states
   const [tag, setTag] = useState("TRÒNG KÍNH CÔNG NGHỆ CHÍNH HÃNG");
@@ -166,16 +167,21 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
     setShowModal(false);
   };
 
-  const handleDeleteBanner = async (id: string) => {
+  const handleRequestDeleteBanner = (slide: BannerSlide) => {
     if (banners.length <= 1) {
       alert("Hệ thống cần giữ lại ít nhất 1 banner để hiển thị trên trang chủ!");
       return;
     }
-    if (!confirm("Bạn có chắc chắn muốn xóa banner này khỏi trang chủ?")) return;
+    setBannerToDelete(slide);
+  };
 
+  const handleConfirmDeleteBanner = async () => {
+    if (!bannerToDelete) return;
+    const id = bannerToDelete.id;
     const updated = banners.filter(b => b.id !== id);
     onUpdateBanners(updated);
     await deleteBannerFromFirebase(id);
+    setBannerToDelete(null);
   };
 
   const handleToggleActive = async (slide: BannerSlide) => {
@@ -205,12 +211,6 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
     await saveAllBannersToFirebase(updated);
   };
 
-  const handleResetDefaultBanners = async () => {
-    if (!confirm("Khôi phục danh sách banner về 3 mẫu chuẩn Essilor, Transitions và Chiết Suất 1.74?")) return;
-    onUpdateBanners(INITIAL_BANNER_SLIDES);
-    await saveAllBannersToFirebase(INITIAL_BANNER_SLIDES);
-  };
-
   return (
     <div className="space-y-6">
       {/* Top Header & Quick Action */}
@@ -230,15 +230,6 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            onClick={handleResetDefaultBanners}
-            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
-            title="Khôi phục 3 banner mặc định"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Khôi Phục Mẫu</span>
-          </button>
-
           <button
             onClick={handleOpenAdd}
             className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2 transition-colors cursor-pointer"
@@ -369,7 +360,7 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
               </button>
 
               <button
-                onClick={() => handleDeleteBanner(slide.id)}
+                onClick={() => handleRequestDeleteBanner(slide)}
                 className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
                 title="Xóa banner"
               >
@@ -751,6 +742,20 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
 
           </div>
         </div>
+      )}
+
+      {/* MODAL: XÁC THỰC KÉP XÓA BANNER */}
+      {bannerToDelete && (
+        <ConfirmDeleteModal
+          isOpen={!!bannerToDelete}
+          itemType="banner"
+          itemTitle={`${bannerToDelete.title1} ${bannerToDelete.title2}`}
+          itemId={bannerToDelete.id}
+          itemImage={bannerToDelete.image}
+          itemSubtitle={`Thẻ: ${bannerToDelete.tag} • Vị trí thứ: ${(bannerToDelete.order || 0) + 1}`}
+          onConfirm={handleConfirmDeleteBanner}
+          onClose={() => setBannerToDelete(null)}
+        />
       )}
 
     </div>

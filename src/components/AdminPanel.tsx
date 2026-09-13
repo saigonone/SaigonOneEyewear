@@ -49,7 +49,8 @@ import {
   List,
   ListOrdered,
   Type,
-  Wand2
+  Wand2,
+  Download
 } from "lucide-react";
 import { 
   Product, 
@@ -105,12 +106,12 @@ import {
   db, 
   rtdb 
 } from "../firebase";
-import { INITIAL_BANNER_SLIDES } from "../data/mockBanners";
-import { INITIAL_LENS_BRANDS, INITIAL_LENS_ARTICLES } from "../data/mockLensBrands";
 import { AdminBannerManager } from "./AdminBannerManager";
 import { AdminLensBrandsManager } from "./AdminLensBrandsManager";
 import { AdminLensArticlesManager } from "./AdminLensArticlesManager";
 import { RichTextEditor } from "./RichTextEditor";
+import { AdminBackupModal } from "./AdminBackupModal";
+import { ConfirmDeleteModal, DeletableItemType } from "./ConfirmDeleteModal";
 import { sortArticlesByNewest } from "../utils/articleUtils";
 
 const PRODUCT_CATEGORY_OPTIONS: { id: ProductCategory; label: string; sub: string; icon: string }[] = [
@@ -169,11 +170,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onDeleteProduct,
   articles: initialArticles = [],
   onUpdateArticles,
-  lensArticles: initialLensArticles = INITIAL_LENS_ARTICLES,
+  lensArticles: initialLensArticles = [],
   onUpdateLensArticles,
-  lensBrands: initialLensBrands = INITIAL_LENS_BRANDS,
+  lensBrands: initialLensBrands = [],
   onUpdateLensBrands,
-  banners: initialBanners = INITIAL_BANNER_SLIDES,
+  banners: initialBanners = [],
   onUpdateBanners,
   onLogout,
 }) => {
@@ -190,6 +191,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchFilter, setSearchFilter] = useState<string>("");
+
+  // Safe Data Management States
+  const [showBackupModal, setShowBackupModal] = useState<boolean>(false);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    itemType: DeletableItemType;
+    itemTitle: string;
+    itemId?: string;
+    itemImage?: string;
+    itemSubtitle?: string;
+    onConfirm: () => Promise<void> | void;
+  } | null>(null);
 
   // Product Form State
   const [showAddProductModal, setShowAddProductModal] = useState<boolean>(false);
@@ -844,23 +856,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  const handleDeleteArticle = async (id: string) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa bài viết này không?")) {
-      try {
-        console.log(`[AdminPanel] Bắt đầu xóa bài viết '${id}' khỏi Firestore collection 'articles'...`);
-        await deleteArticleFromFirebase(id);
-        console.log(`[AdminPanel] ✅ Đã xóa bài viết '${id}' khỏi Firestore thành công!`);
-        setArticles(prev => {
-          const next = prev.filter(a => a.id !== id);
-          onUpdateArticles?.(next);
-          return next;
-        });
-        alert("✅ Đã xóa bài viết khỏi Firestore thành công!");
-      } catch (err: any) {
-        console.error(`[AdminPanel ERROR] ❌ Lỗi khi xóa bài viết '${id}':`, err);
-        alert(`❌ Lỗi khi xóa bài viết: ${err?.message || err}`);
-      }
+  const executeDeleteArticle = async (id: string) => {
+    try {
+      console.log(`[AdminPanel] Bắt đầu xóa bài viết '${id}' khỏi Firestore collection 'articles'...`);
+      await deleteArticleFromFirebase(id);
+      console.log(`[AdminPanel] ✅ Đã xóa bài viết '${id}' khỏi Firestore thành công!`);
+      setArticles(prev => {
+        const next = prev.filter(a => a.id !== id);
+        onUpdateArticles?.(next);
+        return next;
+      });
+    } catch (err: any) {
+      console.error(`[AdminPanel ERROR] ❌ Lỗi khi xóa bài viết '${id}':`, err);
+      throw err;
     }
+  };
+
+  const handleRequestDeleteArticle = (art: Article) => {
+    setDeleteTarget({
+      itemType: "article",
+      itemTitle: art.title,
+      itemId: art.id,
+      itemImage: art.thumbnail,
+      itemSubtitle: `Chuyên mục: ${art.category || "Cẩm nang"} • Slug: ${art.slug || "N/A"}`,
+      onConfirm: async () => {
+        await executeDeleteArticle(art.id);
+      },
+    });
   };
 
   // ==========================================
@@ -885,14 +907,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleDeleteLensArticle = async (id: string) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa bài viết tròng kính này không?")) {
-      await deleteLensArticleFromFirebase(id);
-      setLensArticles(prev => {
-        const next = prev.filter(a => a.id !== id);
-        onUpdateLensArticles?.(next);
-        return next;
-      });
-    }
+    await deleteLensArticleFromFirebase(id);
+    setLensArticles(prev => {
+      const next = prev.filter(a => a.id !== id);
+      onUpdateLensArticles?.(next);
+      return next;
+    });
   };
 
   const handleTogglePinLensArticle = async (art: Article) => {
@@ -938,14 +958,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
   };
 
-  const handleResetLensBrands = async () => {
-    for (const b of INITIAL_LENS_BRANDS) {
-      await addLensBrandToFirebase(b);
-    }
-    setLensBrands(INITIAL_LENS_BRANDS);
-    onUpdateLensBrands?.(INITIAL_LENS_BRANDS);
-  };
-
   // ==========================================
   // HANDLERS: CATEGORIES & ADMINS
   // ==========================================
@@ -965,11 +977,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNewArtCatDesc("");
   };
 
-  const handleDeleteArtCat = async (id: string) => {
-    if (window.confirm("Xóa chuyên mục bài viết này?")) {
-      await deleteArticleCategoryFromFirebase(id);
-      setArticleCategories(prev => prev.filter(c => c.id !== id));
-    }
+  const handleRequestDeleteArtCat = (cat: ArticleCategory) => {
+    setDeleteTarget({
+      itemType: "article_category",
+      itemTitle: cat.name,
+      itemId: cat.id,
+      itemSubtitle: `Slug: ${cat.slug || "N/A"} • ${cat.description || ""}`,
+      onConfirm: async () => {
+        await deleteArticleCategoryFromFirebase(cat.id);
+        setArticleCategories(prev => prev.filter(c => c.id !== cat.id));
+      },
+    });
   };
 
   const handleSaveProdCat = async (e: React.FormEvent) => {
@@ -988,11 +1006,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNewProdCatDesc("");
   };
 
-  const handleDeleteProdCat = async (id: string) => {
-    if (window.confirm("Xóa danh mục sản phẩm này?")) {
-      await deleteProductCategoryFromFirebase(id);
-      setProductCategories(prev => prev.filter(c => c.id !== id));
-    }
+  const handleRequestDeleteProdCat = (pcat: ProductCategoryItem) => {
+    setDeleteTarget({
+      itemType: "product_category",
+      itemTitle: pcat.name,
+      itemId: pcat.id,
+      itemSubtitle: `Slug: ${pcat.slug || "N/A"} • ${pcat.description || ""}`,
+      onConfirm: async () => {
+        await deleteProductCategoryFromFirebase(pcat.id);
+        setProductCategories(prev => prev.filter(c => c.id !== pcat.id));
+      },
+    });
   };
 
   const handleSaveAdmin = async (e: React.FormEvent) => {
@@ -1015,15 +1039,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNewAdminEmail("");
   };
 
-  const handleDeleteAdmin = async (id: string) => {
+  const handleRequestDeleteAdmin = (adm: AdminUser) => {
     if (admins.length <= 1) {
       alert("Hệ thống phải có ít nhất 1 tài khoản quản trị!");
       return;
     }
-    if (window.confirm("Xóa tài khoản quản trị viên này?")) {
-      await deleteAdminFromFirebase(id);
-      setAdmins(prev => prev.filter(a => a.id !== id));
-    }
+    setDeleteTarget({
+      itemType: "admin",
+      itemTitle: adm.fullName || adm.username,
+      itemId: adm.id,
+      itemSubtitle: `Tài khoản: @${adm.username} • Email: ${adm.email} • Phân quyền: ${adm.role}`,
+      onConfirm: async () => {
+        await deleteAdminFromFirebase(adm.id);
+        setAdmins(prev => prev.filter(a => a.id !== adm.id));
+      },
+    });
   };
 
   const handleStatusChange = async (orderCode: string, newStatus: any) => {
@@ -1048,11 +1078,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     await updateAppointmentStatusInFirebase(id, newStatus);
   };
 
-  const handleDeleteAppointment = async (id: string) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa lịch hẹn đo mắt này?")) {
-      await deleteAppointmentFromFirebase(id);
-      setAppointments(prev => prev.filter(a => a.id !== id));
-    }
+  const handleRequestDeleteAppointment = (apt: Appointment) => {
+    setDeleteTarget({
+      itemType: "appointment",
+      itemTitle: `Lịch hẹn: ${apt.fullName}`,
+      itemId: apt.id,
+      itemSubtitle: `SĐT: ${apt.phone} • Ngày: ${apt.date} lúc ${apt.time} • Ghi chú: ${apt.note || "Khám đo mắt"}`,
+      onConfirm: async () => {
+        if (apt.id) {
+          await deleteAppointmentFromFirebase(apt.id);
+          setAppointments(prev => prev.filter(a => a.id !== apt.id));
+        }
+      },
+    });
   };
 
   const pendingAppointmentsCount = appointments.filter(a => a.status === "pending").length;
@@ -1083,6 +1121,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Nút Sao Lưu Dữ Liệu Toàn Bộ */}
+            <button
+              id="btn-open-backup-modal"
+              onClick={() => setShowBackupModal(true)}
+              className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Sao lưu toàn bộ dữ liệu trên Firestore về máy tính (Export JSON)"
+            >
+              <Download className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">Sao lưu dữ liệu (Export JSON)</span>
+              <span className="sm:hidden">Sao lưu</span>
+            </button>
+
             <button
               onClick={loadData}
               disabled={loading}
@@ -1463,12 +1513,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 </button>
                                 <button
                                   onClick={() => {
-                                    if (window.confirm(`Xóa kính "${p.name}" khỏi Firebase?`)) {
-                                      onDeleteProduct(p.id);
-                                    }
+                                    setDeleteTarget({
+                                      itemType: "product",
+                                      itemTitle: p.name,
+                                      itemId: p.id,
+                                      itemImage: p.images?.[0] || p.thumbnail,
+                                      itemSubtitle: `Mã SKU: ${p.sku || "N/A"} • Giá: ${p.price?.toLocaleString("vi-VN")}₫`,
+                                      onConfirm: async () => {
+                                        await onDeleteProduct(p.id);
+                                      },
+                                    });
                                   }}
-                                  className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors"
-                                  title="Xóa kính"
+                                  className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer"
+                                  title="Xóa sản phẩm"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -1511,8 +1568,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           Slug: {pcat.slug}
                         </span>
                         <button
-                          onClick={() => handleDeleteProdCat(pcat.id)}
-                          className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                          onClick={() => handleRequestDeleteProdCat(pcat)}
+                          className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                           title="Xóa danh mục"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1550,7 +1607,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               onAddBrand={handleAddLensBrand}
               onUpdateBrand={handleUpdateLensBrand}
               onDeleteBrand={handleDeleteLensBrand}
-              onResetToDefaults={handleResetLensBrands}
             />
           )}
 
@@ -1725,7 +1781,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                     <Edit3 className="w-3.5 h-3.5" />
                                   </button>
                                   <button
-                                    onClick={() => handleDeleteArticle(art.id)}
+                                    onClick={() => handleRequestDeleteArticle(art)}
                                     className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer"
                                     title="Xóa bài viết"
                                   >
@@ -1778,8 +1834,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           Slug: {cat.slug}
                         </span>
                         <button
-                          onClick={() => handleDeleteArtCat(cat.id)}
-                          className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                          onClick={() => handleRequestDeleteArtCat(cat)}
+                          className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1826,8 +1882,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </span>
                         {admins.length > 1 && (
                           <button
-                            onClick={() => handleDeleteAdmin(adm.id)}
-                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                            onClick={() => handleRequestDeleteAdmin(adm)}
+                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -2130,8 +2186,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                                 {apt.id && (
                                   <button
-                                    onClick={() => handleDeleteAppointment(apt.id!)}
-                                    className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center"
+                                    onClick={() => handleRequestDeleteAppointment(apt)}
+                                    className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center cursor-pointer"
                                     title="Xóa lịch hẹn này"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -3583,6 +3639,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL: SAO LƯU TOÀN BỘ DỮ LIỆU FIRESTORE (EXPORT JSON) */}
+      {/* ======================================================== */}
+      <AdminBackupModal
+        isOpen={showBackupModal}
+        onClose={() => setShowBackupModal(false)}
+      />
+
+      {/* ======================================================== */}
+      {/* MODAL: XÁC THỰC KÉP XÓA DỮ LIỆU AN TOÀN (CONFIRM DELETE) */}
+      {/* ======================================================== */}
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          isOpen={!!deleteTarget}
+          itemType={deleteTarget.itemType}
+          itemTitle={deleteTarget.itemTitle}
+          itemId={deleteTarget.itemId}
+          itemImage={deleteTarget.itemImage}
+          itemSubtitle={deleteTarget.itemSubtitle}
+          onConfirm={async () => {
+            if (deleteTarget) {
+              await deleteTarget.onConfirm();
+              setDeleteTarget(null);
+            }
+          }}
+          onClose={() => setDeleteTarget(null)}
+        />
       )}
 
     </div>

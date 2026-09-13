@@ -19,6 +19,7 @@ import {
 import { Article, LensBrandCategory } from "../types";
 import { createSlug, getArticleSlug, getArticleUrl } from "../utils/slug";
 import { RichTextEditor } from "./RichTextEditor";
+import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 
 interface AdminLensArticlesManagerProps {
   articles: Article[];
@@ -42,6 +43,7 @@ export const AdminLensArticlesManager: React.FC<AdminLensArticlesManagerProps> =
   const [showModal, setShowModal] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+  const [articleToDelete, setArticleToDelete] = useState<Article | null>(null);
 
   // Form states
   const [title, setTitle] = useState("");
@@ -408,11 +410,7 @@ export const AdminLensArticlesManager: React.FC<AdminLensArticlesManagerProps> =
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm(`Bạn có chắc muốn xóa bài viết "${art.title}"?`)) {
-                              onDeleteArticle(art.id);
-                            }
-                          }}
+                          onClick={() => setArticleToDelete(art)}
                           className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
                           title="Xóa bài viết"
                         >
@@ -668,6 +666,25 @@ export const AdminLensArticlesManager: React.FC<AdminLensArticlesManagerProps> =
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL: XÁC THỰC KÉP XÓA BÀI VIẾT TRÒNG KÍNH */}
+      {articleToDelete && (
+        <ConfirmDeleteModal
+          isOpen={!!articleToDelete}
+          itemType="lens_article"
+          itemTitle={articleToDelete.title}
+          itemId={articleToDelete.id}
+          itemImage={articleToDelete.thumbnail}
+          itemSubtitle={`Thương hiệu: ${articleToDelete.lensBrand || "Tròng kính"} • Slug: ${articleToDelete.slug || "N/A"}`}
+          onConfirm={async () => {
+            if (articleToDelete) {
+              await onDeleteArticle(articleToDelete.id);
+              setArticleToDelete(null);
+            }
+          }}
+          onClose={() => setArticleToDelete(null)}
+        />
       )}
     </div>
   );

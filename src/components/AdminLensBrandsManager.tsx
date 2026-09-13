@@ -18,13 +18,13 @@ import {
 } from "lucide-react";
 import { LensBrandCategory } from "../types";
 import { createSlug } from "../utils/slug";
+import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 
 interface AdminLensBrandsManagerProps {
   brands: LensBrandCategory[];
   onAddBrand: (brand: LensBrandCategory) => Promise<void>;
   onUpdateBrand: (brand: LensBrandCategory) => Promise<void>;
   onDeleteBrand: (id: string) => Promise<void>;
-  onResetDefaults?: () => Promise<void>;
 }
 
 export const AdminLensBrandsManager: React.FC<AdminLensBrandsManagerProps> = ({
@@ -32,10 +32,10 @@ export const AdminLensBrandsManager: React.FC<AdminLensBrandsManagerProps> = ({
   onAddBrand,
   onUpdateBrand,
   onDeleteBrand,
-  onResetDefaults,
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingBrand, setEditingBrand] = useState<LensBrandCategory | null>(null);
+  const [brandToDelete, setBrandToDelete] = useState<LensBrandCategory | null>(null);
 
   // Form states
   const [name, setName] = useState("");
@@ -153,21 +153,6 @@ export const AdminLensBrandsManager: React.FC<AdminLensBrandsManagerProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {onResetDefaults && (
-            <button
-              onClick={() => {
-                if (window.confirm("Khôi phục danh sách 4 thương hiệu tròng kính chuẩn (Hoya, Kodak, Essilor, Chemi)?")) {
-                  onResetDefaults();
-                }
-              }}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
-              title="Khôi phục các thương hiệu mặc định"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Khôi Phục Mặc Định</span>
-            </button>
-          )}
-
           <button
             onClick={handleOpenAdd}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
@@ -247,11 +232,7 @@ export const AdminLensBrandsManager: React.FC<AdminLensBrandsManagerProps> = ({
                 </button>
 
                 <button
-                  onClick={() => {
-                    if (window.confirm(`Xóa thương hiệu "${b.name}"? Các bài viết liên quan sẽ không bị xóa nhưng cần gán lại.`)) {
-                      onDeleteBrand(b.id);
-                    }
-                  }}
+                  onClick={() => setBrandToDelete(b)}
                   className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer"
                   title="Xóa thương hiệu này"
                 >
@@ -448,6 +429,25 @@ export const AdminLensBrandsManager: React.FC<AdminLensBrandsManagerProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL: XÁC THỰC KÉP XÓA THƯƠNG HIỆU TRÒNG KÍNH */}
+      {brandToDelete && (
+        <ConfirmDeleteModal
+          isOpen={!!brandToDelete}
+          itemType="lens_brand"
+          itemTitle={brandToDelete.name}
+          itemId={brandToDelete.id}
+          itemImage={brandToDelete.logo}
+          itemSubtitle={`Xuất xứ: ${brandToDelete.origin || "Chính hãng"} • Slug: ${brandToDelete.slug || "N/A"}`}
+          onConfirm={async () => {
+            if (brandToDelete) {
+              await onDeleteBrand(brandToDelete.id);
+              setBrandToDelete(null);
+            }
+          }}
+          onClose={() => setBrandToDelete(null)}
+        />
       )}
 
     </div>
