@@ -188,7 +188,7 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
             </div>
 
             <h1 className="text-[38px] font-extrabold tracking-tight text-white mb-3 leading-tight">
-              Bảng Giá & Cẩm Nang <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 via-sky-300 to-amber-300">Tròng Kính Chính Hãng</span>
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 via-sky-300 to-amber-300">Tròng Kính Chính Hãng</span>
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed mb-6 font-normal">
