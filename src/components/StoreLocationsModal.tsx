@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   CheckCircle2
 } from "lucide-react";
-import { STORE_LOCATIONS } from "../data/mockProducts";
+import { STORE_LOCATIONS } from "../constants/storeConfig";
 import { addAppointmentToFirebase } from "../firebase";
 
 interface StoreLocationsModalProps {

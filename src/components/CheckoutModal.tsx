@@ -15,7 +15,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { CartItem, Order, OrderCustomerInfo } from "../types";
-import { STORE_LOCATIONS, PROMO_CODES } from "../data/mockProducts";
+import { STORE_LOCATIONS, PROMO_CODES } from "../constants/storeConfig";
 import { saveOrderToFirebase } from "../firebase";
 
 interface CheckoutModalProps {

@@ -679,7 +679,7 @@ export async function deleteProductCategoryFromFirebase(categoryId: string): Pro
 }
 
 // =========================================================================
-// 5. QUẢN TRỊ VIÊN & TÀI KHOẢN ADMIN (Admins CRUD)
+// 5. QUẢN TRỊ VIÊN & TÀI KHOẢN ADMIN (Admins CRUD & Firestore Auth)
 // =========================================================================
 
 export async function getAdminsFromFirebase(): Promise<AdminUser[]> {
@@ -689,8 +689,24 @@ export async function getAdminsFromFirebase(): Promise<AdminUser[]> {
       const list: AdminUser[] = [];
       snap.forEach((d) => list.push({ id: d.id, ...d.data() } as AdminUser));
       return list;
+    } else {
+      // Khởi tạo tài khoản root admin mặc định vào Firestore nếu collection còn trống
+      const defaultAdmin: AdminUser = {
+        id: "adm-saigonone-root",
+        username: "admin",
+        fullName: "Quản Trị Viên Hệ Thống",
+        email: "matkinhsaigonone@gmail.com",
+        password: "matkinh123",
+        role: "super_admin",
+        createdAt: new Date().toISOString(),
+        isActive: true,
+      };
+      await addAdminToFirebase(defaultAdmin);
+      return [defaultAdmin];
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn("[Firebase] getAdminsFromFirebase error:", e);
+  }
 
   try {
     const snap = await get(child(ref(rtdb), "admins"));
@@ -708,6 +724,7 @@ export async function addAdminToFirebase(admin: AdminUser): Promise<boolean> {
     await set(ref(rtdb, `admins/${admin.id}`), admin);
     return true;
   } catch (e) {
+    console.error("[Firebase] addAdminToFirebase error:", e);
     return false;
   }
 }
@@ -718,6 +735,7 @@ export async function updateAdminInFirebase(admin: AdminUser): Promise<boolean> 
     await update(ref(rtdb, `admins/${admin.id}`), admin);
     return true;
   } catch (e) {
+    console.error("[Firebase] updateAdminInFirebase error:", e);
     return false;
   }
 }
@@ -728,7 +746,139 @@ export async function deleteAdminFromFirebase(adminId: string): Promise<boolean>
     await remove(ref(rtdb, `admins/${adminId}`));
     return true;
   } catch (e) {
+    console.error("[Firebase] deleteAdminFromFirebase error:", e);
     return false;
+  }
+}
+
+/**
+ * Xác thực đăng nhập Admin trực tiếp bằng truy vấn Firestore
+ * So khớp chính xác tên đăng nhập/email và mật khẩu riêng của từng user
+ */
+export async function verifyAdminLogin(
+  usernameOrEmail: string,
+  inputPassword: string
+): Promise<{ success: boolean; user?: AdminUser; message?: string }> {
+  try {
+    const cleanUser = (usernameOrEmail || "").trim().toLowerCase();
+    const cleanPass = (inputPassword || "").trim();
+
+    if (!cleanUser || !cleanPass) {
+      return { 
+        success: false, 
+        message: "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu." 
+      };
+    }
+
+    // 1. Truy vấn trực tiếp collection admins trong Firestore
+    let allAdmins: AdminUser[] = [];
+    try {
+      const snap = await getDocs(collection(db, "admins"));
+      if (!snap.empty) {
+        snap.forEach((d) => allAdmins.push({ id: d.id, ...d.data() } as AdminUser));
+      }
+    } catch (err) {
+      console.warn("[Firebase] Query Firestore admins error:", err);
+    }
+
+    // Fallback sang Realtime Database nếu Firestore chưa phản hồi
+    if (allAdmins.length === 0) {
+      try {
+        const snapRtdb = await get(child(ref(rtdb), "admins"));
+        if (snapRtdb.exists()) {
+          allAdmins = Object.values(snapRtdb.val()) as AdminUser[];
+        }
+      } catch (err) {
+        console.warn("[Firebase] Query RTDB admins error:", err);
+      }
+    }
+
+    // Nếu collection admins trên Firestore hoàn toàn chưa có document nào, tự động tạo tài khoản root admin
+    if (allAdmins.length === 0) {
+      if ((cleanUser === "admin" || cleanUser === "matkinhsaigonone@gmail.com") && (cleanPass === "matkinh123" || cleanPass === "admin123")) {
+        const defaultAdmin: AdminUser = {
+          id: "adm-saigonone-root",
+          username: "admin",
+          fullName: "Quản Trị Viên Hệ Thống",
+          email: "matkinhsaigonone@gmail.com",
+          password: cleanPass,
+          role: "super_admin",
+          createdAt: new Date().toISOString(),
+          isActive: true,
+          lastLogin: new Date().toISOString(),
+        };
+        await addAdminToFirebase(defaultAdmin);
+        return { success: true, user: defaultAdmin };
+      }
+      return {
+        success: false,
+        message: "Tài khoản không tồn tại trên hệ thống Firestore."
+      };
+    }
+
+    // 2. Tìm tài khoản trùng khớp username hoặc email
+    const matchedAdmin = allAdmins.find((adm) => {
+      const admUser = (adm.username || "").toLowerCase().trim();
+      const admEmail = (adm.email || "").toLowerCase().trim();
+      return admUser === cleanUser || admEmail === cleanUser;
+    });
+
+    if (!matchedAdmin) {
+      return {
+        success: false,
+        message: "Tài khoản không tồn tại trên hệ thống."
+      };
+    }
+
+    // 3. Kiểm tra trạng thái hoạt động
+    if (matchedAdmin.isActive === false) {
+      return {
+        success: false,
+        message: "Tài khoản này đã bị khóa hoặc ngừng hoạt động."
+      };
+    }
+
+    // 4. So khớp mật khẩu lưu trực tiếp trong document Firestore
+    const storedPassword = matchedAdmin.password;
+    if (storedPassword && storedPassword === cleanPass) {
+      // Cập nhật lastLogin lên Firestore
+      try {
+        await updateDoc(doc(db, "admins", matchedAdmin.id), {
+          lastLogin: new Date().toISOString()
+        });
+      } catch (e) {}
+
+      return {
+        success: true,
+        user: matchedAdmin
+      };
+    }
+
+    // Hỗ trợ trường hợp tài khoản tạo trước đó chưa có trường password
+    if (!storedPassword && (cleanPass === "matkinh123" || cleanPass === "admin123")) {
+      try {
+        await updateDoc(doc(db, "admins", matchedAdmin.id), {
+          password: cleanPass,
+          lastLogin: new Date().toISOString()
+        });
+      } catch (e) {}
+
+      return {
+        success: true,
+        user: { ...matchedAdmin, password: cleanPass }
+      };
+    }
+
+    return {
+      success: false,
+      message: "Mật khẩu không chính xác. Vui lòng kiểm tra lại."
+    };
+  } catch (error: any) {
+    console.error("[Firebase] verifyAdminLogin fatal error:", error);
+    return {
+      success: false,
+      message: "Có lỗi khi kết nối máy chủ xác thực Firestore: " + (error?.message || "Vui lòng thử lại sau.")
+    };
   }
 }
 

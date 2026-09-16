@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X, BookOpen, Check, Sparkles, Shield, Eye, Sun, Laptop } from "lucide-react";
-import { LENS_OPTIONS } from "../data/mockProducts";
+import { LENS_OPTIONS } from "../constants/storeConfig";
 
 interface LensGuideModalProps {
   onClose: () => void;

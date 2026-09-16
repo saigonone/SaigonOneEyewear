@@ -78,10 +78,6 @@ import {
   BannerSlide,
   LensBrandCategory
 } from "./types";
-import { MOCK_PRODUCTS } from "./data/mockProducts";
-import { INITIAL_ARTICLES, INITIAL_ARTICLE_CATEGORIES } from "./data/mockArticles";
-import { INITIAL_BANNER_SLIDES } from "./data/mockBanners";
-import { INITIAL_LENS_BRANDS, INITIAL_LENS_ARTICLES } from "./data/mockLensBrands";
 import { normalizeProduct } from "./utils/productUtils";
 import { sortArticlesByNewest } from "./utils/articleUtils";
 import { 
@@ -136,11 +132,16 @@ export default function App() {
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((p, idx) => normalizeProduct(p, p.id || `sgo-cached-${idx}`));
+          const hasOldMock = parsed.some(p => p && p.id && typeof p.id === "string" && p.id.startsWith("sg-one-"));
+          if (!hasOldMock) {
+            return parsed.map((p, idx) => normalizeProduct(p, p.id || `sgo-cached-${idx}`));
+          } else {
+            localStorage.removeItem("saigonone_products");
+          }
         }
       }
     } catch (e) {}
-    return MOCK_PRODUCTS.map((p) => normalizeProduct(p, p.id));
+    return [];
   });
   const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(true);
 
@@ -208,7 +209,7 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) return sortArticlesByNewest(parsed);
       }
     } catch (e) {}
-    return sortArticlesByNewest(INITIAL_ARTICLES);
+    return [];
   });
 
   const [lensArticles, setLensArticles] = useState<Article[]>(() => {
@@ -219,10 +220,10 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {}
-    return INITIAL_LENS_ARTICLES;
+    return [];
   });
 
-  const [articleCategories, setArticleCategories] = useState<ArticleCategory[]>(INITIAL_ARTICLE_CATEGORIES);
+  const [articleCategories, setArticleCategories] = useState<ArticleCategory[]>([]);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
   // Lens Brands state loaded from Firebase with realtime onSnapshot
@@ -234,7 +235,7 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {}
-    return INITIAL_LENS_BRANDS;
+    return [];
   });
   const [selectedLensBrand, setSelectedLensBrand] = useState<LensBrandCategory | null>(null);
 
@@ -247,7 +248,7 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {}
-    return INITIAL_BANNER_SLIDES;
+    return [];
   });
 
   // Admin Authentication State
@@ -1212,18 +1213,33 @@ export default function App() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-              {newestHomeProducts.map((p) => (
-                <ProductCard
-                  key={p.id}
-                  product={p}
-                  isFavorite={favoriteIds.includes(p.id)}
-                  onToggleFavorite={handleToggleFavorite}
-                  onOpenDetail={(product, color) => handleOpenProductDetail(product, color)}
-                  onQuickTryOn={handleOpenTryOn}
-                />
-              ))}
-            </div>
+            {isLoadingProducts ? (
+              <div className="py-16 text-center text-slate-400">
+                <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-xs font-medium">Đang đồng bộ sản phẩm từ hệ thống...</p>
+              </div>
+            ) : newestHomeProducts.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+                {newestHomeProducts.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    isFavorite={favoriteIds.includes(p.id)}
+                    onToggleFavorite={handleToggleFavorite}
+                    onOpenDetail={(product, color) => handleOpenProductDetail(product, color)}
+                    onQuickTryOn={handleOpenTryOn}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="py-14 px-4 text-center bg-stone-50/80 rounded-2xl border border-stone-200/80 max-w-xl mx-auto">
+                <Glasses className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <h3 className="text-sm font-bold text-slate-700 mb-1">Chưa có sản phẩm nào trong hệ thống</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Dữ liệu sản phẩm đang được cập nhật từ máy chủ Firestore.
+                </p>
+              </div>
+            )}
 
             <div className="mt-10 text-center">
               <button

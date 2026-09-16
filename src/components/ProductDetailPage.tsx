@@ -28,7 +28,7 @@ import {
   CATEGORY_TO_PATH, 
   navigateTo 
 } from "../utils/routes";
-import { LENS_OPTIONS } from "../data/mockProducts";
+import { LENS_OPTIONS } from "../constants/storeConfig";
 import { ProductCard } from "./ProductCard";
 import { getProductRepresentativeImage, DEFAULT_PRODUCT_FALLBACK_IMAGE } from "../utils/productUtils";
 

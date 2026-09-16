@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Camera, Sparkles, ChevronRight, Shield, Award, Clock, RefreshCw, Eye, ArrowRight, Check, Calendar, MapPin, Phone } from "lucide-react";
 import { ProductCategory, BannerSlide } from "../types";
-import { INITIAL_BANNER_SLIDES, DEFAULT_FALLBACK_BANNER } from "../data/mockBanners";
 
 interface HeroBannerProps {
   slides?: BannerSlide[];
@@ -13,39 +12,39 @@ interface HeroBannerProps {
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({
-  slides = INITIAL_BANNER_SLIDES,
+  slides = [],
   onOpenTryOn,
   onOpenFaceAdvisor,
   onOpenLensGuide,
   onSelectCategory,
   onOpenStores,
 }) => {
-  const activeSlides = (slides && Array.isArray(slides) && slides.length > 0) 
-    ? slides.filter(s => s && s.isActive !== false)
-    : [];
-
-  const validSlides = activeSlides.length > 0 
-    ? activeSlides 
-    : (INITIAL_BANNER_SLIDES && INITIAL_BANNER_SLIDES.length > 0 ? INITIAL_BANNER_SLIDES : [DEFAULT_FALLBACK_BANNER]);
+  const activeSlides = (Array.isArray(slides) ? slides : []).filter(
+    (s) => s && s.isActive !== false
+  );
 
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Keep index within bounds if slide count changes
   useEffect(() => {
-    if (currentSlide >= validSlides.length) {
+    if (currentSlide >= activeSlides.length) {
       setCurrentSlide(0);
     }
-  }, [validSlides.length, currentSlide]);
+  }, [activeSlides.length, currentSlide]);
 
   useEffect(() => {
-    if (validSlides.length <= 1) return;
+    if (activeSlides.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % validSlides.length);
+      setCurrentSlide((prev) => (prev + 1) % activeSlides.length);
     }, 7000);
     return () => clearInterval(timer);
-  }, [validSlides.length]);
+  }, [activeSlides.length]);
 
-  const slide = validSlides[currentSlide] || validSlides[0] || DEFAULT_FALLBACK_BANNER;
+  if (!activeSlides || activeSlides.length === 0) {
+    return null;
+  }
+
+  const slide = activeSlides[currentSlide] || activeSlides[0];
 
   if (!slide) {
     return null;
@@ -204,9 +203,9 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           </div>
 
           {/* Slide Indicator dots */}
-          {validSlides.length > 1 && (
+          {activeSlides.length > 1 && (
             <div className="absolute top-6 right-6 z-20 flex items-center gap-1.5 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-100 shadow-xs">
-              {validSlides.map((_, idx) => (
+              {activeSlides.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentSlide(idx)}

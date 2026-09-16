@@ -19,7 +19,6 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { ProductCategory, GenderTarget, LensBrandCategory } from "../types";
-import { INITIAL_LENS_BRANDS } from "../data/mockLensBrands";
 
 interface HeaderProps {
   favoritesCount: number;
@@ -67,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
   isLensArticlesActive = false,
   onOpenProducts,
   isProductsActive = false,
-  lensBrands = INITIAL_LENS_BRANDS,
+  lensBrands = [],
   onSelectLensBrand,
   selectedLensBrandSlug,
   searchQuery,

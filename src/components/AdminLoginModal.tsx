@@ -12,6 +12,7 @@ import {
   Eye,
   EyeOff
 } from "lucide-react";
+import { verifyAdminLogin } from "../firebase";
 
 interface AdminLoginModalProps {
   isOpen: boolean;
@@ -32,28 +33,32 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    setTimeout(() => {
-      // Check credentials: user is admin and pass is matkinh123 (or email match)
-      const validUser = (username.trim().toLowerCase() === "admin" || username.trim().toLowerCase() === "matkinhsaigonone@gmail.com");
-      const validPass = (password === "matkinh123" || password === "admin123");
+    try {
+      // Xác thực trực tiếp qua cơ sở dữ liệu Firestore
+      const result = await verifyAdminLogin(username, password);
 
-      if (validUser && validPass) {
+      if (result.success && result.user) {
         setIsLoading(false);
         try {
           sessionStorage.setItem("saigonone_admin_authenticated", "true");
-          sessionStorage.setItem("saigonone_admin_user", username);
+          sessionStorage.setItem("saigonone_admin_user", result.user.username);
+          sessionStorage.setItem("saigonone_admin_role", result.user.role);
+          sessionStorage.setItem("saigonone_admin_name", result.user.fullName);
         } catch (e) {}
         onLoginSuccess();
       } else {
         setIsLoading(false);
-        setError("Tên đăng nhập hoặc mật khẩu không chính xác. Mặc định là: admin / matkinh123");
+        setError(result.message || "Tên đăng nhập hoặc mật khẩu không chính xác.");
       }
-    }, 400);
+    } catch (err: any) {
+      setIsLoading(false);
+      setError("Không thể kết nối đến máy chủ xác thực Firestore: " + (err?.message || "Vui lòng thử lại sau."));
+    }
   };
 
   const handleQuickFill = () => {
@@ -70,7 +75,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         <div className="bg-slate-900 px-6 py-6 text-white text-center relative border-b border-slate-800">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -83,7 +88,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             Đăng Nhập Quản Trị Hệ Thống
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Sài Gòn One Eyewear • Bảng điều khiển Admin
+            Sài Gòn One Eyewear • Xác thực trực tiếp từ Firestore
           </p>
         </div>
 
@@ -94,15 +99,18 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           <div className="p-3.5 bg-blue-50/80 border border-blue-100 rounded-xl text-xs text-blue-900 flex items-start gap-2.5">
             <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <span className="font-semibold">Tài khoản mặc định:</span>
-              <div className="mt-1 flex items-center justify-between text-slate-700">
-                <span>User: <strong className="text-blue-700 font-mono">admin</strong> • Pass: <strong className="text-blue-700 font-mono">matkinh123</strong></span>
+              <span className="font-semibold">Xác thực bảo mật Firestore:</span>
+              <p className="text-[11px] text-slate-600 mt-0.5">
+                Mỗi tài khoản quản trị viên có mật khẩu riêng lưu trong collection <strong className="font-mono text-blue-700">admins</strong>.
+              </p>
+              <div className="mt-2 pt-2 border-t border-blue-100/80 flex items-center justify-between text-slate-700">
+                <span>Tài khoản gốc: <strong className="text-blue-700 font-mono">admin</strong></span>
                 <button
                   type="button"
                   onClick={handleQuickFill}
-                  className="text-blue-600 hover:underline font-semibold text-[11px]"
+                  className="text-blue-600 hover:underline font-semibold text-[11px] cursor-pointer"
                 >
-                  Tự điền
+                  Điền tài khoản gốc
                 </button>
               </div>
             </div>

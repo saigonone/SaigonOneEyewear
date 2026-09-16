@@ -14,7 +14,7 @@ import {
   FileText
 } from "lucide-react";
 import { CartItem } from "../types";
-import { PROMO_CODES } from "../data/mockProducts";
+import { PROMO_CODES } from "../constants/storeConfig";
 
 interface CartDrawerProps {
   isOpen: boolean;

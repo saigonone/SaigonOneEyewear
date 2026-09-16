@@ -121,7 +121,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
               <span>Trang Chủ</span>
             </button>
             <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-            <span className="text-slate-900 font-bold">Cẩm Nang & Tin Tức Thị Lực</span>
+            <span className="text-slate-900 font-bold">Cẩm Nang & Tin Tức</span>
           </nav>
           
           <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500">
@@ -142,9 +142,7 @@ export const ArticlesPage: React.FC<ArticlesPageProps> = ({
             
             <h1 className="text-[38px] font-black tracking-tight text-white leading-tight">
               Cẩm Nang & Tin Tức <br className="hidden sm:inline" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-amber-300">
-                Thị Lực Saigon One
-              </span>
+          
             </h1>
             
             <p className="mt-4 text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">

@@ -50,7 +50,9 @@ import {
   ListOrdered,
   Type,
   Wand2,
-  Download
+  Download,
+  EyeOff,
+  KeyRound
 } from "lucide-react";
 import { 
   Product, 
@@ -90,6 +92,7 @@ import {
   deleteProductCategoryFromFirebase,
   getAdminsFromFirebase,
   addAdminToFirebase,
+  updateAdminInFirebase,
   deleteAdminFromFirebase,
   getBannersFromFirebase,
   getAppointmentsFromFirebase,
@@ -346,7 +349,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newAdminUser, setNewAdminUser] = useState("");
   const [newAdminFullName, setNewAdminFullName] = useState("");
   const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [showNewAdminPassword, setShowNewAdminPassword] = useState(false);
   const [newAdminRole, setNewAdminRole] = useState<"super_admin" | "admin" | "editor" | "technician">("admin");
+
+  // Admin Password Management State
+  const [showPasswordId, setShowPasswordId] = useState<string | null>(null);
+  const [changePassAdmin, setChangePassAdmin] = useState<AdminUser | null>(null);
+  const [newPasswordVal, setNewPasswordVal] = useState("");
+  const [showChangePasswordVal, setShowChangePasswordVal] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   // Load all initial data from Firebase
   const loadData = async () => {
@@ -1021,22 +1033,80 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleSaveAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAdminUser.trim()) return;
+    const cleanUser = newAdminUser.trim().toLowerCase();
+    const cleanPass = newAdminPassword.trim();
+
+    if (!cleanUser) {
+      alert("Vui lòng nhập tên đăng nhập!");
+      return;
+    }
+
+    if (!cleanPass || cleanPass.length < 6) {
+      alert("Mật khẩu là bắt buộc và phải có ít nhất 6 ký tự!");
+      return;
+    }
+
+    if (admins.some(a => (a.username || "").toLowerCase() === cleanUser)) {
+      alert(`Tên đăng nhập "${cleanUser}" đã tồn tại trên hệ thống. Vui lòng chọn tên khác!`);
+      return;
+    }
+
     const adm: AdminUser = {
       id: `adm-${Date.now()}`,
-      username: newAdminUser.trim().toLowerCase(),
-      fullName: newAdminFullName || newAdminUser,
-      email: newAdminEmail || `${newAdminUser}@saigonone.vn`,
+      username: cleanUser,
+      fullName: newAdminFullName.trim() || cleanUser,
+      email: newAdminEmail.trim() || `${cleanUser}@saigonone.vn`,
+      password: cleanPass,
       role: newAdminRole,
       createdAt: new Date().toISOString(),
       isActive: true,
     };
-    await addAdminToFirebase(adm);
-    setAdmins(prev => [...prev, adm]);
-    setShowAddAdminModal(false);
-    setNewAdminUser("");
-    setNewAdminFullName("");
-    setNewAdminEmail("");
+
+    const ok = await addAdminToFirebase(adm);
+    if (ok) {
+      setAdmins(prev => [...prev, adm]);
+      setShowAddAdminModal(false);
+      setNewAdminUser("");
+      setNewAdminFullName("");
+      setNewAdminEmail("");
+      setNewAdminPassword("");
+      setShowNewAdminPassword(false);
+    } else {
+      alert("Có lỗi khi lưu tài khoản vào Firestore. Vui lòng thử lại!");
+    }
+  };
+
+  const handleOpenChangePassword = (adm: AdminUser) => {
+    setChangePassAdmin(adm);
+    setNewPasswordVal("");
+    setShowChangePasswordVal(false);
+  };
+
+  const handleSaveChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!changePassAdmin) return;
+    const cleanPass = newPasswordVal.trim();
+    if (!cleanPass || cleanPass.length < 6) {
+      alert("Mật khẩu mới phải có tối thiểu 6 ký tự!");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    const updatedAdmin: AdminUser = {
+      ...changePassAdmin,
+      password: cleanPass,
+    };
+
+    const ok = await updateAdminInFirebase(updatedAdmin);
+    setIsUpdatingPassword(false);
+
+    if (ok) {
+      setAdmins(prev => prev.map(a => a.id === updatedAdmin.id ? updatedAdmin : a));
+      setChangePassAdmin(null);
+      setNewPasswordVal("");
+    } else {
+      alert("Có lỗi khi cập nhật mật khẩu trên Firestore. Vui lòng thử lại!");
+    }
   };
 
   const handleRequestDeleteAdmin = (adm: AdminUser) => {
@@ -1891,8 +1961,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
 
                       <div className="font-bold text-slate-900 text-base">{adm.fullName}</div>
-                      <div className="text-xs font-mono text-blue-600 font-semibold">User: {adm.username}</div>
-                      <div className="text-xs text-slate-400 mt-1">{adm.email}</div>
+                      <div className="text-xs font-mono text-blue-600 font-semibold mt-0.5">User: @{adm.username}</div>
+                      <div className="text-xs text-slate-400 mt-1 truncate">{adm.email}</div>
+
+                      <div className="mt-3.5 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 text-slate-600 font-mono text-[11px]">
+                          <KeyRound className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="font-semibold">
+                            {adm.password ? (showPasswordId === adm.id ? adm.password : "••••••••") : "Mật khẩu mặc định"}
+                          </span>
+                          {adm.password && (
+                            <button
+                              type="button"
+                              onClick={() => setShowPasswordId(showPasswordId === adm.id ? null : adm.id)}
+                              className="text-slate-400 hover:text-slate-700 ml-1 p-0.5 transition-colors cursor-pointer"
+                              title={showPasswordId === adm.id ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                            >
+                              {showPasswordId === adm.id ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenChangePassword(adm)}
+                          className="text-blue-600 hover:text-blue-800 font-semibold text-[11px] hover:underline cursor-pointer"
+                        >
+                          Đổi mật khẩu
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -3597,12 +3694,46 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               <div>
+                <label className="block font-semibold text-slate-700 mb-1">Mật Khẩu (Password) *</label>
+                <div className="relative">
+                  <input
+                    type={showNewAdminPassword ? "text" : "password"}
+                    required
+                    minLength={6}
+                    value={newAdminPassword}
+                    onChange={(e) => setNewAdminPassword(e.target.value)}
+                    placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)..."
+                    className="w-full pl-3 pr-9 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewAdminPassword(!showNewAdminPassword)}
+                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showNewAdminPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Lưu trực tiếp vào document của tài khoản trong collection admins.</p>
+              </div>
+
+              <div>
                 <label className="block font-semibold text-slate-700 mb-1">Họ và Tên</label>
                 <input
                   type="text"
                   value={newAdminFullName}
                   onChange={(e) => setNewAdminFullName(e.target.value)}
                   placeholder="Nguyễn Văn A..."
+                  className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Email Quản Trị</label>
+                <input
+                  type="email"
+                  value={newAdminEmail}
+                  onChange={(e) => setNewAdminEmail(e.target.value)}
+                  placeholder="admin@saigonone.vn..."
                   className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs"
                 />
               </div>
@@ -3624,7 +3755,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setShowAddAdminModal(false)}
+                  onClick={() => {
+                    setShowAddAdminModal(false);
+                    setNewAdminPassword("");
+                    setShowNewAdminPassword(false);
+                  }}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold"
                 >
                   Hủy
@@ -3634,6 +3769,71 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold"
                 >
                   Tạo Tài Khoản
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* MODAL: ĐỔI MẬT KHẨU QUẢN TRỊ VIÊN */}
+      {/* ========================================== */}
+      {changePassAdmin && (
+        <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl max-w-sm w-full p-6">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+              <div>
+                <h3 className="font-bold text-slate-900 text-base">Đổi Mật Khẩu Quản Trị</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">Tài khoản: @{changePassAdmin.username} ({changePassAdmin.fullName})</p>
+              </div>
+              <button 
+                onClick={() => setChangePassAdmin(null)} 
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveChangePassword} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Mật Khẩu Mới *</label>
+                <div className="relative">
+                  <input
+                    type={showChangePasswordVal ? "text" : "password"}
+                    required
+                    minLength={6}
+                    value={newPasswordVal}
+                    onChange={(e) => setNewPasswordVal(e.target.value)}
+                    placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)..."
+                    className="w-full pl-3 pr-9 py-2 bg-slate-50 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowChangePasswordVal(!showChangePasswordVal)}
+                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showChangePasswordVal ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Mật khẩu mới sẽ được cập nhật trực tiếp vào Firestore.</p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  disabled={isUpdatingPassword}
+                  onClick={() => setChangePassAdmin(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingPassword}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isUpdatingPassword ? <span>Đang lưu...</span> : <span>Lưu Mật Khẩu</span>}
                 </button>
               </div>
             </form>

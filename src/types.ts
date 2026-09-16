@@ -224,6 +224,7 @@ export interface AdminUser {
   username: string;
   fullName: string;
   email: string;
+  password?: string;
   role: "super_admin" | "admin" | "editor" | "technician";
   createdAt: string;
   lastLogin?: string;
