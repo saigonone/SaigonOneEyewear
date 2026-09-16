@@ -31,10 +31,11 @@ interface AdminBannerManagerProps {
 }
 
 export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
-  banners,
+  banners = [],
   onUpdateBanners
 }) => {
   const [showModal, setShowModal] = useState<boolean>(false);
+
   const [editingBanner, setEditingBanner] = useState<BannerSlide | null>(null);
   const [bannerToDelete, setBannerToDelete] = useState<BannerSlide | null>(null);
 
@@ -242,133 +243,147 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
 
       {/* Banner Slides List */}
       <div className="grid grid-cols-1 gap-4">
-        {banners.map((slide, idx) => (
-          <div
-            key={slide.id}
-            className={`bg-white rounded-2xl border transition-all p-5 shadow-2xs flex flex-col lg:flex-row gap-5 items-start lg:items-center justify-between ${
-              slide.isActive !== false ? "border-gray-200" : "border-amber-200/80 bg-amber-50/20 opacity-75"
-            }`}
-          >
-            {/* Left: Thumbnail & Order */}
-            <div className="flex items-center gap-4 w-full lg:w-auto">
-              <div className="flex flex-col items-center gap-1 shrink-0">
-                <button
-                  disabled={idx === 0}
-                  onClick={() => handleMoveOrder(idx, "up")}
-                  className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                  title="Di chuyển lên đầu"
-                >
-                  <ArrowUp className="w-3.5 h-3.5" />
-                </button>
-                <span className="w-6 h-6 rounded-full bg-slate-900 text-white font-mono text-[11px] font-bold flex items-center justify-center shadow-xs">
-                  #{idx + 1}
-                </span>
-                <button
-                  disabled={idx === banners.length - 1}
-                  onClick={() => handleMoveOrder(idx, "down")}
-                  className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                  title="Di chuyển xuống dưới"
-                >
-                  <ArrowDown className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Image Preview */}
-              <div className="relative w-28 sm:w-36 h-20 sm:h-24 rounded-xl overflow-hidden bg-slate-100 border border-gray-200 shrink-0 shadow-2xs group">
-                <img
-                  src={slide.image || "https://images.unsplash.com/photo-1577803645773-f96470509666?auto=format&fit=crop&w=1200&q=85"}
-                  alt={slide.titleLine2}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                {slide.brandNote && (
-                  <span className="absolute bottom-1 left-1 right-1 text-[9px] text-white truncate px-1 font-medium">
-                    {slide.brandNote}
-                  </span>
-                )}
-              </div>
-
-              {/* Title & Info */}
-              <div className="space-y-1 min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold text-[10px] uppercase tracking-wider border border-blue-200/60">
-                    {slide.collectionTag}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-[10px]">
-                    Danh mục: {slide.category}
-                  </span>
-                  {slide.isActive !== false ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                      <Check className="w-3 h-3" /> Đang hiển thị
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                      <EyeOff className="w-3 h-3" /> Đang ẩn
-                    </span>
-                  )}
-                </div>
-
-                <h4 className="text-base font-extrabold text-slate-900 tracking-tight line-clamp-1">
-                  {slide.titleLine1} <span className="text-blue-600">{slide.titleLine2}</span>
-                </h4>
-
-                <p className="text-xs text-slate-500 line-clamp-2 max-w-xl">
-                  {slide.desc}
-                </p>
-
-                <div className="flex items-center gap-3 pt-1 text-[11px] text-slate-600 flex-wrap">
-                  <span className="font-semibold text-slate-900">
-                    Nút: <span className="text-blue-600 underline font-bold">{slide.buttonText}</span>
-                  </span>
-                  <span>•</span>
-                  <span>Tính năng: <strong className="text-slate-800">{slide.featureBadge}</strong></span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Actions */}
-            <div className="flex items-center gap-2 shrink-0 self-end lg:self-center pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-100 w-full lg:w-auto justify-end">
-              <button
-                onClick={() => handleToggleActive(slide)}
-                className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  slide.isActive !== false
-                    ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                    : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
-                }`}
-                title={slide.isActive !== false ? "Tắt hiển thị slide này" : "Bật hiển thị slide này"}
-              >
-                {slide.isActive !== false ? (
-                  <>
-                    <EyeOff className="w-4 h-4 text-slate-500" />
-                    <span className="hidden sm:inline">Ẩn</span>
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4" />
-                    <span className="hidden sm:inline">Hiển Thị</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={() => handleOpenEdit(slide)}
-                className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Sửa Banner</span>
-              </button>
-
-              <button
-                onClick={() => handleRequestDeleteBanner(slide)}
-                className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
-                title="Xóa banner"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+        {(!banners || banners.length === 0) ? (
+          <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-8 text-center text-slate-500">
+            <p className="text-sm font-medium">Chưa có banner nào được thiết lập.</p>
+            <p className="text-xs text-slate-400 mt-1">Bấm "+ Thêm Banner Mới" ở góc trên bên phải để tạo banner hiển thị trên trang chủ.</p>
           </div>
-        ))}
+        ) : (
+          banners.map((slide, idx) => {
+            if (!slide) return null;
+            return (
+              <div
+                key={slide.id || idx}
+                className={`bg-white rounded-2xl border transition-all p-5 shadow-2xs flex flex-col lg:flex-row gap-5 items-start lg:items-center justify-between ${
+                  slide.isActive !== false ? "border-gray-200" : "border-amber-200/80 bg-amber-50/20 opacity-75"
+                }`}
+              >
+                {/* Left: Thumbnail & Order */}
+                <div className="flex items-center gap-4 w-full lg:w-auto">
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    <button
+                      disabled={idx === 0}
+                      onClick={() => handleMoveOrder(idx, "up")}
+                      className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                      title="Di chuyển lên đầu"
+                    >
+                      <ArrowUp className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-6 h-6 rounded-full bg-slate-900 text-white font-mono text-[11px] font-bold flex items-center justify-center shadow-xs">
+                      #{idx + 1}
+                    </span>
+                    <button
+                      disabled={idx === banners.length - 1}
+                      onClick={() => handleMoveOrder(idx, "down")}
+                      className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                      title="Di chuyển xuống dưới"
+                    >
+                      <ArrowDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Image Preview */}
+                  <div className="relative w-28 sm:w-36 h-20 sm:h-24 rounded-xl overflow-hidden bg-slate-100 border border-gray-200 shrink-0 shadow-2xs group">
+                    <img
+                      src={slide.image || "https://images.unsplash.com/photo-1577803645773-f96470509666?auto=format&fit=crop&w=1200&q=85"}
+                      alt={slide.titleLine2 || "Banner"}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    {slide.brandNote && (
+                      <span className="absolute bottom-1 left-1 right-1 text-[9px] text-white truncate px-1 font-medium">
+                        {slide.brandNote}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Title & Info */}
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold text-[10px] uppercase tracking-wider border border-blue-200/60">
+                        {slide.collectionTag || "BỘ SƯU TẬP"}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-[10px]">
+                        Danh mục: {slide.category || "all"}
+                      </span>
+                      {slide.isActive !== false ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          <Check className="w-3 h-3" /> Đang hiển thị
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                          <EyeOff className="w-3 h-3" /> Đang ẩn
+                        </span>
+                      )}
+                    </div>
+
+                    <h4 className="text-base font-extrabold text-slate-900 tracking-tight line-clamp-1">
+                      {slide.titleLine1 || ""} <span className="text-blue-600">{slide.titleLine2 || ""}</span>
+                    </h4>
+
+                    <p className="text-xs text-slate-500 line-clamp-2 max-w-xl">
+                      {slide.desc || ""}
+                    </p>
+
+                    <div className="flex items-center gap-3 pt-1 text-[11px] text-slate-600 flex-wrap">
+                      <span className="font-semibold text-slate-900">
+                        Nút: <span className="text-blue-600 underline font-bold">{slide.buttonText || "Chi tiết"}</span>
+                      </span>
+                      {slide.featureBadge && (
+                        <>
+                          <span>•</span>
+                          <span>Tính năng: <strong className="text-slate-800">{slide.featureBadge}</strong></span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Actions */}
+                <div className="flex items-center gap-2 shrink-0 self-end lg:self-center pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-100 w-full lg:w-auto justify-end">
+                  <button
+                    onClick={() => handleToggleActive(slide)}
+                    className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                      slide.isActive !== false
+                        ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                        : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
+                    }`}
+                    title={slide.isActive !== false ? "Tắt hiển thị slide này" : "Bật hiển thị slide này"}
+                  >
+                    {slide.isActive !== false ? (
+                      <>
+                        <EyeOff className="w-4 h-4 text-slate-500" />
+                        <span className="hidden sm:inline">Ẩn</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-4 h-4" />
+                        <span className="hidden sm:inline">Hiển Thị</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenEdit(slide)}
+                    className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Sửa Banner</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleRequestDeleteBanner(slide)}
+                    className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                    title="Xóa banner"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* ======================================================== */}

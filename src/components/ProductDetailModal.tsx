@@ -28,9 +28,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   onOpenTryOn,
 }) => {
-  const representativeImg = getProductRepresentativeImage(product);
+  const representativeImg = product ? (getProductRepresentativeImage(product) || DEFAULT_PRODUCT_FALLBACK_IMAGE) : DEFAULT_PRODUCT_FALLBACK_IMAGE;
   const [selectedColor, setSelectedColor] = useState<ProductColor>(() => {
-    return initialColor || product.colors?.[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: representativeImg };
+    return initialColor || product?.colors?.[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: representativeImg };
   });
   const [selectedImage, setSelectedImage] = useState<string>(() => {
     return initialColor?.image || representativeImg;
@@ -38,13 +38,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   // Đồng bộ ảnh và màu sắc đại diện khi product hoặc initialColor thay đổi
   useEffect(() => {
-    const freshThumb = getProductRepresentativeImage(product);
-    const activeCol = initialColor || product.colors?.[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: freshThumb };
+    if (!product) return;
+    const freshThumb = getProductRepresentativeImage(product) || DEFAULT_PRODUCT_FALLBACK_IMAGE;
+    const activeCol = initialColor || product?.colors?.[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: freshThumb };
     setSelectedColor(activeCol);
     setSelectedImage(initialColor?.image || activeCol?.image || freshThumb);
   }, [product, initialColor]);
 
-  const getCategoryLabel = (cat: string) => {
+  if (!product) {
+    return null;
+  }
+
+  const getCategoryLabel = (cat?: string) => {
+
     switch (cat) {
       case "gong-kinh-can":
         return "GỌNG KÍNH";

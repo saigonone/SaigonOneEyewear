@@ -130,16 +130,19 @@ export const LensArticlesPage: React.FC<LensArticlesPageProps> = ({
   };
 
   const getAssignedBrandInfo = (art: Article) => {
+    if (!art) return null;
+    const brandsList = Array.isArray(lensBrands) ? lensBrands : [];
     if (!art.lensBrandId) {
       // Try to find by title or tags
-      const found = lensBrands.find(b => 
-        (art.title && art.title.toLowerCase().includes(b.name.toLowerCase())) ||
-        (Array.isArray(art.tags) && art.tags.some(t => t.toLowerCase().includes(b.name.toLowerCase()) || (b.brandKey && t.toLowerCase() === b.brandKey.toLowerCase())))
+      const found = brandsList.find(b => 
+        b && ((art.title && b.name && art.title.toLowerCase().includes(b.name.toLowerCase())) ||
+        (Array.isArray(art.tags) && b.name && art.tags.some(t => t && (t.toLowerCase().includes(b.name.toLowerCase()) || (b.brandKey && t.toLowerCase() === b.brandKey.toLowerCase())))))
       );
       return found || null;
     }
-    return lensBrands.find(b => b.id === art.lensBrandId || b.slug === art.lensBrandId || b.brandKey === art.lensBrandId) || null;
+    return brandsList.find(b => b && (b.id === art.lensBrandId || b.slug === art.lensBrandId || (b.brandKey && b.brandKey === art.lensBrandId))) || null;
   };
+
 
   const featureOptions = [
     { id: "all", label: "Tất Cả Tính Năng" },

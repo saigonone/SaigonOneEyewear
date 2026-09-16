@@ -82,7 +82,7 @@ export const realtimeBroadcast = typeof window !== "undefined" && "BroadcastChan
   ? new BroadcastChannel("saigonone_realtime_sync") 
   : null;
 
-export function notifyCrossTabUpdate(entity: "products" | "articles" | "lens_articles" | "banners" | "all") {
+export function notifyCrossTabUpdate(entity: "products" | "articles" | "lens_articles" | "lens_brands" | "banners" | "all") {
   try {
     realtimeBroadcast?.postMessage({ type: "DATA_UPDATED", entity, timestamp: Date.now() });
   } catch (e) {}

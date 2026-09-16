@@ -47,7 +47,7 @@ interface ProductDetailPageProps {
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   product,
   initialColor,
-  allProducts,
+  allProducts = [],
   onGoBack,
   onGoHome,
   onSelectCategory,
@@ -55,24 +55,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   onOpenTryOn,
   onOpenStores,
 }) => {
-  const representativeImg = getProductRepresentativeImage(product);
-  const [selectedColor, setSelectedColor] = useState<ProductColor>(
-    initialColor || product.colors?.[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: representativeImg }
-  );
-  const [selectedImage, setSelectedImage] = useState<string>(
-    initialColor?.image || representativeImg
-  );
+  const representativeImg = product ? (getProductRepresentativeImage(product) || DEFAULT_PRODUCT_FALLBACK_IMAGE) : DEFAULT_PRODUCT_FALLBACK_IMAGE;
+  const [selectedColor, setSelectedColor] = useState<ProductColor>(() => {
+    return initialColor || product?.colors?.[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: representativeImg };
+  });
+  const [selectedImage, setSelectedImage] = useState<string>(() => {
+    return initialColor?.image || representativeImg;
+  });
   const [copiedLink, setCopiedLink] = useState(false);
   const [selectedLens, setSelectedLens] = useState<LensOption | null>(null);
 
   // Sync color/image when product prop changes
   useEffect(() => {
-    const freshThumb = getProductRepresentativeImage(product);
-    const firstCol = initialColor || product.colors?.[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: freshThumb };
+    if (!product) return;
+    const freshThumb = getProductRepresentativeImage(product) || DEFAULT_PRODUCT_FALLBACK_IMAGE;
+    const firstCol = initialColor || product?.colors?.[0] || { name: "Màu Tiêu Chuẩn", hex: "#1e2022", image: freshThumb };
     setSelectedColor(firstCol);
     setSelectedImage(initialColor?.image || firstCol?.image || freshThumb);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [product, initialColor]);
+
 
   const getCategoryLabel = (cat: ProductCategory) => {
     switch (cat) {
@@ -154,10 +156,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     window.open("https://www.facebook.com/SaigonOneEyewear/", "_blank", "noopener,noreferrer");
   };
 
+  if (!product) {
+    return null;
+  }
+
   // Related products from same category or brand
-  const relatedProducts = allProducts
+  const relatedProducts = (allProducts || [])
     .filter((p) => {
-      if (p.id === product.id) return false;
+      if (!p || p.id === product.id) return false;
       const isBrandMatch = p.brand === product.brand;
       const productCategories = product.categories && product.categories.length > 0 ? product.categories : [product.category];
       const pCategories = p.categories && p.categories.length > 0 ? p.categories : [p.category];
@@ -168,10 +174,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   const fallbackRelated = relatedProducts.length > 0 
     ? relatedProducts 
-    : allProducts.filter((p) => p.id !== product.id).slice(0, 4);
+    : (allProducts || []).filter((p) => p && p.id !== product.id).slice(0, 4);
 
   const currentSlug = getProductSlug(product);
-  const categoryPath = CATEGORY_TO_PATH[product.category] || "/san-pham";
+  const categoryPath = (product.category && CATEGORY_TO_PATH[product.category]) || "/san-pham";
+
 
   return (
     <div className="bg-[#fcfbf9] min-h-screen text-slate-800 pb-20 animate-in fade-in duration-300">

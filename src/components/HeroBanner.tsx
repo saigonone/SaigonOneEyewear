@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Camera, Sparkles, ChevronRight, Shield, Award, Clock, RefreshCw, Eye, ArrowRight, Check, Calendar, MapPin, Phone } from "lucide-react";
 import { ProductCategory, BannerSlide } from "../types";
-import { INITIAL_BANNER_SLIDES } from "../data/mockBanners";
+import { INITIAL_BANNER_SLIDES, DEFAULT_FALLBACK_BANNER } from "../data/mockBanners";
 
 interface HeroBannerProps {
   slides?: BannerSlide[];
@@ -20,11 +20,13 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   onSelectCategory,
   onOpenStores,
 }) => {
-  const activeSlides = (slides && slides.length > 0) 
-    ? slides.filter(s => s.isActive !== false)
-    : INITIAL_BANNER_SLIDES;
+  const activeSlides = (slides && Array.isArray(slides) && slides.length > 0) 
+    ? slides.filter(s => s && s.isActive !== false)
+    : [];
 
-  const validSlides = activeSlides.length > 0 ? activeSlides : INITIAL_BANNER_SLIDES;
+  const validSlides = activeSlides.length > 0 
+    ? activeSlides 
+    : (INITIAL_BANNER_SLIDES && INITIAL_BANNER_SLIDES.length > 0 ? INITIAL_BANNER_SLIDES : [DEFAULT_FALLBACK_BANNER]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -43,10 +45,26 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     return () => clearInterval(timer);
   }, [validSlides.length]);
 
-  const slide = validSlides[currentSlide] || validSlides[0];
+  const slide = validSlides[currentSlide] || validSlides[0] || DEFAULT_FALLBACK_BANNER;
+
+  if (!slide) {
+    return null;
+  }
+
+  const collectionTag = slide.collectionTag || "MẮT KÍNH SÀI GÒN ONE";
+  const titleLine1 = slide.titleLine1 || "Mắt Kính Sài Gòn One";
+  const titleLine2 = slide.titleLine2 || "Chính Hãng 100%";
+  const desc = slide.desc || "Trải nghiệm đo khám thị lực chuẩn y khoa và cắt kính lấy ngay 15 phút tại 178 Phan Đăng Lưu, Phú Nhuận.";
+  const buttonText = slide.buttonText || "Khám Phá Bộ Sưu Tập";
+  const secondaryButtonText = slide.secondaryButtonText || "Đặt Lịch Khám Mắt";
+  const category = (slide.category as ProductCategory) || "all";
+  const image = slide.image || "https://images.unsplash.com/photo-1577803645773-f96470509666?auto=format&fit=crop&w=1200&q=85";
+  const brandNote = slide.brandNote || "";
+  const featureBadge = slide.featureBadge || "Chính Hãng 100%";
+  const featureDesc = slide.featureDesc || "Bảo hành trọn đời, nắn chỉnh gọng và thay ve ốc 0đ.";
 
   const handleSecondaryButtonClick = () => {
-    const text = (slide.secondaryButtonText || "").toLowerCase();
+    const text = (secondaryButtonText || "").toLowerCase();
     if (text.includes("đặt lịch") || text.includes("liên hệ") || text.includes("cửa hàng") || text.includes("tư vấn")) {
       if (onOpenStores) {
         onOpenStores();
@@ -67,7 +85,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   };
 
   const getSecondaryIcon = () => {
-    const text = (slide.secondaryButtonText || "").toLowerCase();
+    const text = (secondaryButtonText || "").toLowerCase();
     if (text.includes("đặt lịch") || text.includes("lịch")) {
       return <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />;
     }
@@ -93,29 +111,29 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           <div className="mb-3 flex items-center gap-3">
             <span className="w-10 h-[1.5px] bg-blue-600"></span>
             <span className="text-xs font-bold text-blue-600 uppercase tracking-[0.2em]">
-              {slide.collectionTag}
+              {collectionTag}
             </span>
           </div>
 
           {/* High Impact Editorial Headline - Refined Size */}
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-light leading-[1.15] mb-4 tracking-tight text-slate-900">
-            {slide.titleLine1} <br />
-            <span className="font-extrabold text-[#0f172a]">{slide.titleLine2}</span>
+            {titleLine1} <br />
+            <span className="font-extrabold text-[#0f172a]">{titleLine2}</span>
           </h1>
 
           {/* Refined Description */}
           <p className="text-slate-500 text-sm sm:text-base max-w-md mb-6 leading-relaxed">
-            {slide.desc}
+            {desc}
           </p>
 
           {/* Sleek Action Buttons - Luôn nằm 1 hàng trên Mobile & Desktop */}
           <div className="grid grid-cols-2 sm:flex sm:flex-row items-center gap-2 sm:gap-3.5 w-full max-w-md sm:max-w-none">
             <button
               id="btn-hero-explore-collection"
-              onClick={() => onSelectCategory(slide.category)}
+              onClick={() => onSelectCategory(category)}
               className="w-full sm:w-auto px-2.5 sm:px-7 py-3 sm:py-3.5 bg-[#0f172a] text-white text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-tight sm:tracking-wider rounded-xl hover:bg-blue-900 active:scale-95 transition-all duration-200 cursor-pointer shadow-md flex items-center justify-center gap-1.5 sm:gap-2"
             >
-              <span className="truncate">{slide.buttonText}</span>
+              <span className="truncate">{buttonText}</span>
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
             </button>
 
@@ -125,7 +143,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               className="w-full sm:w-auto px-2.5 sm:px-7 py-3 sm:py-3.5 border border-gray-200 text-slate-800 text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-tight sm:tracking-wider rounded-xl hover:bg-gray-50 hover:border-slate-400 active:scale-95 transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 bg-white shadow-2xs"
             >
               {getSecondaryIcon()}
-              <span className="truncate">{slide.secondaryButtonText}</span>
+              <span className="truncate">{secondaryButtonText}</span>
             </button>
           </div>
 
@@ -158,17 +176,17 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           {/* Main Visual Center Showcase */}
           <div className="relative z-10 w-full max-w-xl aspect-[16/10] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-white shadow-2xl border border-gray-100 p-2 group">
             <img
-              src={slide.image || "https://images.unsplash.com/photo-1577803645773-f96470509666?auto=format&fit=crop&w=1200&q=85"}
-              alt={slide.titleLine2}
+              src={image}
+              alt={titleLine2}
               className="w-full h-full object-cover rounded-xl transition-all duration-700 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 rounded-xl" />
             
             {/* Top Optical Brand Campaign Badge */}
-            {slide.brandNote && (
+            {brandNote && (
               <div className="absolute top-4 left-4 right-4 z-10 flex items-center gap-1.5 bg-slate-950/75 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20 text-white shadow-sm">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="text-[11px] font-medium tracking-wide truncate">{slide.brandNote}</span>
+                <span className="text-[11px] font-medium tracking-wide truncate">{brandNote}</span>
               </div>
             )}
           </div>
@@ -179,25 +197,27 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
               <span>Tính năng nổi bật</span>
             </div>
-            <div className="text-sm font-bold text-slate-900 mb-1">{slide.featureBadge}</div>
+            <div className="text-sm font-bold text-slate-900 mb-1">{featureBadge}</div>
             <div className="text-xs text-gray-500 leading-relaxed">
-              {slide.featureDesc}
+              {featureDesc}
             </div>
           </div>
 
           {/* Slide Indicator dots */}
-          <div className="absolute top-6 right-6 z-20 flex items-center gap-1.5 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-100 shadow-xs">
-            {validSlides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentSlide(idx)}
-                className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                  currentSlide === idx ? "w-6 bg-blue-600" : "w-2 bg-gray-300 hover:bg-gray-400"
-                }`}
-                aria-label={`Slide ${idx + 1}`}
-              />
-            ))}
-          </div>
+          {validSlides.length > 1 && (
+            <div className="absolute top-6 right-6 z-20 flex items-center gap-1.5 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-100 shadow-xs">
+              {validSlides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                    currentSlide === idx ? "w-6 bg-blue-600" : "w-2 bg-gray-300 hover:bg-gray-400"
+                  }`}
+                  aria-label={`Slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
 
         </div>
 
@@ -253,3 +273,4 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     </div>
   );
 };
+

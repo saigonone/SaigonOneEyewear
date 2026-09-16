@@ -52,7 +52,7 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
   // Scroll to top whenever article changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [article.id]);
+  }, [article?.id]);
 
   const handleShare = () => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -64,7 +64,8 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
 
   // Related articles in the same category or general
   const relatedArticles = useMemo(() => {
-    const published = allArticles.filter(a => a.id !== article.id && a.isPublished !== false);
+    if (!article) return [];
+    const published = (allArticles || []).filter(a => a && a.id !== article.id && a.isPublished !== false);
     const sameCategory = published.filter(a => (a.category || "").toLowerCase() === (article.category || "").toLowerCase());
     if (sameCategory.length >= 3) {
       return sameCategory.slice(0, 3);
@@ -74,15 +75,17 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
 
   // Most viewed articles
   const mostViewedArticles = useMemo(() => {
-    return allArticles
-      .filter(a => a.id !== article.id && a.isPublished !== false)
+    if (!article) return [];
+    return (allArticles || [])
+      .filter(a => a && a.id !== article.id && a.isPublished !== false)
       .sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0))
       .slice(0, 4);
   }, [allArticles, article]);
 
   // Previous and Next article navigation
   const { prevArticle, nextArticle } = useMemo(() => {
-    const published = allArticles.filter(a => a.isPublished !== false);
+    if (!article) return { prevArticle: null, nextArticle: null };
+    const published = (allArticles || []).filter(a => a && a.isPublished !== false);
     const currentIndex = published.findIndex(a => a.id === article.id);
     if (currentIndex === -1) return { prevArticle: null, nextArticle: null };
     return {
@@ -90,6 +93,11 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
       nextArticle: currentIndex < published.length - 1 ? published[currentIndex + 1] : null,
     };
   }, [allArticles, article]);
+
+  if (!article) {
+    return null;
+  }
+
 
   return (
     <div id="article-detail-page" className="min-h-screen bg-slate-50/50 pb-20">

@@ -37,8 +37,8 @@ interface LensBrandDetailProps {
 
 export const LensBrandDetail: React.FC<LensBrandDetailProps> = ({
   brand,
-  articles,
-  allBrands,
+  articles = [],
+  allBrands = [],
   onSelectBrand,
   onReadArticle,
   onSelectArticle,
@@ -50,7 +50,12 @@ export const LensBrandDetail: React.FC<LensBrandDetailProps> = ({
   onOpenLensGuide,
   onOpenLensArticles,
 }) => {
+  if (!brand) {
+    return null;
+  }
+
   const handleArticleClick = (art: Article) => {
+
     if (onSelectArticle) {
       onSelectArticle(art);
     } else if (onReadArticle) {

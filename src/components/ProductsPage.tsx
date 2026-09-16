@@ -79,10 +79,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
 
   // Helper tính số lượng sản phẩm theo từng danh mục
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: products.length };
+    const list = Array.isArray(products) ? products : [];
+    const counts: Record<string, number> = { all: list.length };
     categoriesList.forEach((c) => {
       if (c.id !== "all") {
-        counts[c.id] = products.filter((p) => p.category === c.id || (Array.isArray(p.categories) && p.categories.includes(c.id as ProductCategory))).length;
+        counts[c.id] = list.filter((p) => p && (p.category === c.id || (Array.isArray(p.categories) && p.categories.includes(c.id as ProductCategory)))).length;
       }
     });
     return counts;
@@ -90,7 +91,10 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
 
   // Bộ lọc sản phẩm
   const filteredProducts = useMemo(() => {
+    if (!Array.isArray(products)) return [];
     return products.filter((p) => {
+      if (!p) return false;
+
       // 1. Lọc theo Danh mục
       if (selectedCategory !== "all") {
         const inCat = p.category === selectedCategory || (Array.isArray(p.categories) && p.categories.includes(selectedCategory as ProductCategory));
@@ -115,13 +119,17 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
       }
 
       // 5. Lọc theo Dáng khuôn mặt
-      if (selectedFaceShapeFilter && !p.suitableFaceShapes.includes(selectedFaceShapeFilter)) {
-        return false;
+      if (selectedFaceShapeFilter) {
+        if (!Array.isArray(p.suitableFaceShapes) || !p.suitableFaceShapes.includes(selectedFaceShapeFilter)) {
+          return false;
+        }
       }
 
       // 6. Lọc sản phẩm yêu thích
-      if (showOnlyFavorites && !favoriteIds.includes(p.id)) {
-        return false;
+      if (showOnlyFavorites) {
+        if (!Array.isArray(favoriteIds) || !favoriteIds.includes(p.id)) {
+          return false;
+        }
       }
 
       // 7. Lọc theo Tìm kiếm
@@ -138,9 +146,12 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
 
       return true;
     }).sort((a, b) => {
-      if (sortBy === "price_asc") return a.price - b.price;
-      if (sortBy === "price_desc") return b.price - a.price;
-      if (sortBy === "rating") return b.rating - a.rating;
+      if (!a && !b) return 0;
+      if (!a) return 1;
+      if (!b) return -1;
+      if (sortBy === "price_asc") return (Number(a.price) || 0) - (Number(b.price) || 0);
+      if (sortBy === "price_desc") return (Number(b.price) || 0) - (Number(a.price) || 0);
+      if (sortBy === "rating") return (Number(b.rating) || 0) - (Number(a.rating) || 0);
       if (sortBy === "newest") return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
       return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
     });
@@ -156,6 +167,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
     searchQuery, 
     sortBy
   ]);
+
 
   const hasActiveFilters = 
     selectedCategory !== "all" ||

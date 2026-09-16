@@ -16,15 +16,15 @@ import { getArticleUrl } from "../utils/routes";
 import { sortArticlesByNewest } from "../utils/articleUtils";
 
 interface LatestArticlesSectionProps {
-  articles: Article[];
-  categories: ArticleCategory[];
+  articles?: Article[];
+  categories?: ArticleCategory[];
   onSelectArticle: (article: Article) => void;
   onOpenAllArticles?: () => void;
 }
 
 export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
-  articles,
-  categories,
+  articles = [],
+  categories = [],
   onSelectArticle,
   onOpenAllArticles,
 }) => {
@@ -41,7 +41,9 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
   };
 
   const generalCategories = useMemo(() => {
+    if (!Array.isArray(categories)) return [];
     return categories.filter(c => {
+      if (!c) return false;
       const name = (c.name || "").toLowerCase();
       const slug = (c.slug || "").toLowerCase();
       return !name.includes("tròng") && !slug.includes("trong-kinh");
@@ -50,24 +52,24 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
 
   // Sắp xếp toàn bộ bài viết xuất bản theo thứ tự MỚI NHẤT lên đầu tiên
   const publishedArticles = useMemo(() => {
-    const raw = (articles || []).filter(a => a && a.isPublished !== false && !isLensArticle(a));
+    const raw = (Array.isArray(articles) ? articles : []).filter(a => a && a.isPublished !== false && !isLensArticle(a));
     return sortArticlesByNewest(raw);
   }, [articles]);
 
   const filteredArticles = useMemo(() => {
     if (selectedCategory === "all") return publishedArticles;
-    return publishedArticles.filter(a => a.category === selectedCategory);
+    return publishedArticles.filter(a => a && a.category === selectedCategory);
   }, [publishedArticles, selectedCategory]);
 
   // Chọn bài viết tiêu điểm: ưu tiên bài mới nhất có cờ isFeatured, nếu không thì lấy bài mới nhất (phần tử đầu tiên sau khi đã sắp xếp)
   const featuredArticle = useMemo(() => {
-    return filteredArticles.find(a => a.isFeatured) || filteredArticles[0] || publishedArticles[0] || null;
+    return filteredArticles.find(a => a && a.isFeatured) || filteredArticles[0] || publishedArticles[0] || null;
   }, [filteredArticles, publishedArticles]);
   
   // 3 bài viết tiếp theo (theo thứ tự mới nhất, loại trừ bài tiêu điểm)
   const secondaryArticles = useMemo(() => {
     return filteredArticles
-      .filter(a => a.id !== featuredArticle?.id)
+      .filter(a => a && a.id !== featuredArticle?.id)
       .slice(0, 3);
   }, [filteredArticles, featuredArticle]);
 
@@ -75,28 +77,35 @@ export const LatestArticlesSection: React.FC<LatestArticlesSectionProps> = ({
   const filledSecondaryArticles = useMemo(() => {
     if (secondaryArticles.length >= 3) return secondaryArticles;
     const fallback = publishedArticles
-      .filter(a => a.id !== featuredArticle?.id && !secondaryArticles.some(s => s.id === a.id))
+      .filter(a => a && a.id !== featuredArticle?.id && !secondaryArticles.some(s => s && s.id === a.id))
       .slice(0, 3 - secondaryArticles.length);
     return [...secondaryArticles, ...fallback];
   }, [secondaryArticles, publishedArticles, featuredArticle]);
 
-  // 6 bài viết tiếp theo ở khung dưới (div:nth-of-type(3)), đảm bảo luôn xếp từ MỚI NHẤT xuống
+  // 6 bài viết tiếp theo ở khung dưới, đảm bảo luôn xếp từ MỚI NHẤT xuống
   const bottomArticles = useMemo(() => {
-    const topIds = new Set([featuredArticle?.id, ...filledSecondaryArticles.map(a => a.id)]);
-    const bottomCategoryArticles = filteredArticles.filter(a => !topIds.has(a.id));
+    const topIds = new Set([featuredArticle?.id, ...filledSecondaryArticles.map(a => a?.id)].filter(Boolean));
+    const bottomCategoryArticles = filteredArticles.filter(a => a && !topIds.has(a.id));
     if (bottomCategoryArticles.length >= 6) {
       return bottomCategoryArticles.slice(0, 6);
     }
-    const fallback = publishedArticles.filter(a => !topIds.has(a.id) && !bottomCategoryArticles.some(b => b.id === a.id));
+    const fallback = publishedArticles.filter(a => a && !topIds.has(a.id) && !bottomCategoryArticles.some(b => b && b.id === a.id));
     return [...bottomCategoryArticles, ...fallback].slice(0, 6);
   }, [filteredArticles, publishedArticles, featuredArticle, filledSecondaryArticles]);
 
   const handleArticleClick = (e: React.MouseEvent<HTMLAnchorElement>, art: Article) => {
     if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
       e.preventDefault();
-      onSelectArticle(art);
+      if (art) {
+        onSelectArticle(art);
+      }
     }
   };
+
+  if (!publishedArticles || publishedArticles.length === 0) {
+    return null;
+  }
+
 
   return (
     <section id="articles-blog-section" className="py-4 sm:py-5 bg-[#fbfaf8] border-t border-stone-200/90">

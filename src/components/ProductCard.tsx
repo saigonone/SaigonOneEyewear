@@ -18,13 +18,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onOpenDetail,
   onQuickTryOn: _onQuickTryOn,
 }) => {
+  if (!product) {
+    return null;
+  }
+
   const [isHovered, setIsHovered] = useState(false);
   const productUrl = getProductUrl(product);
 
   // Lấy trực tiếp ảnh đại diện mới nhất từ trường thumbnail/image của Firestore
-  const displayImage = getProductRepresentativeImage(product);
+  const displayImage = getProductRepresentativeImage(product) || DEFAULT_PRODUCT_FALLBACK_IMAGE;
 
-  const getCategoryBadgeLabel = (cat: string) => {
+  const getCategoryBadgeLabel = (cat?: string) => {
     switch (cat) {
       case "gong-kinh-can":
         return "Gọng Kính";
@@ -41,7 +45,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     }
   };
 
-  const getShapeLabel = (shape: string) => {
+  const getShapeLabel = (shape?: string) => {
+    if (!shape) return "";
     const map: Record<string, string> = {
       "da-giac": "Đa giác",
       "vuong": "Vuông",
@@ -55,7 +60,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     return map[shape] || shape;
   };
 
-  const getMaterialLabel = (mat: string) => {
+  const getMaterialLabel = (mat?: string) => {
+    if (!mat) return "";
     const map: Record<string, string> = {
       "titanium": "Titanium",
       "acetate": "Acetate",
@@ -66,6 +72,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     };
     return map[mat] || mat;
   };
+
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) {
