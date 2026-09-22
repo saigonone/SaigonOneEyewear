@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <!-- Trang chủ -->
+  <url>
+    <loc>https://matkinhsaigonone.com/</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1516762689617-e1cffcef479d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Mắt Kính Sài Gòn One - Hệ Thống Kính Mắt Phú Nhuận</image:title>
+    </image:image>
+  </url>
+
+  <!-- Danh mục Sản Phẩm & Kính Mắt -->
+  <url>
+    <loc>https://matkinhsaigonone.com/san-pham</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://matkinhsaigonone.com/gong-kinh</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://matkinhsaigonone.com/kinh-thoi-trang</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://matkinhsaigonone.com/kinh-ap-trong</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Chuyên mục & Thương hiệu Tròng Kính -->
+  <url>
+    <loc>https://matkinhsaigonone.com/trong-kinh</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://matkinhsaigonone.com/trong-kinh/trong-kinh-essilor-phap</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://matkinhsaigonone.com/trong-kinh/trong-kinh-chemi-han-quoc</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://matkinhsaigonone.com/trong-kinh/trong-kinh-hoya-nhat-ban</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://matkinhsaigonone.com/trong-kinh/trong-kinh-kodak-my</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://matkinhsaigonone.com/trong-kinh/trong-kinh-zeiss-duc</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Trang Tính Năng & Thông Tin Cửa Hàng -->
+  <url>
+    <loc>https://matkinhsaigonone.com/thu-kinh-ar</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://matkinhsaigonone.com/cam-nang</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://matkinhsaigonone.com/gioi-thieu</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://matkinhsaigonone.com/lien-he</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1516762689617-e1cffcef479d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Showroom Mắt Kính Sài Gòn One - 178 Phan Đăng Lưu</image:title>
+    </image:image>
+  </url>
+</urlset>

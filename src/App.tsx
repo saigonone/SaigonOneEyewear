@@ -379,7 +379,12 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const route = parseCurrentRoute(products, [...articles, ...lensArticles], lensBrands);
-      updateSEOMeta(route.title, route.description);
+      updateSEOMeta(route.title, route.description, undefined, {
+        image: route.image,
+        product: route.product,
+        article: route.article,
+        lensBrand: route.lensBrand
+      });
 
       if (route.category) {
         setSelectedCategory(route.category);
@@ -433,9 +438,17 @@ export default function App() {
           setIsProductsPage(false);
           setSelectedArticle(null);
           setSelectedLensBrand(null);
+          const pUrl = getProductUrl(found);
           updateSEOMeta(
             `${found.name} - ${found.brand} | Saigon One Eyewear`,
-            `${found.name} chính hãng ${found.brand}. Chất liệu ${found.material}. Giá: ${found.price.toLocaleString("vi-VN")}đ.`
+            `${found.name} chính hãng ${found.brand}. Chất liệu ${found.material}. Giá: ${found.price.toLocaleString("vi-VN")}đ. Đo khám mắt miễn phí tại 178 Phan Đăng Lưu, Phú Nhuận.`,
+            typeof window !== "undefined" ? `${window.location.origin}${pUrl}` : undefined,
+            {
+              product: found,
+              type: "product",
+              image: (found.images && found.images.length > 0) ? found.images[0] : undefined,
+              keywords: [found.name, found.brand, found.category, "mắt kính chính hãng", "178 phan đăng lưu"]
+            }
           );
         } else {
           setSelectedDetailProduct(null);
@@ -466,9 +479,17 @@ export default function App() {
           setIsProductsPage(false);
           setSelectedDetailProduct(null);
           setSelectedLensBrand(null);
+          const aUrl = getArticleUrl(foundArt);
           updateSEOMeta(
             `${foundArt.title} | Saigon One Eyewear`,
-            foundArt.summary
+            foundArt.summary,
+            typeof window !== "undefined" ? `${window.location.origin}${aUrl}` : undefined,
+            {
+              article: foundArt,
+              type: "article",
+              image: foundArt.image,
+              keywords: [foundArt.title, foundArt.category, "cẩm nang mắt kính", "chăm sóc mắt"]
+            }
           );
         } else {
           setSelectedArticle(null);
@@ -498,9 +519,17 @@ export default function App() {
           setIsArticlesPage(false);
           setIsLensArticlesPage(false);
           setIsProductsPage(false);
+          const bUrl = `/trong-kinh/${foundBrand.slug}`;
           updateSEOMeta(
             `${foundBrand.name} (${foundBrand.origin}) Chính Hãng | Saigon One Eyewear`,
-            foundBrand.description
+            foundBrand.description,
+            typeof window !== "undefined" ? `${window.location.origin}${bUrl}` : undefined,
+            {
+              lensBrand: foundBrand,
+              type: "website",
+              image: foundBrand.banner || foundBrand.logo,
+              keywords: [foundBrand.name, foundBrand.origin, "tròng kính chính hãng", "bảng giá tròng kính"]
+            }
           );
         } else {
           setSelectedLensBrand(null);
@@ -537,7 +566,12 @@ export default function App() {
     navigateTo("/");
     updateSEOMeta(
       "Saigon One Eyewear - Kính Mắt & Tròng Kính Chính Hãng Phú Nhuận",
-      "Hệ thống kính mắt Sài Gòn One - Đo khám khúc xạ chuẩn y khoa miễn phí, cắt kính lấy ngay 15 phút tại 178 Phan Đăng Lưu, Phú Nhuận, TP.HCM."
+      "Hệ thống kính mắt Sài Gòn One - Đo khám khúc xạ chuẩn y khoa miễn phí, cắt kính lấy ngay 15 phút tại 178 Phan Đăng Lưu, Phú Nhuận, TP.HCM.",
+      typeof window !== "undefined" ? `${window.location.origin}/` : undefined,
+      {
+        type: "website",
+        image: "https://images.unsplash.com/photo-1516762689617-e1cffcef479d?auto=format&fit=crop&w=1200&q=80"
+      }
     );
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -551,7 +585,18 @@ export default function App() {
     const targetPath = category === "all" ? "/san-pham" : CATEGORY_TO_PATH[category] || "/san-pham";
     navigateTo(targetPath);
     const route = parseCurrentRoute(products, articles, lensBrands);
-    updateSEOMeta(route.title, route.description);
+    updateSEOMeta(
+      route.title, 
+      route.description,
+      typeof window !== "undefined" ? `${window.location.origin}${targetPath}` : undefined,
+      {
+        type: "website",
+        breadcrumbs: [
+          { name: "Trang Chủ", url: "/" },
+          { name: "Sản Phẩm", url: targetPath }
+        ]
+      }
+    );
 
     // Close open modals
     setIsAboutOpen(false);
@@ -568,7 +613,8 @@ export default function App() {
   };
 
   const handleSelectLensBrand = (brand: LensBrandCategory) => {
-    navigateTo(`/trong-kinh/${brand.slug}`);
+    const brandUrl = `/trong-kinh/${brand.slug}`;
+    navigateTo(brandUrl);
     setSelectedLensBrand(brand);
     setIsArticlesPage(false);
     setIsLensArticlesPage(false);
@@ -583,7 +629,14 @@ export default function App() {
     setSelectedArticle(null);
     updateSEOMeta(
       `${brand.name} (${brand.origin}) Chính Hãng | Saigon One Eyewear`,
-      brand.description
+      brand.description,
+      typeof window !== "undefined" ? `${window.location.origin}${brandUrl}` : undefined,
+      {
+        lensBrand: brand,
+        type: "website",
+        image: brand.bannerImage || brand.logo,
+        keywords: [brand.name, brand.origin, "tròng kính chính hãng", "bảng giá tròng kính"]
+      }
     );
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -593,7 +646,15 @@ export default function App() {
     setIsAboutOpen(true);
     updateSEOMeta(
       "Giới Thiệu Saigon One Eyewear - 178 Phan Đăng Lưu, Phú Nhuận",
-      "Tìm hiểu về Saigon One Eyewear - Hệ thống mắt kính thời trang cao cấp & phòng khám đo khúc xạ y khoa uy tín tại TP.HCM."
+      "Tìm hiểu về Saigon One Eyewear - Hệ thống mắt kính thời trang cao cấp & phòng khám đo khúc xạ y khoa uy tín tại TP.HCM.",
+      typeof window !== "undefined" ? `${window.location.origin}/gioi-thieu` : undefined,
+      {
+        type: "website",
+        breadcrumbs: [
+          { name: "Trang Chủ", url: "/" },
+          { name: "Giới Thiệu", url: "/gioi-thieu" }
+        ]
+      }
     );
   };
 
@@ -603,7 +664,15 @@ export default function App() {
     setIsStoresOpen(true);
     updateSEOMeta(
       "Liên Hệ & Hệ Thống Cửa Hàng - Saigon One Eyewear",
-      "Địa chỉ trụ sở Flagship Saigon One Eyewear: 178 Phan Đăng Lưu, Phường Đức Nhuận, TP.HCM. Hotline/Zalo: 0973.819.928."
+      "Địa chỉ trụ sở Flagship Saigon One Eyewear: 178 Phan Đăng Lưu, Phường 3, Phú Nhuận, TP.HCM. Hotline/Zalo: 0973.819.928.",
+      typeof window !== "undefined" ? `${window.location.origin}/lien-he` : undefined,
+      {
+        type: "website",
+        breadcrumbs: [
+          { name: "Trang Chủ", url: "/" },
+          { name: "Liên Hệ Cửa Hàng", url: "/lien-he" }
+        ]
+      }
     );
   };
 
@@ -631,7 +700,15 @@ export default function App() {
     setSelectedArticle(null);
     updateSEOMeta(
       "Cẩm Nang Thị Lực & Tin Tức Kính Mắt - Saigon One Eyewear",
-      "Chia sẻ kinh nghiệm chọn gọng kính hợp khuôn mặt, chăm sóc mắt và công nghệ tròng kính chống ánh sáng xanh mới nhất tại Saigon One Eyewear 178 Phan Đăng Lưu."
+      "Chia sẻ kinh nghiệm chọn gọng kính hợp khuôn mặt, chăm sóc mắt và công nghệ tròng kính chống ánh sáng xanh mới nhất tại Saigon One Eyewear 178 Phan Đăng Lưu.",
+      typeof window !== "undefined" ? `${window.location.origin}/cam-nang` : undefined,
+      {
+        type: "website",
+        breadcrumbs: [
+          { name: "Trang Chủ", url: "/" },
+          { name: "Cẩm Nang Thị Lực", url: "/cam-nang" }
+        ]
+      }
     );
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -652,7 +729,15 @@ export default function App() {
     setSelectedArticle(null);
     updateSEOMeta(
       "Bảng Giá & Các Loại Tròng Kính Chính Hãng - Saigon One Eyewear",
-      "Tổng hợp thông tin, bảng giá và cẩm nang các dòng tròng kính Essilor, Chemi, Hoya, Kodak, Zeiss chính hãng tại Sài Gòn One."
+      "Tổng hợp thông tin, bảng giá và cẩm nang các dòng tròng kính Essilor, Chemi, Hoya, Kodak, Zeiss chính hãng tại Sài Gòn One.",
+      typeof window !== "undefined" ? `${window.location.origin}/trong-kinh` : undefined,
+      {
+        type: "website",
+        breadcrumbs: [
+          { name: "Trang Chủ", url: "/" },
+          { name: "Bảng Giá Tròng Kính", url: "/trong-kinh" }
+        ]
+      }
     );
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -667,7 +752,14 @@ export default function App() {
     setIsLensArticlesPage(false);
     updateSEOMeta(
       `${product.name} - ${product.brand} | Saigon One Eyewear`,
-      `${product.name} chính hãng ${product.brand}. Chất liệu ${product.material}. Giá: ${product.price.toLocaleString("vi-VN")}đ.`
+      `${product.name} chính hãng ${product.brand}. Chất liệu ${product.material}. Giá: ${product.price.toLocaleString("vi-VN")}đ. Đo khám mắt miễn phí tại 178 Phan Đăng Lưu, Phú Nhuận.`,
+      typeof window !== "undefined" ? `${window.location.origin}${productUrl}` : undefined,
+      {
+        product,
+        type: "product",
+        image: (product.images && product.images.length > 0) ? product.images[0] : undefined,
+        keywords: [product.name, product.brand, product.category, "mắt kính chính hãng", "178 phan đăng lưu"]
+      }
     );
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -681,7 +773,14 @@ export default function App() {
     setIsLensArticlesPage(false);
     updateSEOMeta(
       `${art.title} | Saigon One Eyewear`,
-      art.summary
+      art.summary,
+      typeof window !== "undefined" ? `${window.location.origin}${articleUrl}` : undefined,
+      {
+        article: art,
+        type: "article",
+        image: art.thumbnail,
+        keywords: [art.title, art.category, "cẩm nang mắt kính", "chăm sóc mắt"]
+      }
     );
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -691,7 +790,11 @@ export default function App() {
     setIsOrderLookupOpen(true);
     updateSEOMeta(
       "Tra Cứu Đơn Hàng - Saigon One Eyewear",
-      "Kiểm tra tiến độ đơn hàng và bảo hành kính mắt Saigon One."
+      "Kiểm tra tiến độ đơn hàng và bảo hành kính mắt Saigon One.",
+      typeof window !== "undefined" ? `${window.location.origin}/tra-cuu-don-hang` : undefined,
+      {
+        type: "website"
+      }
     );
   };
 
@@ -705,7 +808,11 @@ export default function App() {
     setIsTryOnModalOpen(true);
     updateSEOMeta(
       "Thử Kính AR 3D Trực Tuyến - Saigon One Eyewear",
-      "Trải nghiệm tính năng thử gọng kính AR 3D bằng camera trực tiếp siêu chân thực tại Saigon One Eyewear."
+      "Trải nghiệm tính năng thử gọng kính AR 3D bằng camera trực tiếp siêu chân thực tại Saigon One Eyewear.",
+      typeof window !== "undefined" ? `${window.location.origin}/thu-kinh-ar` : undefined,
+      {
+        type: "website"
+      }
     );
   };
 
@@ -718,7 +825,11 @@ export default function App() {
     }
     updateSEOMeta(
       "Quản Trị Hệ Thống - Saigon One Eyewear",
-      "Hệ thống quản trị kính mắt Saigon One Eyewear."
+      "Hệ thống quản trị kính mắt Saigon One Eyewear.",
+      typeof window !== "undefined" ? `${window.location.origin}/admin` : undefined,
+      {
+        noindex: true
+      }
     );
   };
 

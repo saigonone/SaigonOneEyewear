@@ -6,21 +6,27 @@ import {
   getProductUrl, 
   getArticleUrl 
 } from "./slug";
+import { updateSEODocument, SEOOptions } from "./seo";
 
 export { 
   createSlug, 
   getProductSlug, 
   getArticleSlug, 
   getProductUrl, 
-  getArticleUrl 
+  getArticleUrl,
+  updateSEODocument
 };
+export type { SEOOptions };
 
 export interface RouteState {
   path: string;
   category?: ProductCategory;
   productId?: string;
+  product?: Product;
   articleId?: string;
+  article?: Article;
   lensBrandSlug?: string;
+  lensBrand?: LensBrandCategory;
   isLensBrandPage?: boolean;
   isLensArticlesPage?: boolean;
   isAbout?: boolean;
@@ -32,6 +38,7 @@ export interface RouteState {
   isProductsPage?: boolean;
   title: string;
   description?: string;
+  image?: string;
 }
 
 export const CATEGORY_TO_PATH: Record<ProductCategory, string> = {
@@ -68,40 +75,18 @@ export const PATH_TO_CATEGORY: Record<string, ProductCategory> = {
 /**
  * Update Document Title and Meta Description for SEO
  */
-export function updateSEOMeta(title: string, description?: string, canonicalUrl?: string) {
-  if (typeof document === "undefined") return;
-
-  document.title = title;
-
-  if (description) {
-    let descMeta = document.querySelector('meta[name="description"]');
-    if (!descMeta) {
-      descMeta = document.createElement("meta");
-      descMeta.setAttribute("name", "description");
-      document.head.appendChild(descMeta);
-    }
-    descMeta.setAttribute("content", description);
-
-    let ogDesc = document.querySelector('meta[property="og:description"]');
-    if (ogDesc) {
-      ogDesc.setAttribute("content", description);
-    }
-  }
-
-  let ogTitle = document.querySelector('meta[property="og:title"]');
-  if (ogTitle) {
-    ogTitle.setAttribute("content", title);
-  }
-
-  if (canonicalUrl) {
-    let canonical = document.querySelector('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.setAttribute("rel", "canonical");
-      document.head.appendChild(canonical);
-    }
-    canonical.setAttribute("href", canonicalUrl);
-  }
+export function updateSEOMeta(
+  title: string, 
+  description?: string, 
+  canonicalUrl?: string,
+  extraOptions?: Partial<SEOOptions>
+) {
+  updateSEODocument({
+    title,
+    description,
+    canonicalUrl,
+    ...extraOptions
+  });
 }
 
 /**
@@ -216,6 +201,8 @@ export function parseCurrentRoute(
       path: rawPath,
       isLensBrandPage: true,
       lensBrandSlug: foundBrand ? foundBrand.slug : brandSlug,
+      lensBrand: foundBrand,
+      image: foundBrand ? (foundBrand.bannerImage || foundBrand.logo) : undefined,
       title: foundBrand ? `${foundBrand.name} Chính Hãng | Saigon One Eyewear` : "Thương Hiệu Tròng Kính - Saigon One Eyewear",
       description: foundBrand ? foundBrand.description : "Thông tin chi tiết về các thương hiệu tròng kính hàng đầu thế giới tại Saigon One."
     };
@@ -239,6 +226,8 @@ export function parseCurrentRoute(
     return {
       path: rawPath,
       articleId: foundArticle ? foundArticle.id : slug,
+      article: foundArticle,
+      image: foundArticle?.thumbnail,
       title: foundArticle ? `${foundArticle.title} | Saigon One Eyewear` : "Cẩm Nang Kính Mắt - Saigon One Eyewear",
       description: foundArticle ? foundArticle.summary : "Bài viết cẩm nang kính mắt và chăm sóc thị lực."
     };
@@ -272,9 +261,13 @@ export function parseCurrentRoute(
       );
     });
 
+    const prodImage = foundProduct?.images && foundProduct.images.length > 0 ? foundProduct.images[0] : undefined;
+
     return {
       path: rawPath,
       productId: foundProduct ? foundProduct.id : decodedKey,
+      product: foundProduct,
+      image: prodImage,
       title: foundProduct
         ? `${foundProduct.name} - ${foundProduct.brand} | Saigon One Eyewear`
         : "Chi Tiết Sản Phẩm | Saigon One Eyewear",

@@ -1,0 +1,29 @@
+# robots.txt for Mắt Kính Sài Gòn One (Saigon One Eyewear)
+# Trụ sở chính: 178 Phan Đăng Lưu, Phường 3, Phú Nhuận, TP.HCM
+# Hotline / Zalo: 0973.819.928
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /quan-tri
+Disallow: /tra-cuu-don-hang
+
+# Search Engine Crawlers
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /quan-tri
+Disallow: /tra-cuu-don-hang
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /quan-tri
+Disallow: /tra-cuu-don-hang
+
+# Sitemaps for Google Search Console & Bing Webmaster
+Sitemap: https://matkinhsaigonone.com/sitemap.xml
+Sitemap: /sitemap.xml

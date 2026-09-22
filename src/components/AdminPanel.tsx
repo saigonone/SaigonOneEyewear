@@ -116,6 +116,7 @@ import { RichTextEditor } from "./RichTextEditor";
 import { AdminBackupModal } from "./AdminBackupModal";
 import { ConfirmDeleteModal, DeletableItemType } from "./ConfirmDeleteModal";
 import { sortArticlesByNewest } from "../utils/articleUtils";
+import { AdminSEOManager } from "./AdminSEOManager";
 
 const PRODUCT_CATEGORY_OPTIONS: { id: ProductCategory; label: string; sub: string; icon: string }[] = [
   { id: "gong-kinh-can", label: "Gọng Kính Cận", sub: "Gọng cận siêu nhẹ, titan & acetate", icon: "👓" },
@@ -163,7 +164,8 @@ type AdminTab =
   | "banners" 
   | "admins" 
   | "orders" 
-  | "appointments";
+  | "appointments"
+  | "seo";
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
   onClose,
@@ -1322,6 +1324,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <Shield className="w-4 h-4" />
             <span>Quản Trị Viên ({admins.length})</span>
           </button>
+
+          {/* Nhóm 8: SEO & Sitemap */}
+          <button
+            onClick={() => setActiveTab("seo")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
+              activeTab === "seo" ? "bg-emerald-600 text-white shadow-xs" : "hover:bg-slate-800 text-slate-300 hover:text-white"
+            }`}
+          >
+            <Globe className="w-4 h-4 text-emerald-400" />
+            <span>SEO &amp; Sitemap</span>
+          </button>
         </div>
 
         {/* Dynamic Sub-Navigation Bar for Multi-Item Sections */}
@@ -1406,6 +1419,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {/* Tab Content Body */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
           
+          {/* ======================================================== */}
+          {/* TAB: SEO & SITEMAP */}
+          {/* ======================================================== */}
+          {activeTab === "seo" && (
+            <AdminSEOManager
+              products={products}
+              articles={[...articles, ...lensArticles]}
+              lensBrands={lensBrands}
+            />
+          )}
+
           {/* ======================================================== */}
           {/* TAB: QUẢN TRỊ BANNER & SLIDER TRANG CHỦ */}
           {/* ======================================================== */}
